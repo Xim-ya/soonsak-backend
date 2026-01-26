@@ -2,6 +2,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS } from '@/shared/constants';
 import { IChannelRepository } from '@/domain/repositories';
 import { RegisterChannelUseCase, BatchProcessResult } from '@/application/use-cases';
+import { SlackNotificationAdapter } from '@/infrastructure/external-services/slack';
 
 /** 배치 처리 기본 설정 */
 const DEFAULT_MIN_AGE_HOURS = 25;
@@ -37,6 +38,8 @@ export class BatchProcessingService {
   constructor(
     @Inject(INJECTION_TOKENS.CHANNEL_REPOSITORY)
     private readonly channelRepository: IChannelRepository,
+    @Inject(INJECTION_TOKENS.SLACK_NOTIFIER)
+    private readonly slackNotifier: SlackNotificationAdapter,
     private readonly registerChannelUseCase: RegisterChannelUseCase,
   ) {}
 
@@ -110,6 +113,15 @@ export class BatchProcessingService {
       this.logger.log(
         `Batch completed: ${result.totalSuccess} success, ${result.totalFailed} failed`,
       );
+
+      // Slack 알림 전송
+      await this.slackNotifier.sendBatchCompletionNotification({
+        totalChannels: result.totalChannels,
+        totalVideosProcessed: result.totalVideosProcessed,
+        totalSuccess: result.totalSuccess,
+        totalFailed: result.totalFailed,
+        durationMs: result.completedAt.getTime() - startedAt.getTime(),
+      });
     } finally {
       this.jobStatus.isRunning = false;
     }

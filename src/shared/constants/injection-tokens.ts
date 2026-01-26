@@ -13,6 +13,7 @@ export const INJECTION_TOKENS = {
   CONTENT_SEARCH: Symbol('ContentSearch'),
   AI_ANALYZER: Symbol('AIAnalyzer'),
   RSS_FEED: Symbol('RSSFeed'),
+  SLACK_NOTIFIER: Symbol('SlackNotifier'),
 } as const;
 
 export type InjectionTokens = typeof INJECTION_TOKENS;

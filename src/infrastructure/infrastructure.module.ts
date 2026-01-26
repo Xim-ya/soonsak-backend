@@ -10,6 +10,7 @@ import {
 import { YouTubeExtractorAdapter, RSSFeedAdapter } from './external-services/youtube/adapters';
 import { TMDBAdapter } from './external-services/tmdb/tmdb.adapter';
 import { OpenAIAdapter } from './external-services/openai/openai.adapter';
+import { SlackNotificationAdapter } from './external-services/slack';
 
 /**
  * 인프라스트럭처 모듈
@@ -50,6 +51,10 @@ import { OpenAIAdapter } from './external-services/openai/openai.adapter';
       provide: INJECTION_TOKENS.AI_ANALYZER,
       useClass: OpenAIAdapter,
     },
+    {
+      provide: INJECTION_TOKENS.SLACK_NOTIFIER,
+      useClass: SlackNotificationAdapter,
+    },
   ],
   exports: [
     INJECTION_TOKENS.VIDEO_REPOSITORY,
@@ -59,6 +64,7 @@ import { OpenAIAdapter } from './external-services/openai/openai.adapter';
     INJECTION_TOKENS.RSS_FEED,
     INJECTION_TOKENS.CONTENT_SEARCH,
     INJECTION_TOKENS.AI_ANALYZER,
+    INJECTION_TOKENS.SLACK_NOTIFIER,
   ],
 })
 export class InfrastructureModule {}
