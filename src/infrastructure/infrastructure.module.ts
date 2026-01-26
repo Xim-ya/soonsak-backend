@@ -1,0 +1,62 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { INJECTION_TOKENS } from '@/shared/constants';
+import {
+  SupabaseVideoRepository,
+  SupabaseContentRepository,
+  SupabaseChannelRepository,
+} from './persistence/supabase/repositories';
+import { YouTubeExtractorAdapter } from './external-services/youtube/adapters';
+import { RSSFeedAdapter } from './external-services/youtube/rss-feed.adapter';
+import { TMDBAdapter } from './external-services/tmdb/tmdb.adapter';
+import { OpenAIAdapter } from './external-services/openai/openai.adapter';
+
+/**
+ * 인프라스트럭처 모듈
+ * 리포지토리 및 외부 서비스 어댑터 제공
+ */
+@Module({
+  imports: [ConfigModule],
+  providers: [
+    // Repositories
+    {
+      provide: INJECTION_TOKENS.VIDEO_REPOSITORY,
+      useClass: SupabaseVideoRepository,
+    },
+    {
+      provide: INJECTION_TOKENS.CONTENT_REPOSITORY,
+      useClass: SupabaseContentRepository,
+    },
+    {
+      provide: INJECTION_TOKENS.CHANNEL_REPOSITORY,
+      useClass: SupabaseChannelRepository,
+    },
+    // External Services
+    {
+      provide: INJECTION_TOKENS.YOUTUBE_EXTRACTOR,
+      useClass: YouTubeExtractorAdapter,
+    },
+    {
+      provide: INJECTION_TOKENS.RSS_FEED,
+      useClass: RSSFeedAdapter,
+    },
+    {
+      provide: INJECTION_TOKENS.CONTENT_SEARCH,
+      useClass: TMDBAdapter,
+    },
+    {
+      provide: INJECTION_TOKENS.AI_ANALYZER,
+      useClass: OpenAIAdapter,
+    },
+  ],
+  exports: [
+    INJECTION_TOKENS.VIDEO_REPOSITORY,
+    INJECTION_TOKENS.CONTENT_REPOSITORY,
+    INJECTION_TOKENS.CHANNEL_REPOSITORY,
+    INJECTION_TOKENS.YOUTUBE_EXTRACTOR,
+    INJECTION_TOKENS.RSS_FEED,
+    INJECTION_TOKENS.CONTENT_SEARCH,
+    INJECTION_TOKENS.AI_ANALYZER,
+  ],
+})
+export class InfrastructureModule {}

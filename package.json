@@ -15,7 +15,10 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:video": "curl -s -X POST http://localhost:3001/scheduler/video/$VIDEO_ID | jq ."
+    "test:video": "curl -s -X POST http://localhost:3001/scheduler/video/$VIDEO_ID | jq .",
+    "test:status": "curl -s http://localhost:3001/scheduler/status | jq .",
+    "test:channel": "curl -s -X POST http://localhost:3001/scheduler/channel/$CHANNEL_ID | jq .",
+    "test:api": "./scripts/test-api.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
