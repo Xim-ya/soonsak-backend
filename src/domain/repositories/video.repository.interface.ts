@@ -34,4 +34,9 @@ export interface IVideoRepository {
    * 콘텐츠 ID로 Primary 비디오 조회
    */
   findPrimaryByContentId(contentId: TMDBId): Promise<Video | null>;
+
+  /**
+   * 주어진 ID 목록 중 이미 존재하는 ID 조회
+   */
+  findExistingIds(videoIds: string[]): Promise<string[]>;
 }

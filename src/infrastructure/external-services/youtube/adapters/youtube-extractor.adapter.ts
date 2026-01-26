@@ -10,6 +10,7 @@ import {
   IYouTubeExtractorPort,
   YouTubeVideoInfo,
   TranscriptResult,
+  ChannelVideoItem,
 } from '@/application/ports';
 import { extractVideoId } from '@/shared/utils';
 
@@ -304,6 +305,166 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       files.forEach((f) => fs.unlinkSync(path.join(tmpDir, f)));
     } catch {
       // 정리 오류 무시
+    }
+  }
+
+  async getChannelVideos(
+    channelId: string,
+    maxResults: number = 100,
+  ): Promise<ChannelVideoItem[]> {
+    const resolvedId = await this.resolveChannelId(channelId);
+    this.logger.log(`Fetching videos for channel: ${resolvedId}`);
+
+    try {
+      const youtube = await this.getYouTubeInstance();
+      const channel = await youtube.getChannel(resolvedId);
+
+      if (!channel) {
+        throw new Error(`Channel not found: ${resolvedId}`);
+      }
+
+      const videos: ChannelVideoItem[] = [];
+      let videosTab: any = await channel.getVideos();
+
+      while (videos.length < maxResults) {
+        const items = videosTab.videos || [];
+
+        for (const item of items) {
+          if (videos.length >= maxResults) break;
+
+          const video = item as any;
+          if (!video.id) continue;
+
+          videos.push({
+            videoId: video.id,
+            title: video.title?.text || video.title || '',
+            publishedAt: video.published?.text || new Date().toISOString(),
+            thumbnail: video.thumbnails?.[0]?.url || '',
+            viewCount: this.parseViewCount(video.view_count?.text || video.short_view_count?.text),
+          });
+        }
+
+        if (!videosTab.has_continuation || videos.length >= maxResults) {
+          break;
+        }
+
+        videosTab = await videosTab.getContinuation();
+      }
+
+      this.logger.log(`Found ${videos.length} videos for channel: ${channelId}`);
+      return videos;
+    } catch (error) {
+      this.logger.error(`Failed to fetch channel videos: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  private parseViewCount(viewCountText: string | undefined): number | undefined {
+    if (!viewCountText) return undefined;
+
+    const cleaned = viewCountText.replace(/[^0-9.만천억]/g, '');
+
+    if (cleaned.includes('억')) {
+      const num = parseFloat(cleaned.replace('억', ''));
+      return Math.round(num * 100000000);
+    }
+    if (cleaned.includes('만')) {
+      const num = parseFloat(cleaned.replace('만', ''));
+      return Math.round(num * 10000);
+    }
+    if (cleaned.includes('천')) {
+      const num = parseFloat(cleaned.replace('천', ''));
+      return Math.round(num * 1000);
+    }
+
+    const num = parseInt(cleaned, 10);
+    return isNaN(num) ? undefined : num;
+  }
+
+  /**
+   * 채널 핸들(@username) 또는 URL을 실제 채널 ID로 변환
+   * youtubei.js를 먼저 시도하고, 실패하면 yt-dlp로 폴백
+   */
+  private async resolveChannelId(input: string): Promise<string> {
+    // 이미 채널 ID 형식이면 그대로 반환 (UC로 시작하는 24자)
+    if (input.startsWith('UC') && input.length === 24) {
+      return input;
+    }
+
+    // @핸들이나 URL이면 변환 필요
+    const needsResolve = input.startsWith('@') || input.includes('youtube.com');
+
+    if (!needsResolve) {
+      return input;
+    }
+
+    this.logger.log(`Resolving channel ID for: ${input}`);
+
+    // 1차: youtubei.js로 시도
+    try {
+      const channelId = await this.resolveWithYoutubeiJs(input);
+      if (channelId) {
+        this.logger.log(`Resolved via youtubei.js: ${channelId}`);
+        return channelId;
+      }
+    } catch (error) {
+      this.logger.warn(`youtubei.js resolution failed: ${(error as Error).message}`);
+    }
+
+    // 2차: yt-dlp로 폴백
+    try {
+      const channelId = await this.resolveWithYtDlp(input);
+      if (channelId) {
+        this.logger.log(`Resolved via yt-dlp: ${channelId}`);
+        return channelId;
+      }
+    } catch (error) {
+      this.logger.warn(`yt-dlp resolution failed: ${(error as Error).message}`);
+    }
+
+    throw new Error(`Failed to resolve channel ID for: ${input}`);
+  }
+
+  private async resolveWithYoutubeiJs(input: string): Promise<string | null> {
+    const youtube = await this.getYouTubeInstance();
+
+    // URL 형식으로 변환
+    let url = input;
+    if (input.startsWith('@')) {
+      url = `https://www.youtube.com/${input}`;
+    }
+
+    const resolved = await youtube.resolveURL(url);
+    const payload = resolved?.payload as any;
+
+    if (payload?.browseId) {
+      return payload.browseId;
+    }
+
+    return null;
+  }
+
+  private async resolveWithYtDlp(input: string): Promise<string | null> {
+    // URL 형식으로 변환
+    let url = input;
+    if (input.startsWith('@')) {
+      url = `https://www.youtube.com/${input}`;
+    }
+
+    try {
+      const { stdout } = await execAsync(
+        `yt-dlp --print channel_id "${url}" 2>/dev/null | head -1`,
+        { timeout: 30000 },
+      );
+
+      const channelId = stdout.trim();
+      if (channelId && channelId.startsWith('UC')) {
+        return channelId;
+      }
+
+      return null;
+    } catch {
+      return null;
     }
   }
 }

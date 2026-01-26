@@ -30,3 +30,17 @@ export interface ChannelProcessingResponseDto {
   errors: string[];
 }
 
+/**
+ * 채널 비디오 일괄 등록 결과 응답 DTO
+ */
+export interface RegisterChannelVideosResponseDto {
+  channelId: string;
+  channelName: string;
+  totalVideos: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  skippedCount: number;
+  errors: string[];
+}
+

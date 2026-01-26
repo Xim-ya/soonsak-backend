@@ -131,4 +131,22 @@ export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
 
     return (data || []).map((row) => row.id);
   }
+
+  async findExistingIds(videoIds: string[]): Promise<string[]> {
+    if (videoIds.length === 0) {
+      return [];
+    }
+
+    const { data, error } = await this.getClient()
+      .from('videos')
+      .select('id')
+      .in('id', videoIds);
+
+    if (error) {
+      this.logger.error(`Failed to find existing ids: ${error.message}`);
+      return [];
+    }
+
+    return (data || []).map((row) => row.id);
+  }
 }
