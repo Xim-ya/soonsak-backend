@@ -139,10 +139,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
       this.cleanupTempFiles(tmpDir, videoId);
 
-      // 쇼츠 감지: 세로 영상(aspect_ratio < 1) OR URL에 /shorts/ 포함
-      const isShorts =
-        (ytdlpData.aspect_ratio !== undefined && ytdlpData.aspect_ratio < 1) ||
-        (ytdlpData.webpage_url?.includes('/shorts/') ?? false);
+      // 쇼츠 감지: 3분 이하 영상
+      const isShorts = (ytdlpData.duration || 0) <= 180;
 
       return {
         id: videoId,
@@ -246,16 +244,12 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
     }
 
-    // 쇼츠 감지: is_short 플래그 또는 짧은 영상 + 해시태그 다수
-    const title = basicInfo.title || '';
-    const hashtagCount = (title.match(/#/g) || []).length;
-    const isShorts =
-      basicInfo.is_short === true ||
-      (duration <= 180 && hashtagCount >= 3);
+    // 쇼츠 감지: 3분 이하 영상
+    const isShorts = duration <= 180;
 
     return {
       id: videoId,
-      title,
+      title: basicInfo.title || '',
       description: basicInfo.description || basicInfo.short_description || '',
       duration,
       publishedAt:
