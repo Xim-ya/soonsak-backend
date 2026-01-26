@@ -1,43 +1,20 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Injectable, Logger } from '@nestjs/common';
 import { Channel } from '@/domain/entities';
 import { IChannelRepository } from '@/domain/repositories';
 import { ChannelMapper, ChannelDBRecord } from '../mappers';
+import { SupabaseClientProvider } from '../supabase-client.provider';
 
 /**
  * Supabase 채널 리포지토리 구현체
  */
 @Injectable()
-export class SupabaseChannelRepository implements IChannelRepository, OnModuleInit {
+export class SupabaseChannelRepository implements IChannelRepository {
   private readonly logger = new Logger(SupabaseChannelRepository.name);
-  private client: SupabaseClient | null = null;
 
-  constructor(private readonly configService: ConfigService) {}
-
-  onModuleInit() {
-    const url = this.configService.get<string>('SUPABASE_URL');
-    const key = this.configService.get<string>('SUPABASE_SERVICE_KEY');
-
-    if (url && key) {
-      this.client = createClient(url, key, {
-        db: { schema: 'public' },
-      });
-      this.logger.log('SupabaseChannelRepository initialized');
-    } else {
-      this.logger.warn('SUPABASE_URL or SUPABASE_SERVICE_KEY not configured');
-    }
-  }
-
-  private getClient(): SupabaseClient {
-    if (!this.client) {
-      throw new Error('Supabase client not initialized');
-    }
-    return this.client;
-  }
+  constructor(private readonly supabaseProvider: SupabaseClientProvider) {}
 
   async findAll(): Promise<Channel[]> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('channels')
       .select('id, name, handle_id, logo_url')
       .order('name');
@@ -53,7 +30,7 @@ export class SupabaseChannelRepository implements IChannelRepository, OnModuleIn
   }
 
   async findById(id: string): Promise<Channel | null> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('channels')
       .select('*')
       .eq('id', id)
@@ -69,7 +46,7 @@ export class SupabaseChannelRepository implements IChannelRepository, OnModuleIn
   async save(channel: Channel): Promise<void> {
     const record = ChannelMapper.toPersistence(channel);
 
-    const { error } = await this.getClient().from('channels').upsert(
+    const { error } = await this.supabaseProvider.getClient().from('channels').upsert(
       {
         ...record,
         updated_at: new Date().toISOString(),
@@ -84,7 +61,7 @@ export class SupabaseChannelRepository implements IChannelRepository, OnModuleIn
   }
 
   async exists(id: string): Promise<boolean> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('channels')
       .select('id')
       .eq('id', id)
@@ -94,7 +71,7 @@ export class SupabaseChannelRepository implements IChannelRepository, OnModuleIn
   }
 
   async getOrCreate(id: string, name: string): Promise<string> {
-    const { data: existing } = await this.getClient()
+    const { data: existing } = await this.supabaseProvider.getClient()
       .from('channels')
       .select('id')
       .eq('id', id)
@@ -104,7 +81,7 @@ export class SupabaseChannelRepository implements IChannelRepository, OnModuleIn
       return existing.id;
     }
 
-    const { data: created, error } = await this.getClient()
+    const { data: created, error } = await this.supabaseProvider.getClient()
       .from('channels')
       .upsert({
         id,

@@ -1,44 +1,21 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Injectable, Logger } from '@nestjs/common';
 import { Video } from '@/domain/entities';
 import { IVideoRepository } from '@/domain/repositories';
 import { VideoId, TMDBId } from '@/domain/value-objects';
 import { VideoMapper, VideoDBRecord } from '../mappers';
+import { SupabaseClientProvider } from '../supabase-client.provider';
 
 /**
  * Supabase 비디오 리포지토리 구현체
  */
 @Injectable()
-export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
+export class SupabaseVideoRepository implements IVideoRepository {
   private readonly logger = new Logger(SupabaseVideoRepository.name);
-  private client: SupabaseClient | null = null;
 
-  constructor(private readonly configService: ConfigService) {}
-
-  onModuleInit() {
-    const url = this.configService.get<string>('SUPABASE_URL');
-    const key = this.configService.get<string>('SUPABASE_SERVICE_KEY');
-
-    if (url && key) {
-      this.client = createClient(url, key, {
-        db: { schema: 'public' },
-      });
-      this.logger.log('SupabaseVideoRepository initialized');
-    } else {
-      this.logger.warn('SUPABASE_URL or SUPABASE_SERVICE_KEY not configured');
-    }
-  }
-
-  private getClient(): SupabaseClient {
-    if (!this.client) {
-      throw new Error('Supabase client not initialized - check SUPABASE_URL and SUPABASE_SERVICE_KEY');
-    }
-    return this.client;
-  }
+  constructor(private readonly supabaseProvider: SupabaseClientProvider) {}
 
   async exists(id: VideoId): Promise<boolean> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('videos')
       .select('id')
       .eq('id', id.getValue())
@@ -48,7 +25,7 @@ export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
   }
 
   async findById(id: VideoId): Promise<Video | null> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('videos')
       .select('*')
       .eq('id', id.getValue())
@@ -62,7 +39,7 @@ export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
   }
 
   async findByContentId(contentId: TMDBId): Promise<Video[]> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('videos')
       .select('*')
       .eq('content_id', contentId.getValue());
@@ -77,7 +54,7 @@ export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
   async save(video: Video): Promise<void> {
     const record = VideoMapper.toPersistence(video);
 
-    const { error } = await this.getClient().from('videos').upsert(record, {
+    const { error } = await this.supabaseProvider.getClient().from('videos').upsert(record, {
       onConflict: 'id',
     });
 
@@ -88,7 +65,7 @@ export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
   }
 
   async updatePrimaryStatus(id: VideoId, isPrimary: boolean): Promise<void> {
-    const { error } = await this.getClient()
+    const { error } = await this.supabaseProvider.getClient()
       .from('videos')
       .update({
         is_primary: isPrimary,
@@ -103,7 +80,7 @@ export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
   }
 
   async findPrimaryByContentId(contentId: TMDBId): Promise<Video | null> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('videos')
       .select('*')
       .eq('content_id', contentId.getValue())
@@ -118,7 +95,7 @@ export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
   }
 
   async getRecentVideoIds(channelId: string, limit = 50): Promise<string[]> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('videos')
       .select('id')
       .eq('channel_id', channelId)
@@ -137,7 +114,7 @@ export class SupabaseVideoRepository implements IVideoRepository, OnModuleInit {
       return [];
     }
 
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('videos')
       .select('id')
       .in('id', videoIds);

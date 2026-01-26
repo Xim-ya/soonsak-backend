@@ -39,4 +39,9 @@ export interface IVideoRepository {
    * 주어진 ID 목록 중 이미 존재하는 ID 조회
    */
   findExistingIds(videoIds: string[]): Promise<string[]>;
+
+  /**
+   * 채널의 최근 비디오 ID 목록 조회
+   */
+  getRecentVideoIds(channelId: string, limit?: number): Promise<string[]>;
 }

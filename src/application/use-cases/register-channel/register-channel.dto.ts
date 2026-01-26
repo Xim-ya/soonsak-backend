@@ -1,15 +1,15 @@
 /**
- * 채널 처리 입력 DTO
+ * 채널 등록 입력 DTO
  */
-export interface ProcessChannelInput {
+export interface RegisterChannelInput {
   channelId: string;
   maxVideos?: number;
 }
 
 /**
- * 채널 처리 결과 DTO
+ * 채널 등록 결과 DTO
  */
-export interface ProcessChannelResult {
+export interface RegisterChannelResult {
   channelId: string;
   channelName: string;
   processedCount: number;
@@ -29,6 +29,6 @@ export interface BatchProcessResult {
   totalVideosProcessed: number;
   totalSuccess: number;
   totalFailed: number;
-  channelResults: ProcessChannelResult[];
+  channelResults: RegisterChannelResult[];
   errors: string[];
 }

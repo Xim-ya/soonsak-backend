@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS } from '@/shared/constants';
 import { IChannelRepository } from '@/domain/repositories';
-import { ProcessChannelUseCase, BatchProcessResult } from '@/application/use-cases';
+import { RegisterChannelUseCase, BatchProcessResult } from '@/application/use-cases';
 
 /**
  * 스케줄러 작업 상태
@@ -34,7 +34,7 @@ export class BatchProcessingService {
   constructor(
     @Inject(INJECTION_TOKENS.CHANNEL_REPOSITORY)
     private readonly channelRepository: IChannelRepository,
-    private readonly processChannelUseCase: ProcessChannelUseCase,
+    private readonly registerChannelUseCase: RegisterChannelUseCase,
   ) {}
 
   async runBatch(): Promise<BatchProcessResult> {
@@ -71,7 +71,7 @@ export class BatchProcessingService {
 
       for (const channel of channels) {
         try {
-          const channelResult = await this.processChannelUseCase.execute({
+          const channelResult = await this.registerChannelUseCase.execute({
             channelId: channel.id,
           });
 

@@ -1,17 +1,17 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { INJECTION_TOKENS } from '@/shared/constants';
+import { INJECTION_TOKENS, MESSAGES } from '@/shared/constants';
 import { IVideoRepository, IChannelRepository } from '@/domain/repositories';
 import { IRSSFeedPort } from '@/application/ports';
-import { ProcessVideoUseCase } from '../process-video';
-import { ProcessChannelInput, ProcessChannelResult } from './process-channel.dto';
+import { RegisterVideoUseCase } from '../register-video';
+import { RegisterChannelInput, RegisterChannelResult } from './register-channel.dto';
 
 /**
- * 채널 처리 Use Case
- * 단일 채널의 최근 비디오 처리
+ * 채널 등록 Use Case
+ * 단일 채널의 최근 비디오 등록
  */
 @Injectable()
-export class ProcessChannelUseCase {
-  private readonly logger = new Logger(ProcessChannelUseCase.name);
+export class RegisterChannelUseCase {
+  private readonly logger = new Logger(RegisterChannelUseCase.name);
 
   constructor(
     @Inject(INJECTION_TOKENS.CHANNEL_REPOSITORY)
@@ -20,14 +20,14 @@ export class ProcessChannelUseCase {
     private readonly videoRepository: IVideoRepository,
     @Inject(INJECTION_TOKENS.RSS_FEED)
     private readonly rssFeed: IRSSFeedPort,
-    private readonly processVideoUseCase: ProcessVideoUseCase,
+    private readonly registerVideoUseCase: RegisterVideoUseCase,
   ) {}
 
-  async execute(input: ProcessChannelInput): Promise<ProcessChannelResult> {
+  async execute(input: RegisterChannelInput): Promise<RegisterChannelResult> {
     const { channelId, maxVideos = 15 } = input;
-    this.logger.log(`Processing channel: ${channelId}`);
+    this.logger.log(`Registering channel: ${channelId}`);
 
-    const result: ProcessChannelResult = {
+    const result: RegisterChannelResult = {
       channelId,
       channelName: '',
       processedCount: 0,
@@ -54,7 +54,7 @@ export class ProcessChannelUseCase {
         result.processedCount++;
 
         try {
-          const processResult = await this.processVideoUseCase.execute({
+          const registerResult = await this.registerVideoUseCase.execute({
             videoId: rssEntry.videoId,
             title: rssEntry.title,
             description: rssEntry.description,
@@ -66,15 +66,15 @@ export class ProcessChannelUseCase {
             viewCount: rssEntry.viewCount,
           });
 
-          if (processResult.success) {
+          if (registerResult.success) {
             result.successCount++;
           } else {
-            if (processResult.message === '이미 처리된 동영상입니다') {
+            if (registerResult.message === MESSAGES.VIDEO.ALREADY_PROCESSED) {
               result.skippedCount++;
               result.processedCount--;
             } else {
               result.failedCount++;
-              result.errors.push(`${rssEntry.videoId}: ${processResult.message}`);
+              result.errors.push(`${rssEntry.videoId}: ${registerResult.message}`);
             }
           }
         } catch (error) {
@@ -88,7 +88,7 @@ export class ProcessChannelUseCase {
       );
     } catch (error) {
       result.errors.push(`Channel error: ${(error as Error).message}`);
-      this.logger.error(`  Channel processing failed: ${(error as Error).message}`);
+      this.logger.error(`  Channel registration failed: ${(error as Error).message}`);
     }
 
     return result;
@@ -101,11 +101,10 @@ export class ProcessChannelUseCase {
         return new Set();
       }
 
-      const videoIds = await (
-        this.videoRepository as any
-      ).getRecentVideoIds?.(channelId, 50);
+      const videoIds = await this.videoRepository.getRecentVideoIds(channelId, 50);
       return new Set(videoIds || []);
-    } catch {
+    } catch (error) {
+      this.logger.debug(`Failed to get processed video IDs: ${(error as Error).message}`);
       return new Set();
     }
   }

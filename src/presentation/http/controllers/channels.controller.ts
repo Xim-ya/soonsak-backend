@@ -1,6 +1,10 @@
-import { Controller, Post, Param, Query, Logger, HttpException, HttpStatus } from '@nestjs/common';
-import { ProcessChannelUseCase, RegisterChannelVideosUseCase } from '@/application/use-cases';
-import { ChannelProcessingResponseDto, RegisterChannelVideosResponseDto } from '../dtos';
+import { Controller, Post, Param, Query, Logger } from '@nestjs/common';
+import { RegisterChannelUseCase, RegisterChannelVideosUseCase } from '@/application/use-cases';
+import {
+  ChannelProcessingResponseDto,
+  RegisterChannelVideosResponseDto,
+  ChannelIdParam,
+} from '../dtos';
 
 /**
  * 채널 컨트롤러
@@ -11,27 +15,22 @@ export class ChannelsController {
   private readonly logger = new Logger(ChannelsController.name);
 
   constructor(
-    private readonly processChannelUseCase: ProcessChannelUseCase,
+    private readonly registerChannelUseCase: RegisterChannelUseCase,
     private readonly registerChannelVideosUseCase: RegisterChannelVideosUseCase,
   ) {}
 
   /**
-   * 단일 채널 처리 (최근 영상만)
+   * 단일 채널 등록 (최근 영상만)
+   * ValidationPipe가 channelId를 자동으로 검증합니다.
    */
   @Post(':channelId/register')
-  async processChannel(
-    @Param('channelId') channelId: string,
+  async registerChannel(
+    @Param() params: ChannelIdParam,
   ): Promise<ChannelProcessingResponseDto> {
-    this.logger.log(`Processing single channel: ${channelId}`);
+    const { channelId } = params;
+    this.logger.log(`Registering single channel: ${channelId}`);
 
-    if (!channelId) {
-      throw new HttpException(
-        'Channel ID is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const result = await this.processChannelUseCase.execute({
+    const result = await this.registerChannelUseCase.execute({
       channelId,
     });
 
@@ -40,20 +39,15 @@ export class ChannelsController {
 
   /**
    * 채널의 모든 비디오 일괄 등록
+   * ValidationPipe가 channelId를 자동으로 검증합니다.
    */
   @Post(':channelId/register-all')
   async registerAllVideos(
-    @Param('channelId') channelId: string,
+    @Param() params: ChannelIdParam,
     @Query('max') maxVideos?: string,
   ): Promise<RegisterChannelVideosResponseDto> {
+    const { channelId } = params;
     this.logger.log(`Registering all videos for channel: ${channelId}`);
-
-    if (!channelId) {
-      throw new HttpException(
-        'Channel ID is required',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
 
     const max = maxVideos ? parseInt(maxVideos, 10) : 100;
 

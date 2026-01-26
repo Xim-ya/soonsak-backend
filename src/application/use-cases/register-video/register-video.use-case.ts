@@ -1,5 +1,5 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { INJECTION_TOKENS } from '@/shared/constants';
+import { INJECTION_TOKENS, MESSAGES, TMDB_CONFIG } from '@/shared/constants';
 import { Video, Content } from '@/domain/entities';
 import { VideoId, TMDBId } from '@/domain/value-objects';
 import { IVideoRepository, IContentRepository, IChannelRepository } from '@/domain/repositories';
@@ -15,15 +15,16 @@ import {
   IAIAnalyzerPort,
   ContentMatchResult,
 } from '@/application/ports';
-import { ProcessVideoInput, ProcessVideoResult, TMDBCandidateDTO } from './process-video.dto';
+import { AIAnalysisError } from '@/domain/errors/domain.error';
+import { RegisterVideoInput, RegisterVideoResult } from './register-video.dto';
 
 /**
- * 비디오 처리 Use Case
- * 핵심 비디오 처리 로직: YouTube 추출, TMDB 매칭, 데이터베이스 저장
+ * 비디오 등록 Use Case
+ * 핵심 비디오 등록 로직: YouTube 추출, TMDB 매칭, 데이터베이스 저장
  */
 @Injectable()
-export class ProcessVideoUseCase {
-  private readonly logger = new Logger(ProcessVideoUseCase.name);
+export class RegisterVideoUseCase {
+  private readonly logger = new Logger(RegisterVideoUseCase.name);
 
   constructor(
     @Inject(INJECTION_TOKENS.VIDEO_REPOSITORY)
@@ -43,16 +44,16 @@ export class ProcessVideoUseCase {
     private readonly primaryVideoSelectionService: PrimaryVideoSelectionService,
   ) {}
 
-  async execute(input: ProcessVideoInput): Promise<ProcessVideoResult> {
+  async execute(input: RegisterVideoInput): Promise<RegisterVideoResult> {
     const { videoId, title } = input;
-    this.logger.log(`Processing video: ${title} (${videoId})`);
+    this.logger.log(`Registering video: ${title} (${videoId})`);
 
     try {
       const exists = await this.videoRepository.exists(VideoId.fromString(videoId));
       if (exists) {
         return {
           success: false,
-          message: '이미 처리된 동영상입니다',
+          message: MESSAGES.VIDEO.ALREADY_PROCESSED,
         };
       }
 
@@ -113,7 +114,10 @@ export class ProcessVideoUseCase {
 
           this.logger.log(`  AI analysis: ${includesEnding ? '결말포함' : '결말없음'}`);
         } catch (error) {
-          this.logger.warn(`  AI analysis failed: ${(error as Error).message}`);
+          const errorMessage = error instanceof AIAnalysisError
+            ? error.message
+            : (error as Error).message;
+          this.logger.warn(`  AI analysis failed: ${errorMessage}`);
         }
       }
 
@@ -134,15 +138,18 @@ export class ProcessVideoUseCase {
             tmdbCandidates.push(...aiCandidates);
             includesEnding = analysis.includesEnding;
           }
-        } catch {
-          // AI 실패 시 무시
+        } catch (error) {
+          const errorMessage = error instanceof AIAnalysisError
+            ? error.message
+            : (error as Error).message;
+          this.logger.debug(`AI title extraction failed: ${errorMessage}`);
         }
       }
 
       if (tmdbCandidates.length === 0) {
         return {
           success: false,
-          message: 'TMDB 매칭 실패 - 검색결과 없음',
+          message: MESSAGES.TMDB.MATCH_FAILED_NO_RESULTS,
         };
       }
 
@@ -206,7 +213,7 @@ export class ProcessVideoUseCase {
 
       return {
         success: true,
-        message: '동영상 처리 완료',
+        message: '동영상 등록 완료',
         data: {
           videoId,
           youtubeTitle: videoInfo.title,
@@ -218,10 +225,10 @@ export class ProcessVideoUseCase {
         },
       };
     } catch (error) {
-      this.logger.error(`  Processing failed: ${(error as Error).message}`);
+      this.logger.error(`  Registration failed: ${(error as Error).message}`);
       return {
         success: false,
-        message: `처리 실패: ${(error as Error).message}`,
+        message: `등록 실패: ${(error as Error).message}`,
       };
     }
   }
@@ -234,8 +241,8 @@ export class ProcessVideoUseCase {
     titleCandidates: string[],
   ): Promise<TMDBMatchResult[]> {
     const validCandidates = titleCandidates
-      .slice(0, 5)
-      .filter((c) => c.length >= 2 && c.length <= 30);
+      .slice(0, TMDB_CONFIG.MAX_CANDIDATES)
+      .filter((c) => c.length >= TMDB_CONFIG.MIN_TITLE_LENGTH && c.length <= TMDB_CONFIG.MAX_TITLE_LENGTH);
 
     if (validCandidates.length === 0) {
       return [];
@@ -314,9 +321,9 @@ export class ProcessVideoUseCase {
       return null;
     }
 
-    // 인기도 체크 (최소 10 이상)
+    // 인기도 체크
     const popularity = candidate.data.popularity || 0;
-    if (popularity < 10) {
+    if (popularity < TMDB_CONFIG.MIN_POPULARITY_THRESHOLD) {
       return null;
     }
 

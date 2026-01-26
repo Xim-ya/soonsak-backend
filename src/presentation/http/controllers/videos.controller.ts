@@ -1,6 +1,6 @@
-import { Controller, Post, Param, Logger, HttpException, HttpStatus } from '@nestjs/common';
-import { ProcessVideoUseCase } from '@/application/use-cases';
-import { VideoProcessingResponseDto } from '../dtos';
+import { Controller, Post, Param, Logger } from '@nestjs/common';
+import { RegisterVideoUseCase } from '@/application/use-cases';
+import { VideoProcessingResponseDto, VideoIdParam } from '../dtos';
 
 /**
  * 비디오 컨트롤러
@@ -10,25 +10,20 @@ import { VideoProcessingResponseDto } from '../dtos';
 export class VideosController {
   private readonly logger = new Logger(VideosController.name);
 
-  constructor(private readonly processVideoUseCase: ProcessVideoUseCase) {}
+  constructor(private readonly registerVideoUseCase: RegisterVideoUseCase) {}
 
   /**
-   * 단일 비디오 처리
+   * 단일 비디오 등록
+   * ValidationPipe가 videoId 형식을 자동으로 검증합니다.
    */
   @Post(':videoId/register')
-  async processVideo(
-    @Param('videoId') videoId: string,
+  async registerVideo(
+    @Param() params: VideoIdParam,
   ): Promise<VideoProcessingResponseDto> {
-    this.logger.log(`Processing single video: ${videoId}`);
+    const { videoId } = params;
+    this.logger.log(`Registering single video: ${videoId}`);
 
-    if (!videoId || videoId.length !== 11) {
-      throw new HttpException(
-        'Invalid video ID format',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    const result = await this.processVideoUseCase.execute({
+    const result = await this.registerVideoUseCase.execute({
       videoId,
       title: '',
       description: '',

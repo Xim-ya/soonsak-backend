@@ -73,7 +73,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       try {
         const fallbackData = await this.extractWithYoutubeiJs(normalizedId);
         return this.mergeVideoInfo(ytdlpResult, fallbackData, missingFields);
-      } catch {
+      } catch (error) {
+        this.logger.debug(`youtubei.js fallback failed for ${normalizedId}: ${(error as Error).message}`);
         return ytdlpResult;
       }
     }
@@ -190,7 +191,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
 
       return textLines.join(' ').replace(/\s+/g, ' ').trim();
-    } catch {
+    } catch (error) {
+      this.logger.debug(`VTT file parsing failed: ${(error as Error).message}`);
       return '';
     }
   }
@@ -201,8 +203,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
         .readdirSync(tmpDir)
         .filter((f) => f.startsWith(`yt-video-${videoId}`));
       files.forEach((f) => fs.unlinkSync(path.join(tmpDir, f)));
-    } catch {
-      // 정리 오류 무시
+    } catch (error) {
+      this.logger.debug(`Temp file cleanup failed for ${videoId}: ${(error as Error).message}`);
     }
   }
 
@@ -291,7 +293,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
 
       return '';
-    } catch {
+    } catch (error) {
+      this.logger.debug(`Transcript extraction failed for ${videoId}: ${(error as Error).message}`);
       this.cleanupTranscriptFiles(tmpDir, videoId);
       return '';
     }
@@ -303,8 +306,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
         .readdirSync(tmpDir)
         .filter((f) => f.startsWith(`yt-transcript-${videoId}`));
       files.forEach((f) => fs.unlinkSync(path.join(tmpDir, f)));
-    } catch {
-      // 정리 오류 무시
+    } catch (error) {
+      this.logger.debug(`Transcript file cleanup failed for ${videoId}: ${(error as Error).message}`);
     }
   }
 
@@ -463,7 +466,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
 
       return null;
-    } catch {
+    } catch (error) {
+      this.logger.debug(`yt-dlp channel resolution failed for ${input}: ${(error as Error).message}`);
       return null;
     }
   }

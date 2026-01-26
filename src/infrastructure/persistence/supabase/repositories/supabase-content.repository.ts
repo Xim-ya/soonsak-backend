@@ -1,44 +1,21 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Injectable, Logger } from '@nestjs/common';
 import { Content } from '@/domain/entities';
 import { IContentRepository } from '@/domain/repositories';
 import { TMDBId } from '@/domain/value-objects';
 import { ContentMapper, ContentDBRecord } from '../mappers';
+import { SupabaseClientProvider } from '../supabase-client.provider';
 
 /**
  * Supabase 콘텐츠 리포지토리 구현체
  */
 @Injectable()
-export class SupabaseContentRepository implements IContentRepository, OnModuleInit {
+export class SupabaseContentRepository implements IContentRepository {
   private readonly logger = new Logger(SupabaseContentRepository.name);
-  private client: SupabaseClient | null = null;
 
-  constructor(private readonly configService: ConfigService) {}
-
-  onModuleInit() {
-    const url = this.configService.get<string>('SUPABASE_URL');
-    const key = this.configService.get<string>('SUPABASE_SERVICE_KEY');
-
-    if (url && key) {
-      this.client = createClient(url, key, {
-        db: { schema: 'public' },
-      });
-      this.logger.log('SupabaseContentRepository initialized');
-    } else {
-      this.logger.warn('SUPABASE_URL or SUPABASE_SERVICE_KEY not configured');
-    }
-  }
-
-  private getClient(): SupabaseClient {
-    if (!this.client) {
-      throw new Error('Supabase client not initialized');
-    }
-    return this.client;
-  }
+  constructor(private readonly supabaseProvider: SupabaseClientProvider) {}
 
   async findById(id: TMDBId): Promise<Content | null> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('contents')
       .select('*')
       .eq('id', id.getValue())
@@ -59,7 +36,7 @@ export class SupabaseContentRepository implements IContentRepository, OnModuleIn
 
     const record = ContentMapper.toPersistence(content);
 
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('contents')
       .insert({
         ...record,
@@ -77,7 +54,7 @@ export class SupabaseContentRepository implements IContentRepository, OnModuleIn
   }
 
   async exists(id: TMDBId): Promise<boolean> {
-    const { data, error } = await this.getClient()
+    const { data, error } = await this.supabaseProvider.getClient()
       .from('contents')
       .select('id')
       .eq('id', id.getValue())

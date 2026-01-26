@@ -2,7 +2,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS } from '@/shared/constants';
 import { IVideoRepository } from '@/domain/repositories';
 import { IYouTubeExtractorPort } from '@/application/ports';
-import { ProcessVideoUseCase } from '../process-video';
+import { RegisterVideoUseCase } from '../register-video';
 import {
   RegisterChannelVideosInput,
   RegisterChannelVideosResult,
@@ -21,7 +21,7 @@ export class RegisterChannelVideosUseCase {
     private readonly youtubeExtractor: IYouTubeExtractorPort,
     @Inject(INJECTION_TOKENS.VIDEO_REPOSITORY)
     private readonly videoRepository: IVideoRepository,
-    private readonly processVideoUseCase: ProcessVideoUseCase,
+    private readonly registerVideoUseCase: RegisterVideoUseCase,
   ) {}
 
   async execute(input: RegisterChannelVideosInput): Promise<RegisterChannelVideosResult> {
@@ -58,7 +58,7 @@ export class RegisterChannelVideosUseCase {
         result.processedCount++;
 
         try {
-          const processResult = await this.processVideoUseCase.execute({
+          const registerResult = await this.registerVideoUseCase.execute({
             videoId: video.videoId,
             title: video.title,
             description: '',
@@ -70,20 +70,20 @@ export class RegisterChannelVideosUseCase {
             viewCount: video.viewCount,
           });
 
-          if (!result.channelName && processResult.data) {
+          if (!result.channelName && registerResult.data) {
             result.channelName = channelId;
           }
 
-          if (processResult.success) {
+          if (registerResult.success) {
             result.successCount++;
             this.logger.log(`  [${result.successCount}/${result.totalVideos}] ${video.title}`);
           } else {
-            if (processResult.message === '이미 처리된 동영상입니다') {
+            if (registerResult.message === '이미 처리된 동영상입니다') {
               result.skippedCount++;
               result.processedCount--;
             } else {
               result.failedCount++;
-              result.errors.push(`${video.videoId}: ${processResult.message}`);
+              result.errors.push(`${video.videoId}: ${registerResult.message}`);
             }
           }
         } catch (error) {

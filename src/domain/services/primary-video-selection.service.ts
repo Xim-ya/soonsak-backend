@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ContentTypeValue } from '../value-objects';
+import { SELECTION_SCORE_WEIGHTS } from '@/shared/constants';
 
 /**
  * TMDB 검색 결과 타입
@@ -109,12 +110,12 @@ export class PrimaryVideoSelectionService {
 
     // 제목 일치 점수
     if (titleCandidates.some((t) => t.toLowerCase() === tmdbTitle?.toLowerCase())) {
-      score += 10;
+      score += SELECTION_SCORE_WEIGHTS.EXACT_TITLE_MATCH;
     }
 
     // 영화 이모지 보너스
     if (hasMovieEmoji && candidate.type === 'movie') {
-      score += 5;
+      score += SELECTION_SCORE_WEIGHTS.MOVIE_EMOJI_BONUS;
     }
 
     // 연도 일치 점수
@@ -126,14 +127,14 @@ export class PrimaryVideoSelectionService {
       if (releaseDate) {
         const releaseYear = parseInt(releaseDate.split('-')[0], 10);
         if (releaseYear === yearHint) {
-          score += 8;
+          score += SELECTION_SCORE_WEIGHTS.YEAR_MATCH;
         }
       }
     }
 
     // 첫 번째 후보 보너스
     if (index === 0) {
-      score += 2;
+      score += SELECTION_SCORE_WEIGHTS.FIRST_CANDIDATE_BONUS;
     }
 
     return score;

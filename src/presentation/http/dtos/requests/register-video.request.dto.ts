@@ -1,9 +1,9 @@
 import { IsString, IsNotEmpty, Length, IsOptional } from 'class-validator';
 
 /**
- * 단일 비디오 처리 요청 DTO
+ * 단일 비디오 등록 요청 DTO
  */
-export class ProcessVideoRequestDto {
+export class RegisterVideoRequestDto {
   @IsString()
   @IsNotEmpty()
   @Length(11, 11, { message: '비디오 ID는 정확히 11자여야 합니다' })
@@ -11,9 +11,9 @@ export class ProcessVideoRequestDto {
 }
 
 /**
- * 채널 처리 요청 DTO
+ * 채널 등록 요청 DTO
  */
-export class ProcessChannelRequestDto {
+export class RegisterChannelRequestDto {
   @IsString()
   @IsNotEmpty()
   channelId: string;

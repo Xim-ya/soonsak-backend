@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { DomainModule } from '@/domain/domain.module';
 import { InfrastructureModule } from '@/infrastructure/infrastructure.module';
 import {
-  ProcessVideoUseCase,
-  ProcessChannelUseCase,
+  RegisterVideoUseCase,
+  RegisterChannelUseCase,
   RegisterChannelVideosUseCase,
 } from './use-cases';
 import { BatchProcessingService } from './services';
@@ -15,14 +15,14 @@ import { BatchProcessingService } from './services';
 @Module({
   imports: [DomainModule, InfrastructureModule],
   providers: [
-    ProcessVideoUseCase,
-    ProcessChannelUseCase,
+    RegisterVideoUseCase,
+    RegisterChannelUseCase,
     RegisterChannelVideosUseCase,
     BatchProcessingService,
   ],
   exports: [
-    ProcessVideoUseCase,
-    ProcessChannelUseCase,
+    RegisterVideoUseCase,
+    RegisterChannelUseCase,
     RegisterChannelVideosUseCase,
     BatchProcessingService,
   ],

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OpenAI } from 'openai';
 import {
@@ -7,13 +7,9 @@ import {
   AIAnalysisResult,
   IYouTubeExtractorPort,
 } from '@/application/ports';
-import { INJECTION_TOKENS } from '@/shared/constants';
-import { Inject } from '@nestjs/common';
-import {
-  buildContentExtractionPrompt,
-  buildTMDBSelectionPrompt,
-  buildUnifiedAnalysisPrompt,
-} from './prompts';
+import { INJECTION_TOKENS, AI_CONFIG } from '@/shared/constants';
+import { AIAnalysisError } from '@/domain/errors/domain.error';
+import { buildUnifiedAnalysisPrompt } from './prompts';
 
 /**
  * OpenAI 어댑터
@@ -28,7 +24,6 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
 
   // 자막 캐싱 (동일 videoId 중복 fetch 방지)
   private transcriptCache = new Map<string, { content: string; transcript: string; timestamp: number }>();
-  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5분
 
   constructor(
     private readonly configService: ConfigService,
@@ -80,10 +75,11 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
       const result = response.choices[0]?.message?.content || '';
       return this.parseAnalysisResponse(result, content);
     } catch (error) {
+      const errorMessage = (error as Error).message;
       this.logger.warn(
-        `AI analysis failed, falling back to keyword analysis: ${(error as Error).message}`,
+        `AI analysis failed, falling back to keyword analysis: ${errorMessage}`,
       );
-      return this.keywordAnalysis(content);
+      throw new AIAnalysisError(errorMessage);
     }
   }
 
@@ -111,7 +107,7 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
   private async extractVideoContentCached(videoId: string): Promise<string> {
     // 캐시 확인
     const cached = this.transcriptCache.get(videoId);
-    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
+    if (cached && Date.now() - cached.timestamp < AI_CONFIG.CACHE_TTL_MS) {
       this.lastFullTranscript = cached.transcript;
       return cached.content;
     }
@@ -126,8 +122,8 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
       timestamp: Date.now(),
     });
 
-    // 오래된 캐시 정리 (10개 초과 시)
-    if (this.transcriptCache.size > 10) {
+    // 오래된 캐시 정리
+    if (this.transcriptCache.size > AI_CONFIG.MAX_TRANSCRIPT_CACHE_SIZE) {
       const oldestKey = this.transcriptCache.keys().next().value;
       if (oldestKey) this.transcriptCache.delete(oldestKey);
     }

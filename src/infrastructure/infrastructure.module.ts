@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { INJECTION_TOKENS } from '@/shared/constants';
+import { SupabaseClientProvider } from './persistence/supabase/supabase-client.provider';
 import {
   SupabaseVideoRepository,
   SupabaseContentRepository,
   SupabaseChannelRepository,
 } from './persistence/supabase/repositories';
-import { YouTubeExtractorAdapter } from './external-services/youtube/adapters';
-import { RSSFeedAdapter } from './external-services/youtube/rss-feed.adapter';
+import { YouTubeExtractorAdapter, RSSFeedAdapter } from './external-services/youtube/adapters';
 import { TMDBAdapter } from './external-services/tmdb/tmdb.adapter';
 import { OpenAIAdapter } from './external-services/openai/openai.adapter';
 
@@ -18,6 +18,8 @@ import { OpenAIAdapter } from './external-services/openai/openai.adapter';
 @Module({
   imports: [ConfigModule],
   providers: [
+    // Supabase Client Provider
+    SupabaseClientProvider,
     // Repositories
     {
       provide: INJECTION_TOKENS.VIDEO_REPOSITORY,

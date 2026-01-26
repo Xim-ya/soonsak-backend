@@ -1,9 +1,9 @@
 import { ContentTypeValue } from '@/domain/value-objects';
 
 /**
- * 비디오 처리 입력 DTO
+ * 비디오 등록 입력 DTO
  */
-export interface ProcessVideoInput {
+export interface RegisterVideoInput {
   videoId: string;
   title: string;
   description: string;
@@ -16,9 +16,9 @@ export interface ProcessVideoInput {
 }
 
 /**
- * 비디오 처리 결과 DTO
+ * 비디오 등록 결과 DTO
  */
-export interface ProcessVideoResult {
+export interface RegisterVideoResult {
   success: boolean;
   message: string;
   data?: {
