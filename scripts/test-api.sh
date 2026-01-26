@@ -21,8 +21,8 @@ print_result() {
 
 case "$1" in
   status)
-    echo -e "${YELLOW}Testing: GET /scheduler/status${NC}"
-    curl -s "$BASE_URL/scheduler/status" | jq .
+    echo -e "${YELLOW}Testing: GET /batch/status${NC}"
+    curl -s "$BASE_URL/batch/status" | jq .
     print_result $?
     ;;
 
@@ -32,8 +32,8 @@ case "$1" in
       echo "Example: $0 video dQw4w9WgXcQ"
       exit 1
     fi
-    echo -e "${YELLOW}Testing: POST /scheduler/video/$2${NC}"
-    curl -s -X POST "$BASE_URL/scheduler/video/$2" | jq .
+    echo -e "${YELLOW}Testing: POST /videos/$2/register${NC}"
+    curl -s -X POST "$BASE_URL/videos/$2/register" | jq .
     print_result $?
     ;;
 
@@ -42,20 +42,20 @@ case "$1" in
       echo "Usage: $0 channel <CHANNEL_ID>"
       exit 1
     fi
-    echo -e "${YELLOW}Testing: POST /scheduler/channel/$2${NC}"
-    curl -s -X POST "$BASE_URL/scheduler/channel/$2" | jq .
+    echo -e "${YELLOW}Testing: POST /channels/$2/register${NC}"
+    curl -s -X POST "$BASE_URL/channels/$2/register" | jq .
     print_result $?
     ;;
 
   batch)
-    echo -e "${YELLOW}Testing: POST /scheduler/run${NC}"
-    curl -s -X POST "$BASE_URL/scheduler/run" | jq .
+    echo -e "${YELLOW}Testing: POST /batch/run${NC}"
+    curl -s -X POST "$BASE_URL/batch/run" | jq .
     print_result $?
     ;;
 
   health)
     echo -e "${YELLOW}Checking server health...${NC}"
-    if curl -s --head "$BASE_URL/scheduler/status" | head -n 1 | grep -q "200"; then
+    if curl -s --head "$BASE_URL/batch/status" | head -n 1 | grep -q "200"; then
       echo -e "${GREEN}Server is running${NC}"
     else
       echo -e "${RED}Server is not responding${NC}"
@@ -77,7 +77,7 @@ case "$1" in
     echo "Usage: $0 <command> [args]"
     echo ""
     echo "Commands:"
-    echo "  status           - Get scheduler status"
+    echo "  status           - Get batch status"
     echo "  video <ID>       - Process single video"
     echo "  channel <ID>     - Process single channel"
     echo "  batch            - Run full batch processing"

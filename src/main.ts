@@ -16,7 +16,7 @@ async function bootstrap() {
   await app.listen(port);
 
   logger.log(`🚀 Soonsak Backend is running on port ${port}`);
-  logger.log(`📺 Scheduler endpoint: http://localhost:${port}/scheduler/status`);
+  logger.log(`📺 Batch status: http://localhost:${port}/batch/status`);
 }
 
 bootstrap();
