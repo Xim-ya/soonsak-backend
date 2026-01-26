@@ -246,9 +246,16 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
     }
 
+    // 쇼츠 감지: is_short 플래그 또는 짧은 영상 + 해시태그 다수
+    const title = basicInfo.title || '';
+    const hashtagCount = (title.match(/#/g) || []).length;
+    const isShorts =
+      basicInfo.is_short === true ||
+      (duration <= 180 && hashtagCount >= 3);
+
     return {
       id: videoId,
-      title: basicInfo.title || '',
+      title,
       description: basicInfo.description || basicInfo.short_description || '',
       duration,
       publishedAt:
@@ -257,7 +264,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       channelTitle: basicInfo.channel?.name || basicInfo.author || '',
       thumbnail: basicInfo.thumbnail?.[0]?.url || basicInfo.thumbnail?.url || '',
       viewCount: basicInfo.view_count,
-      isShorts: false, // youtubei.js fallback에서는 쇼츠 감지 불가, yt-dlp 결과 우선
+      isShorts,
     };
   }
 
