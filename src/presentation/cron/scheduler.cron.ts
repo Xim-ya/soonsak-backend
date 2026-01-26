@@ -26,7 +26,7 @@ export class SchedulerCron {
    * 매일 오전 6시에 배치 작업 실행
    * 25시간 이전에 게시된 영상만 처리 (자막 등이 준비될 시간 확보)
    */
-  @Cron('30 0 * * *', {
+  @Cron('52 0 * * *', {
     name: 'daily-video-batch',
     timeZone: 'Asia/Seoul',
   })
