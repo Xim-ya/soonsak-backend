@@ -58,6 +58,16 @@ export class RegisterVideoUseCase {
       }
 
       const videoInfo = await this.youtubeExtractor.getVideoInfo(videoId);
+
+      // 쇼츠 영상 제외
+      if (videoInfo.isShorts) {
+        this.logger.log(`  Skipping Shorts video: ${videoInfo.title}`);
+        return {
+          success: false,
+          message: '쇼츠 영상은 등록 대상이 아닙니다',
+        };
+      }
+
       this.logger.log(`  Video duration: ${Math.round(videoInfo.duration / 60)}분`);
 
       const titleCandidates = this.titleExtractionService.extractCandidates(

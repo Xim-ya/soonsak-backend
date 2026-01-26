@@ -27,6 +27,8 @@ interface YtDlpOutput {
   uploader: string;
   thumbnail: string;
   view_count?: number;
+  aspect_ratio?: number;
+  webpage_url?: string;
 }
 
 /**
@@ -137,6 +139,11 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
       this.cleanupTempFiles(tmpDir, videoId);
 
+      // 쇼츠 감지: 세로 영상(aspect_ratio < 1) OR URL에 /shorts/ 포함
+      const isShorts =
+        (ytdlpData.aspect_ratio !== undefined && ytdlpData.aspect_ratio < 1) ||
+        (ytdlpData.webpage_url?.includes('/shorts/') ?? false);
+
       return {
         id: videoId,
         title: ytdlpData.title || '',
@@ -150,6 +157,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
           ? transcript.substring(0, this.maxTranscriptLength)
           : undefined,
         viewCount: ytdlpData.view_count,
+        isShorts,
       };
     } catch (error) {
       this.cleanupTempFiles(tmpDir, videoId);
@@ -249,6 +257,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       channelTitle: basicInfo.channel?.name || basicInfo.author || '',
       thumbnail: basicInfo.thumbnail?.[0]?.url || basicInfo.thumbnail?.url || '',
       viewCount: basicInfo.view_count,
+      isShorts: false, // youtubei.js fallback에서는 쇼츠 감지 불가, yt-dlp 결과 우선
     };
   }
 
