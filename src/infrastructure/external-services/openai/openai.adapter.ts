@@ -12,6 +12,7 @@ import { Inject } from '@nestjs/common';
 import {
   buildContentExtractionPrompt,
   buildTMDBSelectionPrompt,
+  buildUnifiedAnalysisPrompt,
 } from './prompts';
 
 /**
@@ -24,6 +25,10 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
   private openai: OpenAI | null = null;
   private readonly model: string;
   private lastFullTranscript = '';
+
+  // 자막 캐싱 (동일 videoId 중복 fetch 방지)
+  private transcriptCache = new Map<string, { content: string; transcript: string; timestamp: number }>();
+  private readonly CACHE_TTL_MS = 5 * 60 * 1000; // 5분
 
   constructor(
     private readonly configService: ConfigService,
@@ -50,14 +55,12 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
   async analyzeVideoContent(params: AIAnalyzeParams): Promise<AIAnalysisResult> {
     const { videoId, videoDuration, tmdbCandidates } = params;
 
-    const content = await this.extractVideoContent(videoId);
+    const content = await this.extractVideoContentCached(videoId);
     const segments = this.getTranscriptSegments();
     const enhancedContent = this.buildEnhancedContent(content, segments);
 
-    const prompt =
-      tmdbCandidates.length > 0
-        ? buildTMDBSelectionPrompt(enhancedContent, tmdbCandidates, videoDuration)
-        : buildContentExtractionPrompt(enhancedContent, videoDuration);
+    // 통합 프롬프트 사용 (한 번의 호출로 제목 추출 + TMDB 선택 + 결말 판단)
+    const prompt = buildUnifiedAnalysisPrompt(enhancedContent, tmdbCandidates, videoDuration);
 
     try {
       const response = await this.getOpenAI().chat.completions.create({
@@ -103,6 +106,33 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
       confidence: result.confidence,
       reasoning: result.reasoning,
     };
+  }
+
+  private async extractVideoContentCached(videoId: string): Promise<string> {
+    // 캐시 확인
+    const cached = this.transcriptCache.get(videoId);
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
+      this.lastFullTranscript = cached.transcript;
+      return cached.content;
+    }
+
+    // 캐시 미스 - 새로 fetch
+    const content = await this.extractVideoContent(videoId);
+
+    // 캐시 저장
+    this.transcriptCache.set(videoId, {
+      content,
+      transcript: this.lastFullTranscript,
+      timestamp: Date.now(),
+    });
+
+    // 오래된 캐시 정리 (10개 초과 시)
+    if (this.transcriptCache.size > 10) {
+      const oldestKey = this.transcriptCache.keys().next().value;
+      if (oldestKey) this.transcriptCache.delete(oldestKey);
+    }
+
+    return content;
   }
 
   private async extractVideoContent(videoId: string): Promise<string> {

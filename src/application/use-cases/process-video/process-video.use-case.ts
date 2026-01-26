@@ -16,7 +16,6 @@ import {
   ContentMatchResult,
 } from '@/application/ports';
 import { ProcessVideoInput, ProcessVideoResult, TMDBCandidateDTO } from './process-video.dto';
-import { delay } from '@/shared/utils';
 
 /**
  * 비디오 처리 Use Case
@@ -66,24 +65,11 @@ export class ProcessVideoUseCase {
       );
       this.logger.log(`  Title candidates: ${titleCandidates.join(', ')}`);
 
-      const tmdbCandidates = await this.searchTMDBCandidates(titleCandidates);
+      // 1. TMDB 병렬 검색
+      const tmdbCandidates = await this.searchTMDBCandidatesParallel(titleCandidates);
 
-      const shouldRunAI = tmdbCandidates.length === 0 || tmdbCandidates.length <= 3;
-
-      if (shouldRunAI) {
-        await this.enrichWithAIAnalysis(
-          videoId,
-          videoInfo.duration,
-          tmdbCandidates,
-        );
-      }
-
-      if (tmdbCandidates.length === 0) {
-        return {
-          success: false,
-          message: 'TMDB 매칭 실패 - 검색결과 없음',
-        };
-      }
+      // 2. 고신뢰도 매칭 체크 (AI 스킵 가능 여부)
+      const highConfidenceMatch = this.findHighConfidenceMatch(tmdbCandidates, titleCandidates);
 
       let selectedMatch: TMDBMatchResult | null = null;
       let includesEnding = this.endingDetectionService.detectFromContent(
@@ -91,7 +77,13 @@ export class ProcessVideoUseCase {
         videoInfo.description,
       );
 
-      if (tmdbCandidates.length > 0) {
+      if (highConfidenceMatch) {
+        // 고신뢰도 매칭 → AI 스킵
+        this.logger.log(`  High confidence match found, skipping AI: ${highConfidenceMatch.data.title || highConfidenceMatch.data.name}`);
+        selectedMatch = highConfidenceMatch;
+      } else if (tmdbCandidates.length > 0) {
+        // 3. AI 통합 분석 (1회 호출로 제목 추출 + TMDB 선택 + 결말 판단)
+        this.logger.log(`  Running unified AI analysis...`);
         try {
           const analysis = await this.aiAnalyzer.analyzeVideoContent({
             videoId,
@@ -108,12 +100,53 @@ export class ProcessVideoUseCase {
               ) || null;
           }
 
+          // AI가 추출한 제목으로 추가 검색 (기존 후보에 없을 경우)
+          if (!selectedMatch && analysis.extractedTitles?.length) {
+            const additionalCandidates = await this.searchTMDBCandidatesParallel(
+              analysis.extractedTitles.slice(0, 2),
+            );
+            if (additionalCandidates.length > 0) {
+              tmdbCandidates.unshift(...additionalCandidates);
+              selectedMatch = additionalCandidates[0];
+            }
+          }
+
           this.logger.log(`  AI analysis: ${includesEnding ? '결말포함' : '결말없음'}`);
         } catch (error) {
-          this.logger.warn('  AI analysis failed, using first candidate');
+          this.logger.warn(`  AI analysis failed: ${(error as Error).message}`);
         }
       }
 
+      // 후보가 없으면 AI로 제목 추출 시도
+      if (tmdbCandidates.length === 0) {
+        this.logger.log(`  No TMDB candidates, trying AI title extraction...`);
+        try {
+          const analysis = await this.aiAnalyzer.analyzeVideoContent({
+            videoId,
+            videoDuration: videoInfo.duration,
+            tmdbCandidates: [],
+          });
+
+          if (analysis.extractedTitles?.length) {
+            const aiCandidates = await this.searchTMDBCandidatesParallel(
+              analysis.extractedTitles.slice(0, 3),
+            );
+            tmdbCandidates.push(...aiCandidates);
+            includesEnding = analysis.includesEnding;
+          }
+        } catch {
+          // AI 실패 시 무시
+        }
+      }
+
+      if (tmdbCandidates.length === 0) {
+        return {
+          success: false,
+          message: 'TMDB 매칭 실패 - 검색결과 없음',
+        };
+      }
+
+      // 4. 최종 선택
       if (!selectedMatch) {
         selectedMatch = this.primaryVideoSelectionService.selectBestCandidate(
           tmdbCandidates,
@@ -193,94 +226,101 @@ export class ProcessVideoUseCase {
     }
   }
 
-  private async searchTMDBCandidates(
+  /**
+   * TMDB 병렬 검색
+   * 순차 호출 → Promise.all 병렬 호출로 변경
+   */
+  private async searchTMDBCandidatesParallel(
     titleCandidates: string[],
   ): Promise<TMDBMatchResult[]> {
-    const tmdbCandidates: TMDBMatchResult[] = [];
-    const searchResults: string[] = [];
+    const validCandidates = titleCandidates
+      .slice(0, 5)
+      .filter((c) => c.length >= 2 && c.length <= 30);
 
-    for (const candidate of titleCandidates.slice(0, 5)) {
-      if (candidate.length < 2 || candidate.length > 30) continue;
+    if (validCandidates.length === 0) {
+      return [];
+    }
 
+    // 병렬로 모든 검색 실행
+    const searchPromises = validCandidates.map(async (candidate) => {
       try {
         const results = await this.contentSearch.searchMulti(candidate);
-        searchResults.push(`${candidate}:${results.length}`);
-        for (const result of results) {
-          if (!tmdbCandidates.find((c) => c.data.id === result.data.id)) {
-            tmdbCandidates.push({
-              type: result.type,
-              data: result.data,
-              confidence: 0,
-              searchTerm: candidate,
-            });
-          }
-        }
+        return { candidate, results, error: null };
       } catch (err) {
-        searchResults.push(`${candidate}:ERR`);
+        return { candidate, results: [], error: err };
       }
-      await delay(100);
+    });
+
+    const searchResults = await Promise.all(searchPromises);
+
+    // 결과 병합 (중복 제거)
+    const tmdbCandidates: TMDBMatchResult[] = [];
+    const searchSummary: string[] = [];
+
+    for (const { candidate, results, error } of searchResults) {
+      if (error) {
+        searchSummary.push(`${candidate}:ERR`);
+        continue;
+      }
+      searchSummary.push(`${candidate}:${results.length}`);
+      for (const result of results) {
+        if (!tmdbCandidates.find((c) => c.data.id === result.data.id)) {
+          tmdbCandidates.push({
+            type: result.type,
+            data: result.data,
+            confidence: 0,
+            searchTerm: candidate,
+          });
+        }
+      }
     }
 
     this.logger.log(
-      `  Found ${tmdbCandidates.length} TMDB candidates (${searchResults.join(', ')})`,
+      `  Found ${tmdbCandidates.length} TMDB candidates (${searchSummary.join(', ')})`,
     );
 
     return tmdbCandidates;
   }
 
-  private async enrichWithAIAnalysis(
-    videoId: string,
-    duration: number,
+  /**
+   * 고신뢰도 매칭 찾기
+   * 조건: TMDB 후보 1개 + 정확한 제목 매칭 + 높은 인기도
+   * 이 조건을 만족하면 AI 호출 스킵 가능
+   */
+  private findHighConfidenceMatch(
     tmdbCandidates: TMDBMatchResult[],
-  ): Promise<void> {
-    this.logger.log(`  AI 자막 분석 실행 (패턴 후보: ${tmdbCandidates.length}개)...`);
-
-    try {
-      const aiAnalysis = await this.aiAnalyzer.analyzeVideoContent({
-        videoId,
-        videoDuration: duration,
-        tmdbCandidates: [],
-      });
-
-      this.logger.log(
-        `  AI 분석 결과: ${JSON.stringify({
-          extractedTitles: aiAnalysis.extractedTitles,
-          includesEnding: aiAnalysis.includesEnding,
-          confidence: aiAnalysis.confidence,
-        })}`,
-      );
-
-      const minConfidence = 70;
-      const extractedTitles = aiAnalysis.extractedTitles || [];
-      if (aiAnalysis.confidence >= minConfidence && extractedTitles.length > 0) {
-        this.logger.log(`  AI 추출 제목: ${extractedTitles.join(', ')}`);
-
-        for (const aiTitle of extractedTitles.slice(0, 3)) {
-          if (aiTitle.length < 2 || aiTitle.length > 30) continue;
-
-          try {
-            const results = await this.contentSearch.searchMulti(aiTitle);
-            for (const result of results) {
-              if (!tmdbCandidates.find((c) => c.data.id === result.data.id)) {
-                tmdbCandidates.unshift({
-                  type: result.type,
-                  data: result.data,
-                  confidence: aiAnalysis.confidence,
-                  searchTerm: `AI:${aiTitle}`,
-                });
-              }
-            }
-          } catch {
-            // 다음 제목으로 계속 진행
-          }
-          await delay(100);
-        }
-
-        this.logger.log(`  AI 추가 후 TMDB candidates: ${tmdbCandidates.length}`);
-      }
-    } catch (error) {
-      this.logger.warn(`  AI 자막 분석 실패: ${(error as Error).message}`);
+    titleCandidates: string[],
+  ): TMDBMatchResult | null {
+    if (tmdbCandidates.length !== 1) {
+      return null;
     }
+
+    const candidate = tmdbCandidates[0];
+    const tmdbTitle = (candidate.data.title || candidate.data.name || '').toLowerCase();
+    const tmdbOriginalTitle = (candidate.data.originalTitle || candidate.data.originalName || '').toLowerCase();
+
+    // 제목 정확히 매칭 체크
+    const hasExactMatch = titleCandidates.some((title) => {
+      const normalizedTitle = title.toLowerCase().trim();
+      return (
+        tmdbTitle === normalizedTitle ||
+        tmdbOriginalTitle === normalizedTitle ||
+        tmdbTitle.includes(normalizedTitle) ||
+        tmdbOriginalTitle.includes(normalizedTitle)
+      );
+    });
+
+    if (!hasExactMatch) {
+      return null;
+    }
+
+    // 인기도 체크 (최소 10 이상)
+    const popularity = candidate.data.popularity || 0;
+    if (popularity < 10) {
+      return null;
+    }
+
+    return candidate;
   }
 
   private async determinePrimaryStatus(
