@@ -1,9 +1,12 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS, MESSAGES } from '@/shared/constants';
 import { IVideoRepository, IChannelRepository } from '@/domain/repositories';
-import { IRSSFeedPort } from '@/application/ports';
+import { IRSSFeedPort, RSSFeedEntry } from '@/application/ports';
 import { RegisterVideoUseCase } from '../register-video';
 import { RegisterChannelInput, RegisterChannelResult } from './register-channel.dto';
+
+/** 밀리초 단위 상수 */
+const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
 
 /**
  * 채널 등록 Use Case
@@ -24,7 +27,7 @@ export class RegisterChannelUseCase {
   ) {}
 
   async execute(input: RegisterChannelInput): Promise<RegisterChannelResult> {
-    const { channelId, maxVideos = 15 } = input;
+    const { channelId, maxVideos = 15, minAgeHours } = input;
     this.logger.log(`Registering channel: ${channelId}`);
 
     const result: RegisterChannelResult = {
@@ -43,9 +46,16 @@ export class RegisterChannelUseCase {
 
       this.logger.log(`  Found ${recentVideos.length} recent videos`);
 
+      // 최소 경과 시간 필터링 적용
+      const filteredVideos = this.filterByMinAge(recentVideos, minAgeHours);
+      if (minAgeHours && filteredVideos.length !== recentVideos.length) {
+        const skippedByAge = recentVideos.length - filteredVideos.length;
+        this.logger.log(`  Filtered out ${skippedByAge} videos (published within ${minAgeHours} hours)`);
+      }
+
       const processedVideoIds = await this.getProcessedVideoIds(channelId);
 
-      for (const rssEntry of recentVideos) {
+      for (const rssEntry of filteredVideos) {
         if (processedVideoIds.has(rssEntry.videoId)) {
           result.skippedCount++;
           continue;
@@ -107,5 +117,29 @@ export class RegisterChannelUseCase {
       this.logger.debug(`Failed to get processed video IDs: ${(error as Error).message}`);
       return new Set();
     }
+  }
+
+  /**
+   * 최소 경과 시간 기준으로 영상 필터링
+   * @param videos RSS 피드 영상 목록
+   * @param minAgeHours 최소 경과 시간 (시간 단위)
+   * @returns 필터링된 영상 목록 (게시 후 minAgeHours 이상 지난 영상만)
+   */
+  private filterByMinAge(
+    videos: RSSFeedEntry[],
+    minAgeHours?: number,
+  ): RSSFeedEntry[] {
+    if (!minAgeHours || minAgeHours <= 0) {
+      return videos;
+    }
+
+    const now = Date.now();
+    const minAgeMilliseconds = minAgeHours * MILLISECONDS_PER_HOUR;
+
+    return videos.filter((video) => {
+      const publishedAt = new Date(video.publishedAt).getTime();
+      const ageMilliseconds = now - publishedAt;
+      return ageMilliseconds >= minAgeMilliseconds;
+    });
   }
 }

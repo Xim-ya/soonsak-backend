@@ -4,6 +4,12 @@
 export interface RegisterChannelInput {
   channelId: string;
   maxVideos?: number;
+  /**
+   * 영상 게시일 기준 최소 경과 시간 (시간 단위)
+   * 이 시간보다 최근에 게시된 영상은 필터링됨
+   * 예: 25시간 설정 시, 게시 후 25시간 이상 지난 영상만 처리
+   */
+  minAgeHours?: number;
 }
 
 /**

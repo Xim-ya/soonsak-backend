@@ -5,7 +5,9 @@ import { BatchProcessingService } from '@/application/services';
 
 /**
  * 스케줄러 Cron 서비스
- * 매일 새벽 3시 배치 작업 실행
+ * 매일 오전 6시 배치 작업 실행
+ * - DB에 등록된 모든 채널의 최근 영상을 조회
+ * - 게시일이 25시간 이전인 영상만 필터링하여 처리
  */
 @Injectable()
 export class SchedulerCron {
@@ -21,9 +23,10 @@ export class SchedulerCron {
   }
 
   /**
-   * 매일 새벽 3시에 배치 작업 실행
+   * 매일 오전 6시에 배치 작업 실행
+   * 25시간 이전에 게시된 영상만 처리 (자막 등이 준비될 시간 확보)
    */
-  @Cron('0 3 * * *', {
+  @Cron('0 6 * * *', {
     name: 'daily-video-batch',
     timeZone: 'Asia/Seoul',
   })

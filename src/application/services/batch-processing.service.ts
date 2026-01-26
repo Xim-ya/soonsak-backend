@@ -3,6 +3,9 @@ import { INJECTION_TOKENS } from '@/shared/constants';
 import { IChannelRepository } from '@/domain/repositories';
 import { RegisterChannelUseCase, BatchProcessResult } from '@/application/use-cases';
 
+/** 배치 처리 기본 설정 */
+const DEFAULT_MIN_AGE_HOURS = 25;
+
 /**
  * 스케줄러 작업 상태
  */
@@ -37,7 +40,11 @@ export class BatchProcessingService {
     private readonly registerChannelUseCase: RegisterChannelUseCase,
   ) {}
 
-  async runBatch(): Promise<BatchProcessResult> {
+  /**
+   * 배치 작업 실행
+   * @param minAgeHours 영상 게시일 기준 최소 경과 시간 (기본값: 25시간)
+   */
+  async runBatch(minAgeHours: number = DEFAULT_MIN_AGE_HOURS): Promise<BatchProcessResult> {
     if (this.jobStatus.isRunning) {
       throw new Error('Batch job is already running');
     }
@@ -67,12 +74,15 @@ export class BatchProcessingService {
       const channels = await this.channelRepository.findAll();
       result.totalChannels = channels.length;
 
-      this.logger.log(`Starting batch processing for ${channels.length} channels`);
+      this.logger.log(
+        `Starting batch processing for ${channels.length} channels (minAgeHours: ${minAgeHours})`,
+      );
 
       for (const channel of channels) {
         try {
           const channelResult = await this.registerChannelUseCase.execute({
             channelId: channel.id,
+            minAgeHours,
           });
 
           result.channelResults.push(channelResult);
