@@ -22,6 +22,7 @@ export interface RegisterChannelResult {
   successCount: number;
   failedCount: number;
   skippedCount: number;
+  skippedShortsCount: number;
   errors: string[];
 }
 
@@ -35,6 +36,7 @@ export interface BatchProcessResult {
   totalVideosProcessed: number;
   totalSuccess: number;
   totalFailed: number;
+  totalSkippedShorts: number;
   channelResults: RegisterChannelResult[];
   errors: string[];
 }

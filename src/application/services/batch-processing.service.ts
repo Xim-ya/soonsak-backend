@@ -69,6 +69,7 @@ export class BatchProcessingService {
       totalVideosProcessed: 0,
       totalSuccess: 0,
       totalFailed: 0,
+      totalSkippedShorts: 0,
       channelResults: [],
       errors: [],
     };
@@ -92,6 +93,7 @@ export class BatchProcessingService {
           result.totalVideosProcessed += channelResult.processedCount;
           result.totalSuccess += channelResult.successCount;
           result.totalFailed += channelResult.failedCount;
+          result.totalSkippedShorts += channelResult.skippedShortsCount;
 
           this.jobStatus.processedChannels++;
           this.jobStatus.processedVideos += channelResult.processedCount;
@@ -120,6 +122,7 @@ export class BatchProcessingService {
         totalVideosProcessed: result.totalVideosProcessed,
         totalSuccess: result.totalSuccess,
         totalFailed: result.totalFailed,
+        totalSkippedShorts: result.totalSkippedShorts,
         durationMs: result.completedAt.getTime() - startedAt.getTime(),
       });
     } finally {

@@ -17,5 +17,6 @@ export interface RegisterChannelVideosResult {
   successCount: number;
   failedCount: number;
   skippedCount: number;
+  skippedShortsCount: number;
   errors: string[];
 }

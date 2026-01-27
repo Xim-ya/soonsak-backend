@@ -37,6 +37,7 @@ export class RegisterChannelUseCase {
       successCount: 0,
       failedCount: 0,
       skippedCount: 0,
+      skippedShortsCount: 0,
       errors: [],
     };
 
@@ -82,6 +83,9 @@ export class RegisterChannelUseCase {
             if (registerResult.message === MESSAGES.VIDEO.ALREADY_PROCESSED) {
               result.skippedCount++;
               result.processedCount--;
+            } else if (registerResult.message === '쇼츠 영상은 등록 대상이 아닙니다') {
+              result.skippedShortsCount++;
+              result.processedCount--;
             } else {
               result.failedCount++;
               result.errors.push(`${rssEntry.videoId}: ${registerResult.message}`);
@@ -94,7 +98,7 @@ export class RegisterChannelUseCase {
       }
 
       this.logger.log(
-        `  Channel completed: ${result.successCount} success, ${result.failedCount} failed, ${result.skippedCount} skipped`,
+        `  Channel completed: ${result.successCount} success, ${result.failedCount} failed, ${result.skippedCount} skipped, ${result.skippedShortsCount} shorts`,
       );
     } catch (error) {
       result.errors.push(`Channel error: ${(error as Error).message}`);

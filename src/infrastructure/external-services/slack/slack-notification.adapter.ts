@@ -9,6 +9,7 @@ export interface BatchNotificationData {
   totalVideosProcessed: number;
   totalSuccess: number;
   totalFailed: number;
+  totalSkippedShorts: number;
   durationMs: number;
 }
 
@@ -74,6 +75,17 @@ export class SlackNotificationAdapter {
             },
           ],
         },
+        ...(data.totalSkippedShorts > 0
+          ? [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `🎬 *스킵된 쇼츠*: ${data.totalSkippedShorts}개`,
+                },
+              },
+            ]
+          : []),
         {
           type: 'context',
           elements: [
