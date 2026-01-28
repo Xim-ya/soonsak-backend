@@ -33,6 +33,17 @@ export interface ContentMatchResult {
 }
 
 /**
+ * 콘텐츠 상세 정보 (Details API)
+ */
+export interface ContentDetails {
+  id: number;
+  tagline?: string;
+  backdropPath?: string;
+  releaseDate?: string;
+  genreIds?: number[];
+}
+
+/**
  * 콘텐츠 검색 포트 (TMDB 추상화)
  */
 export interface IContentSearchPort {
@@ -50,4 +61,9 @@ export interface IContentSearchPort {
    * TV만 검색
    */
   searchTV(query: string): Promise<ContentSearchResult[]>;
+
+  /**
+   * 콘텐츠 상세 정보 조회 (tagline 등)
+   */
+  getDetails(id: number, type: ContentTypeValue): Promise<ContentDetails>;
 }

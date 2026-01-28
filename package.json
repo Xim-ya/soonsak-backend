@@ -18,7 +18,8 @@
     "test:video": "curl -s -X POST http://localhost:3001/videos/$VIDEO_ID/register | jq .",
     "test:status": "curl -s http://localhost:3001/batch/status | jq .",
     "test:channel": "curl -s -X POST http://localhost:3001/channels/$CHANNEL_ID/register | jq .",
-    "test:api": "./scripts/test-api.sh"
+    "test:api": "./scripts/test-api.sh",
+    "script:update-contents": "ts-node -r tsconfig-paths/register scripts/update-contents-from-tmdb.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

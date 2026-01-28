@@ -30,3 +30,9 @@ coverage/
 # Temp files
 *.tmp
 *.temp
+
+# AI Tools
+.claude/
+.mcp.json
+.cursor/
+.aider*

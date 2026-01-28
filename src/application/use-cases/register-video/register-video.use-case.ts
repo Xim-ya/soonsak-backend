@@ -177,6 +177,9 @@ export class RegisterVideoUseCase {
 
       this.logger.log(`  Selected TMDB: ${tmdbTitle} (${selectedMatch.type})`);
 
+      // 5. 상세 정보 조회 (tagline)
+      const details = await this.contentSearch.getDetails(tmdbData.id, selectedMatch.type);
+
       const channelId = await this.channelRepository.getOrCreate(
         videoInfo.channelId,
         videoInfo.channelTitle,
@@ -191,9 +194,11 @@ export class RegisterVideoUseCase {
         contentType: selectedMatch.type,
         title: tmdbTitle || '',
         posterPath: tmdbData.posterPath,
+        backdropPath: tmdbData.backdropPath,
         releaseDate,
         genreIds: tmdbData.genreIds,
         originalLanguage: tmdbData.originalLanguage,
+        tagline: details.tagline,
         uploadedAt: new Date().toISOString(),
       });
 

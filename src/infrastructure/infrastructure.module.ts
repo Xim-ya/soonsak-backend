@@ -57,6 +57,7 @@ import { SlackNotificationAdapter } from './external-services/slack';
     },
   ],
   exports: [
+    SupabaseClientProvider,
     INJECTION_TOKENS.VIDEO_REPOSITORY,
     INJECTION_TOKENS.CONTENT_REPOSITORY,
     INJECTION_TOKENS.CHANNEL_REPOSITORY,

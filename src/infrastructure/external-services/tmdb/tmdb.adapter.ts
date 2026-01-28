@@ -4,7 +4,9 @@ import {
   IContentSearchPort,
   ContentSearchResult,
   ContentMatchResult,
+  ContentDetails,
 } from '@/application/ports';
+import { ContentTypeValue } from '@/domain/value-objects';
 
 /**
  * TMDB API 응답 타입
@@ -79,6 +81,26 @@ interface TMDBTVResultItem {
   vote_count?: number;
   genre_ids?: number[];
   original_language?: string;
+}
+
+/**
+ * TMDB Genre 타입
+ */
+interface TMDBGenre {
+  id: number;
+  name: string;
+}
+
+/**
+ * TMDB 상세 정보 응답 (Movie/TV 공통 필드)
+ */
+interface TMDBDetailsResponse {
+  id: number;
+  tagline?: string;
+  backdrop_path?: string;
+  release_date?: string;
+  first_air_date?: string;
+  genres?: TMDBGenre[];
 }
 
 /**
@@ -244,6 +266,22 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       originalLanguage: tv.original_language,
       mediaType: 'tv' as const,
     }));
+  }
+
+  async getDetails(id: number, type: ContentTypeValue): Promise<ContentDetails> {
+    const endpoint = type === 'movie' ? `/movie/${id}` : `/tv/${id}`;
+    const response = await this.makeRequest<TMDBDetailsResponse>(endpoint);
+
+    const releaseDate = type === 'movie' ? response.release_date : response.first_air_date;
+    const genreIds = response.genres?.map((g) => g.id);
+
+    return {
+      id: response.id,
+      tagline: response.tagline,
+      backdropPath: response.backdrop_path,
+      releaseDate,
+      genreIds,
+    };
   }
 
   /**

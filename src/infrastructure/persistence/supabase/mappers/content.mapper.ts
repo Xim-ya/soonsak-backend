@@ -9,9 +9,11 @@ export interface ContentDBRecord {
   content_type: string;
   title: string;
   poster_path?: string;
+  backdrop_path?: string;
   release_date?: string;
   genre_ids?: number[];
   original_language?: string;
+  tagline?: string;
   uploaded_at?: string;
 }
 
@@ -29,9 +31,11 @@ export class ContentMapper {
       contentType: record.content_type as ContentTypeValue,
       title: record.title,
       posterPath: record.poster_path,
+      backdropPath: record.backdrop_path,
       releaseDate: record.release_date,
       genreIds: record.genre_ids,
       originalLanguage: record.original_language,
+      tagline: record.tagline,
       uploadedAt: record.uploaded_at,
     });
   }
@@ -46,9 +50,11 @@ export class ContentMapper {
       content_type: props.contentType,
       title: props.title,
       poster_path: props.posterPath,
+      backdrop_path: props.backdropPath,
       release_date: props.releaseDate,
       genre_ids: props.genreIds,
       original_language: props.originalLanguage,
+      tagline: props.tagline,
       uploaded_at: props.uploadedAt,
     };
   }
@@ -62,9 +68,11 @@ export class ContentMapper {
       content_type: props.contentType,
       title: props.title,
       poster_path: props.posterPath,
+      backdrop_path: props.backdropPath,
       release_date: props.releaseDate,
       genre_ids: props.genreIds,
       original_language: props.originalLanguage,
+      tagline: props.tagline,
       uploaded_at: props.uploadedAt,
     };
   }
