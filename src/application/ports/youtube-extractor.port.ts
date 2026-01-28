@@ -40,6 +40,18 @@ export interface ChannelVideoItem {
 }
 
 /**
+ * 채널 메타데이터
+ */
+export interface ChannelMetadata {
+  id: string;
+  name: string;
+  handleId?: string;
+  logoUrl?: string;
+  bannerUrl?: string;
+  subscriberCount?: number;
+}
+
+/**
  * YouTube 추출기 포트
  */
 export interface IYouTubeExtractorPort {
@@ -62,4 +74,9 @@ export interface IYouTubeExtractorPort {
    * 채널의 모든 비디오 목록 조회
    */
   getChannelVideos(channelId: string, maxResults?: number): Promise<ChannelVideoItem[]>;
+
+  /**
+   * 채널 메타데이터 조회
+   */
+  getChannelMetadata(channelId: string): Promise<ChannelMetadata>;
 }

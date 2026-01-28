@@ -11,6 +11,7 @@ import {
   YouTubeVideoInfo,
   TranscriptResult,
   ChannelVideoItem,
+  ChannelMetadata,
 } from '@/application/ports';
 import { extractVideoId } from '@/shared/utils';
 
@@ -373,6 +374,107 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       this.logger.error(`Failed to fetch channel videos: ${(error as Error).message}`);
       throw error;
     }
+  }
+
+  async getChannelMetadata(channelId: string): Promise<ChannelMetadata> {
+    const resolvedId = await this.resolveChannelId(channelId);
+    this.logger.log(`Fetching metadata for channel: ${resolvedId}`);
+
+    // yt-dlp: subscriber_count 가져오기
+    const ytdlpResult = await this.extractChannelMetadataWithYtDlp(resolvedId);
+
+    // youtubei.js: logo_url, banner_url 가져오기
+    const youtubeiResult = await this.extractChannelMetadataWithYoutubeiJs(resolvedId).catch(() => null);
+
+    // 두 결과 병합 (yt-dlp 우선, youtubei.js로 보완)
+    return {
+      id: resolvedId,
+      name: ytdlpResult?.name || youtubeiResult?.name || '',
+      handleId: ytdlpResult?.handleId || youtubeiResult?.handleId,
+      logoUrl: youtubeiResult?.logoUrl, // youtubei.js에서만 가져올 수 있음
+      bannerUrl: youtubeiResult?.bannerUrl, // youtubei.js에서만 가져올 수 있음
+      subscriberCount: ytdlpResult?.subscriberCount || youtubeiResult?.subscriberCount,
+    };
+  }
+
+  private async extractChannelMetadataWithYtDlp(channelId: string): Promise<ChannelMetadata | null> {
+    try {
+      const { stdout } = await execAsync(
+        `yt-dlp --dump-json --playlist-items 1 "https://www.youtube.com/channel/${channelId}/videos"`,
+        { timeout: 60000 }
+      );
+
+      const data = JSON.parse(stdout);
+
+      return {
+        id: channelId,
+        name: data.channel || data.uploader || '',
+        handleId: data.uploader_id?.replace('@', ''),
+        logoUrl: data.channel_url ? undefined : undefined, // yt-dlp doesn't provide logo
+        bannerUrl: undefined, // yt-dlp doesn't provide banner
+        subscriberCount: data.channel_follower_count,
+      };
+    } catch (error) {
+      this.logger.debug(`yt-dlp channel metadata failed for ${channelId}: ${(error as Error).message}`);
+      return null;
+    }
+  }
+
+  private async extractChannelMetadataWithYoutubeiJs(channelId: string): Promise<ChannelMetadata> {
+    try {
+      const youtube = await this.getYouTubeInstance();
+      const channel = await youtube.getChannel(channelId);
+
+      if (!channel) {
+        throw new Error(`Channel not found: ${channelId}`);
+      }
+
+      const metadata = channel.metadata as any;
+      const header = channel.header as any;
+
+      return {
+        id: channelId,
+        name: metadata?.title || header?.author?.name || '',
+        handleId: metadata?.vanity_channel_url?.split('@')[1] || metadata?.external_id,
+        logoUrl: metadata?.avatar?.[0]?.url || header?.author?.thumbnails?.[0]?.url,
+        bannerUrl: header?.banner?.[0]?.url || metadata?.banner?.[0]?.url,
+        subscriberCount: this.parseSubscriberCount(
+          metadata?.subscriber_count || header?.subscriber_count?.text
+        ),
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch channel metadata: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  private parseSubscriberCount(text: string | undefined): number | undefined {
+    if (!text) return undefined;
+
+    const cleaned = text.replace(/[^0-9.만천억KMB]/gi, '');
+
+    if (/[KkB]/i.test(cleaned)) {
+      const num = parseFloat(cleaned.replace(/[KkB]/gi, ''));
+      if (cleaned.toLowerCase().includes('b')) return Math.round(num * 1000000000);
+      if (cleaned.toLowerCase().includes('m')) return Math.round(num * 1000000);
+      if (cleaned.toLowerCase().includes('k')) return Math.round(num * 1000);
+    }
+
+    if (cleaned.includes('억')) {
+      const num = parseFloat(cleaned.replace('억', ''));
+      return Math.round(num * 100000000);
+    }
+    if (cleaned.includes('만')) {
+      const num = parseFloat(cleaned.replace('만', ''));
+      return Math.round(num * 10000);
+    }
+    if (cleaned.includes('천')) {
+      const num = parseFloat(cleaned.replace('천', ''));
+      return Math.round(num * 1000);
+    }
+
+    const num = parseInt(cleaned, 10);
+    return isNaN(num) ? undefined : num;
   }
 
   private parseViewCount(viewCountText: string | undefined): number | undefined {
