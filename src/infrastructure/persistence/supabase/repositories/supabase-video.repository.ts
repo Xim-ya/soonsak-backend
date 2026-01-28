@@ -4,6 +4,7 @@ import { IVideoRepository } from '@/domain/repositories';
 import { VideoId, TMDBId } from '@/domain/value-objects';
 import { VideoMapper, VideoDBRecord } from '../mappers';
 import { SupabaseClientProvider } from '../supabase-client.provider';
+import { SUPABASE_TABLES } from '../supabase-tables';
 
 /**
  * Supabase 비디오 리포지토리 구현체
@@ -16,7 +17,7 @@ export class SupabaseVideoRepository implements IVideoRepository {
 
   async exists(id: VideoId): Promise<boolean> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('videos')
+      .from(SUPABASE_TABLES.VIDEOS)
       .select('id')
       .eq('id', id.getValue())
       .single();
@@ -26,7 +27,7 @@ export class SupabaseVideoRepository implements IVideoRepository {
 
   async findById(id: VideoId): Promise<Video | null> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('videos')
+      .from(SUPABASE_TABLES.VIDEOS)
       .select('*')
       .eq('id', id.getValue())
       .single();
@@ -40,7 +41,7 @@ export class SupabaseVideoRepository implements IVideoRepository {
 
   async findByContentId(contentId: TMDBId): Promise<Video[]> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('videos')
+      .from(SUPABASE_TABLES.VIDEOS)
       .select('*')
       .eq('content_id', contentId.getValue());
 
@@ -54,7 +55,7 @@ export class SupabaseVideoRepository implements IVideoRepository {
   async save(video: Video): Promise<void> {
     const record = VideoMapper.toPersistence(video);
 
-    const { error } = await this.supabaseProvider.getClient().from('videos').upsert(record, {
+    const { error } = await this.supabaseProvider.getClient().from(SUPABASE_TABLES.VIDEOS).upsert(record, {
       onConflict: 'id',
     });
 
@@ -66,7 +67,7 @@ export class SupabaseVideoRepository implements IVideoRepository {
 
   async updatePrimaryStatus(id: VideoId, isPrimary: boolean): Promise<void> {
     const { error } = await this.supabaseProvider.getClient()
-      .from('videos')
+      .from(SUPABASE_TABLES.VIDEOS)
       .update({
         is_primary: isPrimary,
         updated_at: new Date().toISOString(),
@@ -81,7 +82,7 @@ export class SupabaseVideoRepository implements IVideoRepository {
 
   async findPrimaryByContentId(contentId: TMDBId): Promise<Video | null> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('videos')
+      .from(SUPABASE_TABLES.VIDEOS)
       .select('*')
       .eq('content_id', contentId.getValue())
       .eq('is_primary', true)
@@ -96,7 +97,7 @@ export class SupabaseVideoRepository implements IVideoRepository {
 
   async getRecentVideoIds(channelId: string, limit = 50): Promise<string[]> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('videos')
+      .from(SUPABASE_TABLES.VIDEOS)
       .select('id')
       .eq('channel_id', channelId)
       .order('uploaded_at', { ascending: false })
@@ -115,7 +116,7 @@ export class SupabaseVideoRepository implements IVideoRepository {
     }
 
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('videos')
+      .from(SUPABASE_TABLES.VIDEOS)
       .select('id')
       .in('id', videoIds);
 

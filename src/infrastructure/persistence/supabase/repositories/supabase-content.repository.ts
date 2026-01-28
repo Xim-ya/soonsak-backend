@@ -4,6 +4,7 @@ import { IContentRepository } from '@/domain/repositories';
 import { TMDBId } from '@/domain/value-objects';
 import { ContentMapper, ContentDBRecord } from '../mappers';
 import { SupabaseClientProvider } from '../supabase-client.provider';
+import { SUPABASE_TABLES } from '../supabase-tables';
 
 /**
  * Supabase 콘텐츠 리포지토리 구현체
@@ -16,7 +17,7 @@ export class SupabaseContentRepository implements IContentRepository {
 
   async findById(id: TMDBId): Promise<Content | null> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('contents')
+      .from(SUPABASE_TABLES.CONTENTS)
       .select('*')
       .eq('id', id.getValue())
       .single();
@@ -37,7 +38,7 @@ export class SupabaseContentRepository implements IContentRepository {
     const record = ContentMapper.toPersistence(content);
 
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('contents')
+      .from(SUPABASE_TABLES.CONTENTS)
       .insert({
         ...record,
         uploaded_at: record.uploaded_at || new Date().toISOString(),
@@ -55,7 +56,7 @@ export class SupabaseContentRepository implements IContentRepository {
 
   async exists(id: TMDBId): Promise<boolean> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('contents')
+      .from(SUPABASE_TABLES.CONTENTS)
       .select('id')
       .eq('id', id.getValue())
       .single();

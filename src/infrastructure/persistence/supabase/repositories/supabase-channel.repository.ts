@@ -3,6 +3,7 @@ import { Channel } from '@/domain/entities';
 import { IChannelRepository } from '@/domain/repositories';
 import { ChannelMapper, ChannelDBRecord } from '../mappers';
 import { SupabaseClientProvider } from '../supabase-client.provider';
+import { SUPABASE_TABLES } from '../supabase-tables';
 
 /**
  * Supabase 채널 리포지토리 구현체
@@ -15,7 +16,7 @@ export class SupabaseChannelRepository implements IChannelRepository {
 
   async findAll(): Promise<Channel[]> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('channels')
+      .from(SUPABASE_TABLES.CHANNELS)
       .select('id, name, handle_id, logo_url')
       .order('name');
 
@@ -31,7 +32,7 @@ export class SupabaseChannelRepository implements IChannelRepository {
 
   async findById(id: string): Promise<Channel | null> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('channels')
+      .from(SUPABASE_TABLES.CHANNELS)
       .select('*')
       .eq('id', id)
       .single();
@@ -46,7 +47,7 @@ export class SupabaseChannelRepository implements IChannelRepository {
   async save(channel: Channel): Promise<void> {
     const record = ChannelMapper.toPersistence(channel);
 
-    const { error } = await this.supabaseProvider.getClient().from('channels').upsert(
+    const { error } = await this.supabaseProvider.getClient().from(SUPABASE_TABLES.CHANNELS).upsert(
       {
         ...record,
         updated_at: new Date().toISOString(),
@@ -62,7 +63,7 @@ export class SupabaseChannelRepository implements IChannelRepository {
 
   async exists(id: string): Promise<boolean> {
     const { data, error } = await this.supabaseProvider.getClient()
-      .from('channels')
+      .from(SUPABASE_TABLES.CHANNELS)
       .select('id')
       .eq('id', id)
       .single();
@@ -72,7 +73,7 @@ export class SupabaseChannelRepository implements IChannelRepository {
 
   async getOrCreate(id: string, name: string): Promise<string> {
     const { data: existing } = await this.supabaseProvider.getClient()
-      .from('channels')
+      .from(SUPABASE_TABLES.CHANNELS)
       .select('id')
       .eq('id', id)
       .single();
@@ -82,7 +83,7 @@ export class SupabaseChannelRepository implements IChannelRepository {
     }
 
     const { data: created, error } = await this.supabaseProvider.getClient()
-      .from('channels')
+      .from(SUPABASE_TABLES.CHANNELS)
       .upsert({
         id,
         name: name || 'Unknown Channel',
