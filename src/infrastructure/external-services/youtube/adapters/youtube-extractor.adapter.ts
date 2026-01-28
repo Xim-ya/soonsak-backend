@@ -27,6 +27,7 @@ interface YtDlpOutput {
   uploader: string;
   thumbnail: string;
   view_count?: number;
+  like_count?: number;
   aspect_ratio?: number;
   webpage_url?: string;
 }
@@ -155,6 +156,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
           ? transcript.substring(0, this.maxTranscriptLength)
           : undefined,
         viewCount: ytdlpData.view_count,
+        likeCount: ytdlpData.like_count,
         isShorts,
       };
     } catch (error) {
@@ -258,6 +260,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       channelTitle: basicInfo.channel?.name || basicInfo.author || '',
       thumbnail: basicInfo.thumbnail?.[0]?.url || basicInfo.thumbnail?.url || '',
       viewCount: basicInfo.view_count,
+      likeCount: basicInfo.like_count,
       isShorts,
     };
   }

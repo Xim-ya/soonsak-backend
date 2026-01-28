@@ -227,6 +227,8 @@ export class RegisterVideoUseCase {
         includesEnding,
         uploadedAt: videoInfo.publishedAt,
         updatedAt: new Date().toISOString(),
+        youtubeViewCount: videoInfo.viewCount,
+        youtubeLikeCount: videoInfo.likeCount,
       });
 
       await this.videoRepository.save(video);

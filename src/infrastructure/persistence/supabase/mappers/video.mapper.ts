@@ -16,6 +16,8 @@ export interface VideoDBRecord {
   includes_ending: boolean;
   uploaded_at: string;
   updated_at: string;
+  youtube_view_count?: number;
+  youtube_like_count?: number;
 }
 
 /**
@@ -39,6 +41,8 @@ export class VideoMapper {
       includesEnding: record.includes_ending,
       uploadedAt: record.uploaded_at,
       updatedAt: record.updated_at,
+      youtubeViewCount: record.youtube_view_count,
+      youtubeLikeCount: record.youtube_like_count,
     });
   }
 
@@ -59,6 +63,8 @@ export class VideoMapper {
       includes_ending: props.includesEnding,
       uploaded_at: props.uploadedAt,
       updated_at: props.updatedAt,
+      youtube_view_count: props.youtubeViewCount,
+      youtube_like_count: props.youtubeLikeCount,
     };
   }
 
@@ -78,6 +84,8 @@ export class VideoMapper {
       includes_ending: props.includesEnding,
       uploaded_at: props.uploadedAt,
       updated_at: props.updatedAt,
+      youtube_view_count: props.youtubeViewCount,
+      youtube_like_count: props.youtubeLikeCount,
     };
   }
 }

@@ -12,6 +12,7 @@ export interface YouTubeVideoInfo {
   thumbnail: string;
   transcript?: string;
   viewCount?: number;
+  likeCount?: number;
   isShorts?: boolean;
 }
 

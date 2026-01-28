@@ -12,6 +12,8 @@ export interface VideoProps {
   includesEnding: boolean;
   uploadedAt: string;
   updatedAt: string;
+  youtubeViewCount?: number;
+  youtubeLikeCount?: number;
 }
 
 /**
@@ -29,6 +31,8 @@ export class Video {
   private readonly _includesEnding: boolean;
   private readonly _uploadedAt: Date;
   private _updatedAt: Date;
+  private readonly _youtubeViewCount?: number;
+  private readonly _youtubeLikeCount?: number;
 
   private constructor(props: VideoProps) {
     this._id = VideoId.fromString(props.id);
@@ -42,6 +46,8 @@ export class Video {
     this._includesEnding = props.includesEnding;
     this._uploadedAt = new Date(props.uploadedAt);
     this._updatedAt = new Date(props.updatedAt);
+    this._youtubeViewCount = props.youtubeViewCount;
+    this._youtubeLikeCount = props.youtubeLikeCount;
   }
 
   static create(props: VideoProps): Video {
@@ -96,6 +102,14 @@ export class Video {
     return this._updatedAt;
   }
 
+  get youtubeViewCount(): number | undefined {
+    return this._youtubeViewCount;
+  }
+
+  get youtubeLikeCount(): number | undefined {
+    return this._youtubeLikeCount;
+  }
+
   markAsPrimary(): void {
     this._isPrimary = true;
     this._updatedAt = new Date();
@@ -134,6 +148,8 @@ export class Video {
       includesEnding: this._includesEnding,
       uploadedAt: this._uploadedAt.toISOString(),
       updatedAt: this._updatedAt.toISOString(),
+      youtubeViewCount: this._youtubeViewCount,
+      youtubeLikeCount: this._youtubeLikeCount,
     };
   }
 }
