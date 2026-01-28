@@ -5,6 +5,9 @@ export interface ContentProps {
   contentType: ContentTypeValue;
   title: string;
   posterPath?: string;
+  releaseDate?: string;
+  genreIds?: number[];
+  originalLanguage?: string;
   uploadedAt?: string;
 }
 
@@ -16,6 +19,9 @@ export class Content {
   private readonly _contentType: ContentType;
   private readonly _title: string;
   private readonly _posterPath?: string;
+  private readonly _releaseDate?: string;
+  private readonly _genreIds?: number[];
+  private readonly _originalLanguage?: string;
   private readonly _uploadedAt?: Date;
 
   private constructor(props: ContentProps) {
@@ -23,6 +29,9 @@ export class Content {
     this._contentType = ContentType.fromString(props.contentType);
     this._title = props.title;
     this._posterPath = props.posterPath;
+    this._releaseDate = props.releaseDate;
+    this._genreIds = props.genreIds;
+    this._originalLanguage = props.originalLanguage;
     this._uploadedAt = props.uploadedAt ? new Date(props.uploadedAt) : undefined;
   }
 
@@ -50,6 +59,18 @@ export class Content {
     return this._posterPath;
   }
 
+  get releaseDate(): string | undefined {
+    return this._releaseDate;
+  }
+
+  get genreIds(): number[] | undefined {
+    return this._genreIds;
+  }
+
+  get originalLanguage(): string | undefined {
+    return this._originalLanguage;
+  }
+
   get uploadedAt(): Date | undefined {
     return this._uploadedAt;
   }
@@ -60,6 +81,9 @@ export class Content {
       contentType: this._contentType.getValue(),
       title: this._title,
       posterPath: this._posterPath,
+      releaseDate: this._releaseDate,
+      genreIds: this._genreIds,
+      originalLanguage: this._originalLanguage,
       uploadedAt: this._uploadedAt?.toISOString(),
     };
   }

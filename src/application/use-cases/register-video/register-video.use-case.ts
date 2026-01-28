@@ -182,11 +182,18 @@ export class RegisterVideoUseCase {
         videoInfo.channelTitle,
       );
 
+      const releaseDate = selectedMatch.type === 'movie'
+        ? tmdbData.releaseDate
+        : tmdbData.firstAirDate;
+
       const content = Content.create({
         id: tmdbData.id,
         contentType: selectedMatch.type,
         title: tmdbTitle || '',
         posterPath: tmdbData.posterPath,
+        releaseDate,
+        genreIds: tmdbData.genreIds,
+        originalLanguage: tmdbData.originalLanguage,
         uploadedAt: new Date().toISOString(),
       });
 

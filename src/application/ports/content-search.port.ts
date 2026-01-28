@@ -17,6 +17,8 @@ export interface ContentSearchResult {
   popularity: number;
   voteAverage: number;
   voteCount: number;
+  genreIds?: number[];
+  originalLanguage?: string;
   mediaType: ContentTypeValue;
 }
 

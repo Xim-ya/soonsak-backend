@@ -34,6 +34,8 @@ interface TMDBMultiSearchResultItem {
   popularity?: number;
   vote_average?: number;
   vote_count?: number;
+  genre_ids?: number[];
+  original_language?: string;
 }
 
 /**
@@ -57,6 +59,8 @@ interface TMDBMovieResultItem {
   popularity?: number;
   vote_average?: number;
   vote_count?: number;
+  genre_ids?: number[];
+  original_language?: string;
 }
 
 /**
@@ -73,6 +77,8 @@ interface TMDBTVResultItem {
   popularity?: number;
   vote_average?: number;
   vote_count?: number;
+  genre_ids?: number[];
+  original_language?: string;
 }
 
 /**
@@ -205,6 +211,8 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       popularity: movie.popularity || 0,
       voteAverage: movie.vote_average || 0,
       voteCount: movie.vote_count || 0,
+      genreIds: movie.genre_ids,
+      originalLanguage: movie.original_language,
       mediaType: 'movie' as const,
     }));
   }
@@ -232,6 +240,8 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       popularity: tv.popularity || 0,
       voteAverage: tv.vote_average || 0,
       voteCount: tv.vote_count || 0,
+      genreIds: tv.genre_ids,
+      originalLanguage: tv.original_language,
       mediaType: 'tv' as const,
     }));
   }
@@ -259,6 +269,8 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       popularity: result.popularity || 0,
       voteAverage: result.vote_average || 0,
       voteCount: result.vote_count || 0,
+      genreIds: result.genre_ids,
+      originalLanguage: result.original_language,
       mediaType: result.media_type,
     };
   }
