@@ -8,6 +8,12 @@ import { RegisterChannelInput, RegisterChannelResult } from './register-channel.
 /** 밀리초 단위 상수 */
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
 
+/** API 레이트 리미팅 방지를 위한 딜레이 (밀리초) */
+const VIDEO_PROCESSING_DELAY_MS = 2000;
+
+/** 딜레이 헬퍼 */
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * 채널 등록 Use Case
  * 단일 채널의 최근 비디오 등록
@@ -95,6 +101,9 @@ export class RegisterChannelUseCase {
           result.failedCount++;
           result.errors.push(`${rssEntry.videoId}: ${(error as Error).message}`);
         }
+
+        // API 레이트 리미팅 방지를 위한 딜레이
+        await delay(VIDEO_PROCESSING_DELAY_MS);
       }
 
       this.logger.log(
