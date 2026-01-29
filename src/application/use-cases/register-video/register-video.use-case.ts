@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS, MESSAGES, TMDB_CONFIG } from '@/shared/constants';
-import { Video, Content } from '@/domain/entities';
+import { Video, Content, Channel } from '@/domain/entities';
 import { VideoId, TMDBId } from '@/domain/value-objects';
 import { IVideoRepository, IContentRepository, IChannelRepository } from '@/domain/repositories';
 import {
@@ -180,7 +180,8 @@ export class RegisterVideoUseCase {
       // 5. 상세 정보 조회 (tagline)
       const details = await this.contentSearch.getDetails(tmdbData.id, selectedMatch.type);
 
-      const channelId = await this.channelRepository.getOrCreate(
+      // 6. 채널 정보 저장 (새 채널이면 메타데이터 가져오기)
+      const channelId = await this.getOrCreateChannelWithMetadata(
         videoInfo.channelId,
         videoInfo.channelTitle,
       );
@@ -422,5 +423,45 @@ export class RegisterVideoUseCase {
       confidence: c.confidence,
       searchTerm: c.searchTerm,
     }));
+  }
+
+  /**
+   * 채널 조회 또는 생성 (메타데이터 포함)
+   * 새 채널인 경우 YouTube에서 메타데이터를 가져와서 저장
+   */
+  private async getOrCreateChannelWithMetadata(
+    channelId: string,
+    channelName: string,
+  ): Promise<string> {
+    const exists = await this.channelRepository.exists(channelId);
+
+    if (exists) {
+      return channelId;
+    }
+
+    // 새 채널: 메타데이터 가져오기
+    this.logger.log(`  New channel detected, fetching metadata: ${channelId}`);
+
+    try {
+      const metadata = await this.youtubeExtractor.getChannelMetadata(channelId);
+
+      const channel = Channel.create({
+        id: channelId,
+        name: metadata.name || channelName || 'Unknown Channel',
+        handleId: metadata.handleId || channelId,
+        logoUrl: metadata.logoUrl,
+        bannerUrl: metadata.bannerUrl,
+        subscriberCount: metadata.subscriberCount,
+      });
+
+      await this.channelRepository.save(channel);
+      this.logger.log(`  Channel saved: ${metadata.name} (${metadata.subscriberCount?.toLocaleString()} subscribers)`);
+
+      return channelId;
+    } catch (error) {
+      this.logger.warn(`  Failed to fetch channel metadata: ${(error as Error).message}`);
+      // 폴백: 기본 정보로 저장
+      return this.channelRepository.getOrCreate(channelId, channelName);
+    }
   }
 }

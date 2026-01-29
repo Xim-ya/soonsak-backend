@@ -27,6 +27,8 @@ export class ChannelMapper {
       name: record.name,
       handleId: record.handle_id,
       logoUrl: record.logo_url,
+      bannerUrl: record.banner_url,
+      subscriberCount: record.subscriber_count,
       lastProcessedAt: record.updated_at ? new Date(record.updated_at) : undefined,
     });
   }
@@ -41,6 +43,8 @@ export class ChannelMapper {
       name: props.name,
       handle_id: props.handleId,
       logo_url: props.logoUrl,
+      banner_url: props.bannerUrl,
+      subscriber_count: props.subscriberCount,
       updated_at: props.lastProcessedAt?.toISOString(),
     };
   }
@@ -54,6 +58,8 @@ export class ChannelMapper {
       name: props.name,
       handle_id: props.handleId,
       logo_url: props.logoUrl,
+      banner_url: props.bannerUrl,
+      subscriber_count: props.subscriberCount,
       updated_at: props.lastProcessedAt?.toISOString(),
     };
   }

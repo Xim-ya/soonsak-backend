@@ -3,6 +3,8 @@ export interface ChannelProps {
   name: string;
   handleId: string;
   logoUrl?: string;
+  bannerUrl?: string;
+  subscriberCount?: number;
   lastProcessedAt?: Date;
 }
 
@@ -14,6 +16,8 @@ export class Channel {
   private readonly _name: string;
   private readonly _handleId: string;
   private readonly _logoUrl?: string;
+  private readonly _bannerUrl?: string;
+  private readonly _subscriberCount?: number;
   private _lastProcessedAt?: Date;
 
   private constructor(props: ChannelProps) {
@@ -21,6 +25,8 @@ export class Channel {
     this._name = props.name;
     this._handleId = props.handleId;
     this._logoUrl = props.logoUrl;
+    this._bannerUrl = props.bannerUrl;
+    this._subscriberCount = props.subscriberCount;
     this._lastProcessedAt = props.lastProcessedAt;
   }
 
@@ -48,6 +54,14 @@ export class Channel {
     return this._logoUrl;
   }
 
+  get bannerUrl(): string | undefined {
+    return this._bannerUrl;
+  }
+
+  get subscriberCount(): number | undefined {
+    return this._subscriberCount;
+  }
+
   get lastProcessedAt(): Date | undefined {
     return this._lastProcessedAt;
   }
@@ -62,6 +76,8 @@ export class Channel {
       name: this._name,
       handleId: this._handleId,
       logoUrl: this._logoUrl,
+      bannerUrl: this._bannerUrl,
+      subscriberCount: this._subscriberCount,
       lastProcessedAt: this._lastProcessedAt,
     };
   }
