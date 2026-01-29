@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS } from '@/shared/constants';
-import { HomeSection, HomeSectionItemProps } from '@/domain/entities';
+import { HomeSection, SectionContentRef } from '@/domain/entities';
 import { IHomeSectionRepository } from '@/domain/repositories';
 import {
   IHomeSectionGeneratorPort,
@@ -52,8 +52,11 @@ export class GenerateHomeSectionsUseCase {
           success: true,
           sectionCount: existingSections.length,
           sectionIds: existingSections.map((s) => s.id!),
+          sections: existingSections.map((s) => ({
+            title: s.title,
+            contentCount: s.contentIds.length,
+          })),
           generatedAt: existingSections[0].generatedAt || new Date(),
-          expiresAt: existingSections[0].expiresAt || new Date(),
           message: '기존 활성 섹션이 유효합니다.',
         };
       }
@@ -67,19 +70,24 @@ export class GenerateHomeSectionsUseCase {
         success: false,
         sectionCount: 0,
         sectionIds: [],
+        sections: [],
         generatedAt: new Date(),
-        expiresAt: new Date(),
         message: '콘텐츠가 없어 섹션을 생성할 수 없습니다.',
       };
     }
 
     this.logger.log(`Found ${contents.length} contents for analysis`);
 
-    // 3. AI 기반 섹션 생성
+    // 3. 이전 섹션 정보 조회 (중복 방지용)
+    const previousSections = await this.homeSectionRepository.findPreviousSections(30);
+    this.logger.log(`Found ${previousSections.length} previous sections for deduplication`);
+
+    // 4. AI 기반 섹션 생성
     const generationResult = await this.homeSectionGenerator.generateSections(
       contents,
       sectionCount,
       itemsPerSection,
+      previousSections,
     );
 
     if (generationResult.sections.length === 0) {
@@ -88,38 +96,32 @@ export class GenerateHomeSectionsUseCase {
         success: false,
         sectionCount: 0,
         sectionIds: [],
+        sections: [],
         generatedAt: new Date(),
-        expiresAt: new Date(),
         message: '섹션 생성에 실패했습니다.',
       };
     }
 
-    // 4. HomeSection 엔티티 생성
+    // 5. HomeSection 엔티티 생성
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3일 후
 
     const homeSections = generationResult.sections.map((section, index) => {
-      const items: HomeSectionItemProps[] = section.contentIds.map(
-        (content, itemIndex) => ({
-          sectionId: '', // 저장 시 할당됨
-          contentId: content.contentId,
-          contentType: content.contentType,
-          displayOrder: itemIndex + 1,
-        }),
-      );
+      const contentIds: SectionContentRef[] = section.contentIds.map((content) => ({
+        id: content.contentId,
+        type: content.contentType,
+      }));
 
       return HomeSection.create({
         title: section.title,
         subtitle: section.subtitle,
         themeKeywords: section.themeKeywords,
+        contentIds,
         displayOrder: index + 1,
         aiReasoning: section.reasoning,
-        expiresAt: expiresAt.toISOString(),
-        items,
       });
     });
 
-    // 5. DB 저장 (기존 섹션 비활성화 후 저장)
+    // 6. DB 저장 (기존 섹션 비활성화 후 저장)
     const savedIds = await this.homeSectionRepository.saveAll(homeSections);
 
     this.logger.log(
@@ -130,8 +132,11 @@ export class GenerateHomeSectionsUseCase {
       success: true,
       sectionCount: savedIds.length,
       sectionIds: savedIds,
+      sections: homeSections.map((s) => ({
+        title: s.title,
+        contentCount: s.contentIds.length,
+      })),
       generatedAt: now,
-      expiresAt,
       message: `${savedIds.length}개의 홈 섹션이 생성되었습니다.`,
     };
   }
@@ -143,7 +148,11 @@ export class GenerateHomeSectionsUseCase {
     const { data, error } = await this.supabaseProvider
       .getClient()
       .from('contents')
-      .select('id, content_type, title, genre_ids, tagline, overview, original_language, release_date')
+      .select(`
+        id, content_type, title, genre_ids, tagline, overview,
+        original_language, release_date,
+        vote_average, popularity, origin_country, directors, main_cast
+      `)
       .order('uploaded_at', { ascending: false });
 
     if (error) {
@@ -160,6 +169,11 @@ export class GenerateHomeSectionsUseCase {
       overview: row.overview,
       originalLanguage: row.original_language,
       releaseDate: row.release_date,
+      voteAverage: row.vote_average,
+      popularity: row.popularity,
+      originCountry: row.origin_country,
+      directors: row.directors,
+      mainCast: row.main_cast,
     }));
   }
 }

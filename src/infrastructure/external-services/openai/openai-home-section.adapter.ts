@@ -6,6 +6,7 @@ import {
   ContentMetadataForSection,
   HomeSectionGenerationResult,
   GeneratedSection,
+  PreviousSectionInfo,
 } from '@/application/ports';
 import {
   buildHomeSectionGenerationPrompt,
@@ -20,10 +21,16 @@ import {
 export class OpenAIHomeSectionAdapter implements IHomeSectionGeneratorPort {
   private readonly logger = new Logger(OpenAIHomeSectionAdapter.name);
   private openai: OpenAI | null = null;
-  private readonly model: string;
+
+  /**
+   * 홈 섹션 생성에는 gpt-4o 고정 사용
+   * - 창의적 한국어 카피라이팅 필요
+   * - 콘텐츠 테마 분석 및 그룹화 능력 필요
+   * - 3일마다 1회 실행으로 비용 부담 낮음
+   */
+  private readonly model = 'gpt-4o';
 
   constructor(private readonly configService: ConfigService) {
-    this.model = this.configService.get<string>('OPENAI_MODEL', 'gpt-4o-mini');
 
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (apiKey) {
@@ -46,6 +53,7 @@ export class OpenAIHomeSectionAdapter implements IHomeSectionGeneratorPort {
     contents: ContentMetadataForSection[],
     sectionCount: number = 5,
     itemsPerSection: number = 10,
+    previousSections: PreviousSectionInfo[] = [],
   ): Promise<HomeSectionGenerationResult> {
     if (contents.length === 0) {
       this.logger.warn('No contents provided for section generation');
@@ -58,10 +66,17 @@ export class OpenAIHomeSectionAdapter implements IHomeSectionGeneratorPort {
       return this.generateFallbackResult(contents);
     }
 
+    if (previousSections.length > 0) {
+      this.logger.log(
+        `Including ${previousSections.length} previous sections for deduplication`,
+      );
+    }
+
     const prompt = buildHomeSectionGenerationPrompt(
       contents,
       sectionCount,
       itemsPerSection,
+      previousSections,
     );
 
     try {

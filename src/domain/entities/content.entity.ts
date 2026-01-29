@@ -1,5 +1,13 @@
 import { TMDBId, ContentType, ContentTypeValue } from '../value-objects';
 
+/**
+ * 인물 정보 (감독/배우)
+ */
+export interface PersonInfo {
+  id: number;
+  name: string;
+}
+
 export interface ContentProps {
   id: number;
   contentType: ContentTypeValue;
@@ -10,7 +18,14 @@ export interface ContentProps {
   genreIds?: number[];
   originalLanguage?: string;
   tagline?: string;
+  overview?: string;
   uploadedAt?: string;
+  // AI 분석용 메타데이터
+  voteAverage?: number;
+  popularity?: number;
+  originCountry?: string[];
+  directors?: PersonInfo[];
+  mainCast?: PersonInfo[];
 }
 
 /**
@@ -26,7 +41,14 @@ export class Content {
   private readonly _genreIds?: number[];
   private readonly _originalLanguage?: string;
   private readonly _tagline?: string;
+  private readonly _overview?: string;
   private readonly _uploadedAt?: Date;
+  // AI 분석용 메타데이터
+  private readonly _voteAverage?: number;
+  private readonly _popularity?: number;
+  private readonly _originCountry?: string[];
+  private readonly _directors?: PersonInfo[];
+  private readonly _mainCast?: PersonInfo[];
 
   private constructor(props: ContentProps) {
     this._id = TMDBId.fromNumber(props.id);
@@ -38,7 +60,13 @@ export class Content {
     this._genreIds = props.genreIds;
     this._originalLanguage = props.originalLanguage;
     this._tagline = props.tagline;
+    this._overview = props.overview;
     this._uploadedAt = props.uploadedAt ? new Date(props.uploadedAt) : undefined;
+    this._voteAverage = props.voteAverage;
+    this._popularity = props.popularity;
+    this._originCountry = props.originCountry;
+    this._directors = props.directors;
+    this._mainCast = props.mainCast;
   }
 
   static create(props: ContentProps): Content {
@@ -85,8 +113,32 @@ export class Content {
     return this._tagline;
   }
 
+  get overview(): string | undefined {
+    return this._overview;
+  }
+
   get uploadedAt(): Date | undefined {
     return this._uploadedAt;
+  }
+
+  get voteAverage(): number | undefined {
+    return this._voteAverage;
+  }
+
+  get popularity(): number | undefined {
+    return this._popularity;
+  }
+
+  get originCountry(): string[] | undefined {
+    return this._originCountry;
+  }
+
+  get directors(): PersonInfo[] | undefined {
+    return this._directors;
+  }
+
+  get mainCast(): PersonInfo[] | undefined {
+    return this._mainCast;
   }
 
   toProps(): ContentProps {
@@ -100,7 +152,13 @@ export class Content {
       genreIds: this._genreIds,
       originalLanguage: this._originalLanguage,
       tagline: this._tagline,
+      overview: this._overview,
       uploadedAt: this._uploadedAt?.toISOString(),
+      voteAverage: this._voteAverage,
+      popularity: this._popularity,
+      originCountry: this._originCountry,
+      directors: this._directors,
+      mainCast: this._mainCast,
     };
   }
 }

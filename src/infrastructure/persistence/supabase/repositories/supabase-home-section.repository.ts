@@ -4,11 +4,10 @@ import {
   IHomeSectionRepository,
   HomeSectionWithContents,
 } from '@/domain/repositories';
+import { PreviousSectionInfo } from '@/application/ports';
 import {
   HomeSectionMapper,
-  HomeSectionItemMapper,
   HomeSectionDBRecord,
-  HomeSectionItemDBRecord,
   HomeSectionRPCResult,
 } from '../mappers';
 import { SupabaseClientProvider } from '../supabase-client.provider';
@@ -24,12 +23,12 @@ export class SupabaseHomeSectionRepository implements IHomeSectionRepository {
   constructor(private readonly supabaseProvider: SupabaseClientProvider) {}
 
   async findAllActive(): Promise<HomeSection[]> {
+    // is_active만으로 노출 여부 결정 (expires_at는 참고용)
     const { data: sections, error } = await this.supabaseProvider
       .getClient()
-      .from(SUPABASE_TABLES.HOME_SECTIONS)
+      .from(SUPABASE_TABLES.CONTENT_COLLECTIONS)
       .select('*')
       .eq('is_active', true)
-      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
       .order('display_order', { ascending: true });
 
     if (error) {
@@ -37,47 +36,15 @@ export class SupabaseHomeSectionRepository implements IHomeSectionRepository {
       return [];
     }
 
-    if (!sections || sections.length === 0) {
-      return [];
-    }
-
-    // 각 섹션의 아이템 조회
-    const sectionIds = sections.map((s) => s.id);
-    const { data: items, error: itemsError } = await this.supabaseProvider
-      .getClient()
-      .from(SUPABASE_TABLES.HOME_SECTION_ITEMS)
-      .select('*')
-      .in('section_id', sectionIds)
-      .order('display_order', { ascending: true });
-
-    if (itemsError) {
-      this.logger.warn(`Failed to fetch section items: ${itemsError.message}`);
-    }
-
-    // 섹션별 아이템 그룹핑
-    const itemsBySectionId = (items || []).reduce(
-      (acc, item) => {
-        if (!acc[item.section_id]) {
-          acc[item.section_id] = [];
-        }
-        acc[item.section_id].push(item as HomeSectionItemDBRecord);
-        return acc;
-      },
-      {} as Record<string, HomeSectionItemDBRecord[]>,
-    );
-
-    return sections.map((section) =>
-      HomeSectionMapper.toDomain(
-        section as HomeSectionDBRecord,
-        itemsBySectionId[section.id] || [],
-      ),
+    return (sections || []).map((section) =>
+      HomeSectionMapper.toDomain(section as HomeSectionDBRecord),
     );
   }
 
   async findById(id: string): Promise<HomeSection | null> {
     const { data: section, error } = await this.supabaseProvider
       .getClient()
-      .from(SUPABASE_TABLES.HOME_SECTIONS)
+      .from(SUPABASE_TABLES.CONTENT_COLLECTIONS)
       .select('*')
       .eq('id', id)
       .single();
@@ -86,25 +53,15 @@ export class SupabaseHomeSectionRepository implements IHomeSectionRepository {
       return null;
     }
 
-    const { data: items } = await this.supabaseProvider
-      .getClient()
-      .from(SUPABASE_TABLES.HOME_SECTION_ITEMS)
-      .select('*')
-      .eq('section_id', id)
-      .order('display_order', { ascending: true });
-
-    return HomeSectionMapper.toDomain(
-      section as HomeSectionDBRecord,
-      (items || []) as HomeSectionItemDBRecord[],
-    );
+    return HomeSectionMapper.toDomain(section as HomeSectionDBRecord);
   }
 
   async save(section: HomeSection): Promise<string> {
-    const record = HomeSectionMapper.toPersistenceForInsert(section);
+    const record = HomeSectionMapper.toPersistence(section);
 
     const { data, error } = await this.supabaseProvider
       .getClient()
-      .from(SUPABASE_TABLES.HOME_SECTIONS)
+      .from(SUPABASE_TABLES.CONTENT_COLLECTIONS)
       .insert(record)
       .select('id')
       .single();
@@ -114,26 +71,7 @@ export class SupabaseHomeSectionRepository implements IHomeSectionRepository {
       throw new Error(`Failed to save home section: ${error.message}`);
     }
 
-    const sectionId = data.id;
-
-    // 아이템 저장
-    if (section.items.length > 0) {
-      const itemRecords = section.items.map((item) =>
-        HomeSectionItemMapper.toPersistenceForInsert(item, sectionId),
-      );
-
-      const { error: itemsError } = await this.supabaseProvider
-        .getClient()
-        .from(SUPABASE_TABLES.HOME_SECTION_ITEMS)
-        .insert(itemRecords);
-
-      if (itemsError) {
-        this.logger.error(`Failed to save section items: ${itemsError.message}`);
-        throw new Error(`Failed to save section items: ${itemsError.message}`);
-      }
-    }
-
-    return sectionId;
+    return data.id;
   }
 
   async saveAll(sections: HomeSection[]): Promise<string[]> {
@@ -153,7 +91,7 @@ export class SupabaseHomeSectionRepository implements IHomeSectionRepository {
   async deactivateAll(): Promise<void> {
     const { error } = await this.supabaseProvider
       .getClient()
-      .from(SUPABASE_TABLES.HOME_SECTIONS)
+      .from(SUPABASE_TABLES.CONTENT_COLLECTIONS)
       .update({ is_active: false })
       .eq('is_active', true);
 
@@ -163,27 +101,10 @@ export class SupabaseHomeSectionRepository implements IHomeSectionRepository {
     }
   }
 
-  async cleanupExpired(): Promise<number> {
-    const { data, error } = await this.supabaseProvider
-      .getClient()
-      .from(SUPABASE_TABLES.HOME_SECTIONS)
-      .update({ is_active: false })
-      .eq('is_active', true)
-      .lt('expires_at', new Date().toISOString())
-      .select('id');
-
-    if (error) {
-      this.logger.error(`Failed to cleanup expired sections: ${error.message}`);
-      return 0;
-    }
-
-    return data?.length || 0;
-  }
-
   async getHomeSectionsWithContents(): Promise<HomeSectionWithContents[]> {
     const { data, error } = await this.supabaseProvider
       .getClient()
-      .rpc('get_home_sections');
+      .rpc('get_content_collections');
 
     if (error) {
       this.logger.error(`Failed to get home sections via RPC: ${error.message}`);
@@ -193,5 +114,24 @@ export class SupabaseHomeSectionRepository implements IHomeSectionRepository {
     return (data || []).map((result: HomeSectionRPCResult) =>
       HomeSectionMapper.fromRPCResult(result),
     );
+  }
+
+  async findPreviousSections(limit: number = 30): Promise<PreviousSectionInfo[]> {
+    const { data, error } = await this.supabaseProvider
+      .getClient()
+      .from(SUPABASE_TABLES.CONTENT_COLLECTIONS)
+      .select('title, theme_keywords')
+      .order('generated_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      this.logger.error(`Failed to fetch previous sections: ${error.message}`);
+      return [];
+    }
+
+    return (data || []).map((row) => ({
+      title: row.title,
+      themeKeywords: row.theme_keywords || [],
+    }));
   }
 }

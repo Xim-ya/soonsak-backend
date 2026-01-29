@@ -33,6 +33,14 @@ export interface ContentMatchResult {
 }
 
 /**
+ * 인물 정보 (감독/배우)
+ */
+export interface PersonInfo {
+  id: number;
+  name: string;
+}
+
+/**
  * 콘텐츠 상세 정보 (Details API)
  */
 export interface ContentDetails {
@@ -42,6 +50,12 @@ export interface ContentDetails {
   releaseDate?: string;
   genreIds?: number[];
   overview?: string;
+  // AI 분석용 추가 필드
+  voteAverage?: number;
+  popularity?: number;
+  originCountry?: string[];
+  directors?: PersonInfo[];
+  mainCast?: PersonInfo[];
 }
 
 /**

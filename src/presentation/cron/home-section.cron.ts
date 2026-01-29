@@ -2,11 +2,12 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 import { GenerateHomeSectionsUseCase } from '@/application/use-cases';
+import { SlackNotificationAdapter } from '@/infrastructure/external-services/slack/slack-notification.adapter';
 import { INJECTION_TOKENS } from '@/shared/constants';
 
 /**
- * 홈 섹션 Cron 서비스
- * 3일마다 새벽 4시에 AI 기반 홈 섹션 자동 생성
+ * 홈 큐레이션 Cron 서비스
+ * 매일 오후 12시 30분에 AI 기반 홈 큐레이션 자동 생성
  */
 @Injectable()
 export class HomeSectionCron {
@@ -17,18 +18,20 @@ export class HomeSectionCron {
   constructor(
     private readonly generateHomeSectionsUseCase: GenerateHomeSectionsUseCase,
     private readonly configService: ConfigService,
+    @Inject(INJECTION_TOKENS.SLACK_NOTIFIER)
+    private readonly slackNotification: SlackNotificationAdapter,
   ) {
     this.isEnabled = this.configService.get<boolean>('HOME_SECTION_CRON_ENABLED', true);
-    this.logger.log(`Home section cron ${this.isEnabled ? 'enabled' : 'disabled'}`);
+    this.logger.log(`Home curation cron ${this.isEnabled ? 'enabled' : 'disabled'}`);
   }
 
   /**
-   * 매 3일마다 새벽 4시에 홈 섹션 생성
+   * 매일 오후 12시 30분에 홈 큐레이션 생성
    * Cron 표현식: 분 시 일 월 요일
-   * 0 4 (매3일) - 3일마다 4시 0분
+   * 30 12 * * * - 매일 12시 30분
    */
-  @Cron('0 4 */3 * *', {
-    name: 'home-section-generation',
+  @Cron('30 12 * * *', {
+    name: 'home-curation-generation',
     timeZone: 'Asia/Seoul',
   })
   async handleHomeSectionGeneration() {
@@ -54,15 +57,31 @@ export class HomeSectionCron {
 
       if (result.success) {
         this.logger.log(
-          `Home section generation completed: ${result.sectionCount} sections created, expires at ${result.expiresAt.toISOString()}`,
+          `Home curation generation completed: ${result.sectionCount} sections created at ${result.generatedAt.toISOString()}`,
         );
       } else {
-        this.logger.error(`Home section generation failed: ${result.message}`);
+        this.logger.error(`Home curation generation failed: ${result.message}`);
       }
+
+      // Slack 알림 전송
+      await this.slackNotification.sendHomeCurationNotification({
+        success: result.success,
+        sections: result.sections,
+        generatedAt: result.generatedAt,
+        message: result.message,
+      });
     } catch (error) {
       this.logger.error(
-        `Home section generation error: ${(error as Error).message}`,
+        `Home curation generation error: ${(error as Error).message}`,
       );
+
+      // 실패 시에도 Slack 알림 전송
+      await this.slackNotification.sendHomeCurationNotification({
+        success: false,
+        sections: [],
+        generatedAt: new Date(),
+        message: (error as Error).message,
+      });
     } finally {
       this.isRunning = false;
     }

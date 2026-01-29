@@ -1,4 +1,4 @@
-import { Content, ContentProps } from '@/domain/entities';
+import { Content, ContentProps, PersonInfo } from '@/domain/entities';
 import { ContentTypeValue } from '@/domain/value-objects';
 
 /**
@@ -14,7 +14,14 @@ export interface ContentDBRecord {
   genre_ids?: number[];
   original_language?: string;
   tagline?: string;
+  overview?: string;
   uploaded_at?: string;
+  // AI 분석용 메타데이터
+  vote_average?: number;
+  popularity?: number;
+  origin_country?: string[];
+  directors?: PersonInfo[];
+  main_cast?: PersonInfo[];
 }
 
 /**
@@ -36,7 +43,13 @@ export class ContentMapper {
       genreIds: record.genre_ids,
       originalLanguage: record.original_language,
       tagline: record.tagline,
+      overview: record.overview,
       uploadedAt: record.uploaded_at,
+      voteAverage: record.vote_average,
+      popularity: record.popularity,
+      originCountry: record.origin_country,
+      directors: record.directors,
+      mainCast: record.main_cast,
     });
   }
 
@@ -55,7 +68,13 @@ export class ContentMapper {
       genre_ids: props.genreIds,
       original_language: props.originalLanguage || undefined,
       tagline: props.tagline || undefined,
+      overview: props.overview || undefined,
       uploaded_at: props.uploadedAt,
+      vote_average: props.voteAverage,
+      popularity: props.popularity,
+      origin_country: props.originCountry,
+      directors: props.directors,
+      main_cast: props.mainCast,
     };
   }
 
@@ -73,7 +92,13 @@ export class ContentMapper {
       genre_ids: props.genreIds,
       original_language: props.originalLanguage || undefined,
       tagline: props.tagline || undefined,
+      overview: props.overview || undefined,
       uploaded_at: props.uploadedAt,
+      vote_average: props.voteAverage,
+      popularity: props.popularity,
+      origin_country: props.originCountry,
+      directors: props.directors,
+      main_cast: props.mainCast,
     };
   }
 }

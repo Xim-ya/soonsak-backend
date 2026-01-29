@@ -197,10 +197,17 @@ export class RegisterVideoUseCase {
         posterPath: tmdbData.posterPath,
         backdropPath: tmdbData.backdropPath,
         releaseDate,
-        genreIds: tmdbData.genreIds,
+        genreIds: details.genreIds || tmdbData.genreIds,
         originalLanguage: tmdbData.originalLanguage,
         tagline: details.tagline,
+        overview: details.overview,
         uploadedAt: new Date().toISOString(),
+        // AI 분석용 메타데이터
+        voteAverage: details.voteAverage,
+        popularity: details.popularity,
+        originCountry: details.originCountry,
+        directors: details.directors,
+        mainCast: details.mainCast,
       });
 
       const contentId = await this.contentRepository.save(content);

@@ -1,26 +1,12 @@
-import { HomeSection, HomeSectionProps } from '../entities/home-section.entity';
-
-/**
- * AI 생성 섹션 입력 데이터
- */
-export interface CreateHomeSectionInput {
-  title: string;
-  subtitle?: string;
-  themeKeywords?: string[];
-  displayOrder: number;
-  aiReasoning?: string;
-  contentIds: Array<{
-    contentId: number;
-    contentType: 'movie' | 'tv';
-  }>;
-}
+import { HomeSection } from '../entities/home-section.entity';
+import { PreviousSectionInfo } from '@/application/ports';
 
 /**
  * 홈 섹션 리포지토리 인터페이스
  */
 export interface IHomeSectionRepository {
   /**
-   * 활성화된 모든 홈 섹션 조회 (만료되지 않은 것만)
+   * 활성화된 모든 홈 섹션 조회 (is_active = true)
    */
   findAllActive(): Promise<HomeSection[]>;
 
@@ -30,7 +16,7 @@ export interface IHomeSectionRepository {
   findById(id: string): Promise<HomeSection | null>;
 
   /**
-   * 홈 섹션 저장 (섹션 및 아이템 함께)
+   * 홈 섹션 저장
    */
   save(section: HomeSection): Promise<string>;
 
@@ -45,14 +31,15 @@ export interface IHomeSectionRepository {
   deactivateAll(): Promise<void>;
 
   /**
-   * 만료된 섹션 정리 (soft delete - is_active = false)
-   */
-  cleanupExpired(): Promise<number>;
-
-  /**
    * RPC 함수를 통한 홈 섹션 조회 (contents 포함)
    */
   getHomeSectionsWithContents(): Promise<HomeSectionWithContents[]>;
+
+  /**
+   * 이전 섹션 정보 조회 (중복 방지용)
+   * @param limit 조회할 최대 섹션 수 (기본 30)
+   */
+  findPreviousSections(limit?: number): Promise<PreviousSectionInfo[]>;
 }
 
 /**
@@ -65,7 +52,6 @@ export interface HomeSectionWithContents {
   themeKeywords?: string[];
   displayOrder: number;
   generatedAt?: string;
-  expiresAt?: string;
   contents: Array<{
     id: number;
     contentType: string;

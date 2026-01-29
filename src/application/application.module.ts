@@ -23,6 +23,7 @@ import { BatchProcessingService } from './services';
     BatchProcessingService,
   ],
   exports: [
+    InfrastructureModule,
     RegisterVideoUseCase,
     RegisterChannelUseCase,
     RegisterChannelVideosUseCase,

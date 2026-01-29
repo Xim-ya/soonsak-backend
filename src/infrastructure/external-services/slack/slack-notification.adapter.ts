@@ -14,6 +14,19 @@ export interface BatchNotificationData {
 }
 
 /**
+ * 홈 큐레이션 생성 결과 알림 데이터
+ */
+export interface HomeCurationNotificationData {
+  success: boolean;
+  sections: Array<{
+    title: string;
+    contentCount: number;
+  }>;
+  generatedAt: Date;
+  message?: string;
+}
+
+/**
  * Slack 알림 어댑터
  * 배치 작업 완료 시 Slack 웹훅으로 알림 전송
  */
@@ -110,6 +123,85 @@ export class SlackNotificationAdapter {
       }
 
       this.logger.log('Batch completion notification sent to Slack');
+    } catch (error) {
+      this.logger.error(`Failed to send Slack notification: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * 홈 큐레이션 생성 완료 알림 전송
+   */
+  async sendHomeCurationNotification(data: HomeCurationNotificationData): Promise<void> {
+    if (!this.webhookUrl) {
+      this.logger.debug('Slack notification skipped - webhook URL not configured');
+      return;
+    }
+
+    const statusEmoji = data.success ? '✅' : '❌';
+    const statusText = data.success ? '성공' : '실패';
+
+    const sectionFields = data.sections.map((section) => ({
+      type: 'mrkdwn',
+      text: `• *${section.title}*\n  └ 콘텐츠 ${section.contentCount}개`,
+    }));
+
+    const message = {
+      blocks: [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: `🎬 홈 큐레이션 생성 ${statusText}`,
+            emoji: true,
+          },
+        },
+        ...(data.success
+          ? [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `*생성된 섹션 (${data.sections.length}개)*`,
+                },
+              },
+              ...sectionFields.map((field) => ({
+                type: 'section',
+                text: field,
+              })),
+            ]
+          : [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `${statusEmoji} ${data.message || '알 수 없는 오류'}`,
+                },
+              },
+            ]),
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `🕐 생성 시각: ${data.generatedAt.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`,
+            },
+          ],
+        },
+      ],
+    };
+
+    try {
+      const response = await fetch(this.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Slack API error: ${response.status}`);
+      }
+
+      this.logger.log('Home curation notification sent to Slack');
     } catch (error) {
       this.logger.error(`Failed to send Slack notification: ${(error as Error).message}`);
     }

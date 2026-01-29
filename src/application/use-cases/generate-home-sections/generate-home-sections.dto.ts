@@ -11,6 +11,14 @@ export interface GenerateHomeSectionsInput {
 }
 
 /**
+ * 섹션 요약 정보 (알림용)
+ */
+export interface SectionSummary {
+  title: string;
+  contentCount: number;
+}
+
+/**
  * 홈 섹션 생성 결과 DTO
  */
 export interface GenerateHomeSectionsOutput {
@@ -20,10 +28,10 @@ export interface GenerateHomeSectionsOutput {
   sectionCount: number;
   /** 섹션 ID 목록 */
   sectionIds: string[];
+  /** 섹션 요약 정보 (알림용) */
+  sections: SectionSummary[];
   /** 생성 시각 */
   generatedAt: Date;
-  /** 만료 시각 */
-  expiresAt: Date;
   /** 메시지 */
   message: string;
 }

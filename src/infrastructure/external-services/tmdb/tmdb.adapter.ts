@@ -92,6 +92,28 @@ interface TMDBGenre {
 }
 
 /**
+ * TMDB Credits Cast/Crew 타입
+ */
+interface TMDBCastMember {
+  id: number;
+  name: string;
+  character?: string;
+  order?: number;
+}
+
+interface TMDBCrewMember {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+}
+
+interface TMDBCredits {
+  cast?: TMDBCastMember[];
+  crew?: TMDBCrewMember[];
+}
+
+/**
  * TMDB 상세 정보 응답 (Movie/TV 공통 필드)
  */
 interface TMDBDetailsResponse {
@@ -102,6 +124,11 @@ interface TMDBDetailsResponse {
   first_air_date?: string;
   genres?: TMDBGenre[];
   overview?: string;
+  vote_average?: number;
+  popularity?: number;
+  origin_country?: string[];
+  production_countries?: Array<{ iso_3166_1: string; name: string }>;
+  credits?: TMDBCredits;
 }
 
 /**
@@ -271,10 +298,29 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
 
   async getDetails(id: number, type: ContentTypeValue): Promise<ContentDetails> {
     const endpoint = type === 'movie' ? `/movie/${id}` : `/tv/${id}`;
-    const response = await this.makeRequest<TMDBDetailsResponse>(endpoint);
+    const response = await this.makeRequest<TMDBDetailsResponse>(endpoint, {
+      append_to_response: 'credits',
+    });
 
     const releaseDate = type === 'movie' ? response.release_date : response.first_air_date;
     const genreIds = response.genres?.map((g) => g.id);
+
+    // 제작 국가 추출 (TV는 origin_country, Movie는 production_countries)
+    const originCountry = response.origin_country
+      || response.production_countries?.map((c) => c.iso_3166_1)
+      || [];
+
+    // 감독 추출 (Directing department, Director job) - ID 포함
+    const directors = response.credits?.crew
+      ?.filter((c) => c.job === 'Director')
+      .slice(0, 3)
+      .map((c) => ({ id: c.id, name: c.name })) || [];
+
+    // 주요 출연진 추출 (order 기준 상위 5명) - ID 포함
+    const mainCast = response.credits?.cast
+      ?.sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
+      .slice(0, 5)
+      .map((c) => ({ id: c.id, name: c.name })) || [];
 
     return {
       id: response.id,
@@ -283,6 +329,11 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       releaseDate,
       genreIds,
       overview: response.overview,
+      voteAverage: response.vote_average,
+      popularity: response.popularity,
+      originCountry,
+      directors,
+      mainCast,
     };
   }
 
