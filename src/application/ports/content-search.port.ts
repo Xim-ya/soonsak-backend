@@ -41,6 +41,7 @@ export interface ContentDetails {
   backdropPath?: string;
   releaseDate?: string;
   genreIds?: number[];
+  overview?: string;
 }
 
 /**

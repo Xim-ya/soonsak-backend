@@ -7,6 +7,7 @@ export const INJECTION_TOKENS = {
   VIDEO_REPOSITORY: Symbol('VideoRepository'),
   CONTENT_REPOSITORY: Symbol('ContentRepository'),
   CHANNEL_REPOSITORY: Symbol('ChannelRepository'),
+  HOME_SECTION_REPOSITORY: Symbol('HomeSectionRepository'),
 
   // 외부 서비스 (포트)
   YOUTUBE_EXTRACTOR: Symbol('YouTubeExtractor'),
@@ -14,6 +15,7 @@ export const INJECTION_TOKENS = {
   AI_ANALYZER: Symbol('AIAnalyzer'),
   RSS_FEED: Symbol('RSSFeed'),
   SLACK_NOTIFIER: Symbol('SlackNotifier'),
+  HOME_SECTION_GENERATOR: Symbol('HomeSectionGenerator'),
 } as const;
 
 export type InjectionTokens = typeof INJECTION_TOKENS;

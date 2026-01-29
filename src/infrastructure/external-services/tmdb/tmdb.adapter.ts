@@ -101,6 +101,7 @@ interface TMDBDetailsResponse {
   release_date?: string;
   first_air_date?: string;
   genres?: TMDBGenre[];
+  overview?: string;
 }
 
 /**
@@ -281,6 +282,7 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       backdropPath: response.backdrop_path,
       releaseDate,
       genreIds,
+      overview: response.overview,
     };
   }
 

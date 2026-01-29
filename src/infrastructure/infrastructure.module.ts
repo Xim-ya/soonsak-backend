@@ -6,10 +6,11 @@ import {
   SupabaseVideoRepository,
   SupabaseContentRepository,
   SupabaseChannelRepository,
+  SupabaseHomeSectionRepository,
 } from './persistence/supabase/repositories';
 import { YouTubeExtractorAdapter, RSSFeedAdapter } from './external-services/youtube/adapters';
 import { TMDBAdapter } from './external-services/tmdb/tmdb.adapter';
-import { OpenAIAdapter } from './external-services/openai/openai.adapter';
+import { OpenAIAdapter, OpenAIHomeSectionAdapter } from './external-services/openai';
 import { SlackNotificationAdapter } from './external-services/slack';
 
 /**
@@ -34,6 +35,10 @@ import { SlackNotificationAdapter } from './external-services/slack';
       provide: INJECTION_TOKENS.CHANNEL_REPOSITORY,
       useClass: SupabaseChannelRepository,
     },
+    {
+      provide: INJECTION_TOKENS.HOME_SECTION_REPOSITORY,
+      useClass: SupabaseHomeSectionRepository,
+    },
     // External Services
     {
       provide: INJECTION_TOKENS.YOUTUBE_EXTRACTOR,
@@ -55,17 +60,23 @@ import { SlackNotificationAdapter } from './external-services/slack';
       provide: INJECTION_TOKENS.SLACK_NOTIFIER,
       useClass: SlackNotificationAdapter,
     },
+    {
+      provide: INJECTION_TOKENS.HOME_SECTION_GENERATOR,
+      useClass: OpenAIHomeSectionAdapter,
+    },
   ],
   exports: [
     SupabaseClientProvider,
     INJECTION_TOKENS.VIDEO_REPOSITORY,
     INJECTION_TOKENS.CONTENT_REPOSITORY,
     INJECTION_TOKENS.CHANNEL_REPOSITORY,
+    INJECTION_TOKENS.HOME_SECTION_REPOSITORY,
     INJECTION_TOKENS.YOUTUBE_EXTRACTOR,
     INJECTION_TOKENS.RSS_FEED,
     INJECTION_TOKENS.CONTENT_SEARCH,
     INJECTION_TOKENS.AI_ANALYZER,
     INJECTION_TOKENS.SLACK_NOTIFIER,
+    INJECTION_TOKENS.HOME_SECTION_GENERATOR,
   ],
 })
 export class InfrastructureModule {}

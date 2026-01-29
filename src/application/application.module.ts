@@ -5,6 +5,7 @@ import {
   RegisterVideoUseCase,
   RegisterChannelUseCase,
   RegisterChannelVideosUseCase,
+  GenerateHomeSectionsUseCase,
 } from './use-cases';
 import { BatchProcessingService } from './services';
 
@@ -18,12 +19,14 @@ import { BatchProcessingService } from './services';
     RegisterVideoUseCase,
     RegisterChannelUseCase,
     RegisterChannelVideosUseCase,
+    GenerateHomeSectionsUseCase,
     BatchProcessingService,
   ],
   exports: [
     RegisterVideoUseCase,
     RegisterChannelUseCase,
     RegisterChannelVideosUseCase,
+    GenerateHomeSectionsUseCase,
     BatchProcessingService,
   ],
 })
