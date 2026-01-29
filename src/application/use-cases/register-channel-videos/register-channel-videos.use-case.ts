@@ -1,16 +1,23 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS } from '@/shared/constants';
-import { IVideoRepository } from '@/domain/repositories';
+import { IVideoRepository, IChannelRepository } from '@/domain/repositories';
 import { IYouTubeExtractorPort } from '@/application/ports';
+import { Channel } from '@/domain/entities';
 import { RegisterVideoUseCase } from '../register-video';
 import {
   RegisterChannelVideosInput,
   RegisterChannelVideosResult,
 } from './register-channel-videos.dto';
 
+/** API 레이트 리미팅 방지를 위한 딜레이 (밀리초) */
+const VIDEO_PROCESSING_DELAY_MS = 2000;
+
+/** 딜레이 헬퍼 */
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * 채널 비디오 일괄 등록 Use Case
- * 채널의 모든 비디오를 순차적으로 등록
+ * 채널 등록 + 모든 비디오를 순차적으로 등록
  */
 @Injectable()
 export class RegisterChannelVideosUseCase {
@@ -21,12 +28,14 @@ export class RegisterChannelVideosUseCase {
     private readonly youtubeExtractor: IYouTubeExtractorPort,
     @Inject(INJECTION_TOKENS.VIDEO_REPOSITORY)
     private readonly videoRepository: IVideoRepository,
+    @Inject(INJECTION_TOKENS.CHANNEL_REPOSITORY)
+    private readonly channelRepository: IChannelRepository,
     private readonly registerVideoUseCase: RegisterVideoUseCase,
   ) {}
 
   async execute(input: RegisterChannelVideosInput): Promise<RegisterChannelVideosResult> {
     const { channelId, maxVideos = 100 } = input;
-    this.logger.log(`Registering all videos for channel: ${channelId}`);
+    this.logger.log(`Registering channel and all videos: ${channelId}`);
 
     const result: RegisterChannelVideosResult = {
       channelId,
@@ -41,15 +50,37 @@ export class RegisterChannelVideosUseCase {
     };
 
     try {
-      const videos = await this.youtubeExtractor.getChannelVideos(channelId, maxVideos);
+      // 1. 채널 메타데이터 수집 및 저장
+      const channelMetadata = await this.youtubeExtractor.getChannelMetadata(channelId);
+      result.channelId = channelMetadata.id; // 실제 채널 ID로 업데이트 (@handle → UC...)
+      result.channelName = channelMetadata.name;
+
+      this.logger.log(`Channel metadata fetched: ${channelMetadata.name} (${channelMetadata.id})`);
+
+      // 2. 채널 DB 저장/업데이트
+      const channel = Channel.create({
+        id: channelMetadata.id,
+        name: channelMetadata.name,
+        handleId: channelMetadata.handleId || channelMetadata.id,
+        logoUrl: channelMetadata.logoUrl,
+        bannerUrl: channelMetadata.bannerUrl,
+        subscriberCount: channelMetadata.subscriberCount,
+      });
+      await this.channelRepository.save(channel);
+      this.logger.log(`Channel saved to DB: ${channelMetadata.name}`);
+
+      // 3. 채널 영상 목록 조회
+      const videos = await this.youtubeExtractor.getChannelVideos(channelMetadata.id, maxVideos);
       result.totalVideos = videos.length;
 
       this.logger.log(`Found ${videos.length} videos to process`);
 
+      // 4. 이미 등록된 영상 필터링
       const existingVideoIds = await this.getExistingVideoIds(
         videos.map((v) => v.videoId),
       );
 
+      // 5. 영상 순차 등록
       for (const video of videos) {
         if (existingVideoIds.has(video.videoId)) {
           result.skippedCount++;
@@ -65,15 +96,11 @@ export class RegisterChannelVideosUseCase {
             description: '',
             publishedAt: video.publishedAt,
             updatedAt: new Date().toISOString(),
-            channelId,
-            channelName: '',
+            channelId: channelMetadata.id,
+            channelName: channelMetadata.name,
             thumbnail: video.thumbnail,
             viewCount: video.viewCount,
           });
-
-          if (!result.channelName && registerResult.data) {
-            result.channelName = channelId;
-          }
 
           if (registerResult.success) {
             result.successCount++;
@@ -94,6 +121,9 @@ export class RegisterChannelVideosUseCase {
           result.failedCount++;
           result.errors.push(`${video.videoId}: ${(error as Error).message}`);
         }
+
+        // API 레이트 리미팅 방지를 위한 딜레이
+        await delay(VIDEO_PROCESSING_DELAY_MS);
       }
 
       this.logger.log(
