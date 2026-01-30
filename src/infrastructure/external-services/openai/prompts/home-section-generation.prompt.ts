@@ -205,7 +205,7 @@ ${previousSectionsInfo}
 # 태스크
 ${sectionCount}개의 섹션을 만들어주세요.
 각 섹션에 ${itemsPerSection}개 내외의 콘텐츠를 담아주세요.
-같은 작품이 여러 섹션에 들어가도 됩니다.
+같은 작품이 여러 섹션에 중복으로 들어가면 안 됩니다. 각 콘텐츠는 반드시 하나의 섹션에만 포함되어야 합니다.
 
 # 응답 (JSON만)
 {
@@ -246,6 +246,24 @@ export function generateFallbackSections(
     reasoning: string;
   }[] = [];
 
+  // 섹션 간 중복 방지를 위한 사용 추적 세트
+  const usedContentIds = new Set<number>();
+
+  /** 미사용 콘텐츠만 필터링하고 사용 기록 */
+  function takeUnused(
+    candidates: ContentMetadataForSection[],
+    max: number,
+  ): Array<{ contentId: number; contentType: 'movie' | 'tv' }> {
+    const result: Array<{ contentId: number; contentType: 'movie' | 'tv' }> = [];
+    for (const c of candidates) {
+      if (result.length >= max) break;
+      if (usedContentIds.has(c.id)) continue;
+      result.push({ contentId: c.id, contentType: c.contentType });
+      usedContentIds.add(c.id);
+    }
+    return result;
+  }
+
   // 1. 장르별 섹션
   const genreGroups: Record<string, ContentMetadataForSection[]> = {};
   for (const content of contents) {
@@ -276,14 +294,12 @@ export function generateFallbackSections(
   };
 
   for (const [genre, genreContents] of topGenres) {
-    if (genreContents.length >= 4) {
+    const contentIds = takeUnused(genreContents, 10);
+    if (contentIds.length >= 4) {
       sections.push({
         title: genreTitles[genre] || `${genre} 특선`,
         themeKeywords: [genre],
-        contentIds: genreContents.slice(0, 10).map((c) => ({
-          contentId: c.id,
-          contentType: c.contentType,
-        })),
+        contentIds,
         reasoning: `${genre} 장르 콘텐츠 모음`,
       });
     }
@@ -293,28 +309,24 @@ export function generateFallbackSections(
   const movies = contents.filter((c) => c.contentType === 'movie');
   const tvShows = contents.filter((c) => c.contentType === 'tv');
 
-  if (movies.length >= 4) {
+  const movieContentIds = takeUnused(movies, 10);
+  if (movieContentIds.length >= 4) {
     sections.push({
       title: '영화관 온 기분',
       subtitle: '2시간의 여정',
       themeKeywords: ['영화', '극장'],
-      contentIds: movies.slice(0, 10).map((c) => ({
-        contentId: c.id,
-        contentType: c.contentType,
-      })),
+      contentIds: movieContentIds,
       reasoning: '영화 콘텐츠 모음',
     });
   }
 
-  if (tvShows.length >= 4) {
+  const tvContentIds = takeUnused(tvShows, 10);
+  if (tvContentIds.length >= 4) {
     sections.push({
       title: '밤새 정주행 각',
       subtitle: '멈출 수 없어',
       themeKeywords: ['드라마', '시리즈'],
-      contentIds: tvShows.slice(0, 10).map((c) => ({
-        contentId: c.id,
-        contentType: c.contentType,
-      })),
+      contentIds: tvContentIds,
       reasoning: 'TV 시리즈 콘텐츠 모음',
     });
   }
@@ -322,16 +334,16 @@ export function generateFallbackSections(
   // 3. 전체 콘텐츠 섹션 (필러)
   if (sections.length < 3) {
     const shuffled = [...contents].sort(() => Math.random() - 0.5);
-    sections.push({
-      title: '오늘 뭐 볼까?',
-      subtitle: '추천 콘텐츠',
-      themeKeywords: ['추천', '인기'],
-      contentIds: shuffled.slice(0, 10).map((c) => ({
-        contentId: c.id,
-        contentType: c.contentType,
-      })),
-      reasoning: '전체 콘텐츠에서 랜덤 선택',
-    });
+    const fillerContentIds = takeUnused(shuffled, 10);
+    if (fillerContentIds.length > 0) {
+      sections.push({
+        title: '오늘 뭐 볼까?',
+        subtitle: '추천 콘텐츠',
+        themeKeywords: ['추천', '인기'],
+        contentIds: fillerContentIds,
+        reasoning: '전체 콘텐츠에서 랜덤 선택',
+      });
+    }
   }
 
   return sections;

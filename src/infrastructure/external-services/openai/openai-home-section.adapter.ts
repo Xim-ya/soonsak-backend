@@ -163,16 +163,19 @@ export class OpenAIHomeSectionAdapter implements IHomeSectionGeneratorPort {
 
       // 유효한 콘텐츠 ID 세트
       const validContentIds = new Set(contents.map((c) => c.id));
+      // 섹션 간 중복 방지를 위한 사용 추적 세트
+      const usedContentIds = new Set<number>();
 
       const sections: GeneratedSection[] = parsed.sections
         .map((section: any) => {
-          // 콘텐츠 ID 유효성 검증
+          // 콘텐츠 ID 유효성 검증 + 중복 제거
           const validContentIds_ = (section.content_ids || [])
             .filter(
               (item: any) =>
                 item &&
                 typeof item.id === 'number' &&
                 validContentIds.has(item.id) &&
+                !usedContentIds.has(item.id) &&
                 (item.type === 'movie' || item.type === 'tv'),
             )
             .map((item: any) => ({
@@ -183,6 +186,11 @@ export class OpenAIHomeSectionAdapter implements IHomeSectionGeneratorPort {
           // 최소 4개 이상의 콘텐츠가 있어야 유효한 섹션
           if (validContentIds_.length < 4) {
             return null;
+          }
+
+          // 사용된 콘텐츠 ID 기록
+          for (const item of validContentIds_) {
+            usedContentIds.add(item.contentId);
           }
 
           return {
