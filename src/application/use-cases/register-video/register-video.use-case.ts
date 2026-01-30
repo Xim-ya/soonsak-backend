@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS, MESSAGES, TMDB_CONFIG } from '@/shared/constants';
+import { compareTwoStrings } from '@/shared/utils/string.util';
 import { Video, Content, Channel } from '@/domain/entities';
 import { VideoId, TMDBId } from '@/domain/value-objects';
 import { IVideoRepository, IContentRepository, IChannelRepository } from '@/domain/repositories';
@@ -77,7 +78,7 @@ export class RegisterVideoUseCase {
       this.logger.log(`  Title candidates: ${titleCandidates.join(', ')}`);
 
       // 1. TMDB 병렬 검색
-      const tmdbCandidates = await this.searchTMDBCandidatesParallel(titleCandidates);
+      const tmdbCandidates = await this.searchTMDBCandidatesParallel(titleCandidates, videoInfo.description);
 
       // 2. 고신뢰도 매칭 체크 (AI 스킵 가능 여부)
       const highConfidenceMatch = this.findHighConfidenceMatch(tmdbCandidates, titleCandidates);
@@ -90,7 +91,7 @@ export class RegisterVideoUseCase {
 
       if (highConfidenceMatch) {
         // 고신뢰도 매칭 → AI 스킵
-        this.logger.log(`  High confidence match found, skipping AI: ${highConfidenceMatch.data.title || highConfidenceMatch.data.name}`);
+        this.logger.log(`  [MATCH] High confidence → ${highConfidenceMatch.data.title || highConfidenceMatch.data.name} (id=${highConfidenceMatch.data.id}, path=high-confidence)`);
         selectedMatch = highConfidenceMatch;
       } else if (tmdbCandidates.length > 0) {
         // 3. AI 통합 분석 (1회 호출로 제목 추출 + TMDB 선택 + 결말 판단)
@@ -109,6 +110,9 @@ export class RegisterVideoUseCase {
               tmdbCandidates.find(
                 (c) => c.data.id === analysis.selectedTMDBMatch?.tmdbId,
               ) || null;
+            if (selectedMatch) {
+              this.logger.log(`  [MATCH] AI selected → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, confidence=${analysis.selectedTMDBMatch.confidence}, path=ai)`);
+            }
           }
 
           // AI가 추출한 제목으로 추가 검색 (기존 후보에 없을 경우)
@@ -165,6 +169,20 @@ export class RegisterVideoUseCase {
 
       // 4. 최종 선택
       if (!selectedMatch) {
+        const scores = this.primaryVideoSelectionService.getCandidateScores(
+          tmdbCandidates,
+          titleCandidates,
+          videoInfo.description,
+        );
+        this.logger.log(`  [MATCH] Scoring fallback (${scores.length} candidates):`);
+        scores
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5)
+          .forEach(({ candidate, score }) => {
+            const name = candidate.data.title || candidate.data.name;
+            this.logger.log(`    → ${name} (id=${candidate.data.id}, score=${score})`);
+          });
+
         selectedMatch = this.primaryVideoSelectionService.selectBestCandidate(
           tmdbCandidates,
           titleCandidates,
@@ -175,7 +193,7 @@ export class RegisterVideoUseCase {
       const tmdbData = selectedMatch.data;
       const tmdbTitle = selectedMatch.type === 'movie' ? tmdbData.title : tmdbData.name;
 
-      this.logger.log(`  Selected TMDB: ${tmdbTitle} (${selectedMatch.type})`);
+      this.logger.log(`  [RESULT] Selected: ${tmdbTitle} (${selectedMatch.type}, id=${tmdbData.id})`);
 
       // 5. 상세 정보 조회 (tagline)
       const details = await this.contentSearch.getDetails(tmdbData.id, selectedMatch.type);
@@ -271,6 +289,7 @@ export class RegisterVideoUseCase {
    */
   private async searchTMDBCandidatesParallel(
     titleCandidates: string[],
+    description?: string,
   ): Promise<TMDBMatchResult[]> {
     const validCandidates = titleCandidates
       .slice(0, TMDB_CONFIG.MAX_CANDIDATES)
@@ -280,10 +299,13 @@ export class RegisterVideoUseCase {
       return [];
     }
 
+    // 연도 힌트 추출 (제목 또는 설명에서)
+    const yearHint = this.extractYearHint(validCandidates, description);
+
     // 병렬로 모든 검색 실행
     const searchPromises = validCandidates.map(async (candidate) => {
       try {
-        const results = await this.contentSearch.searchMulti(candidate);
+        const results = await this.contentSearch.searchMulti(candidate, yearHint || undefined);
         return { candidate, results, error: null };
       } catch (err) {
         return { candidate, results: [], error: err };
@@ -323,43 +345,92 @@ export class RegisterVideoUseCase {
 
   /**
    * 고신뢰도 매칭 찾기
-   * 조건: TMDB 후보 1개 + 정확한 제목 매칭 + 높은 인기도
+   * 조건: Dice 유사도 ≥ 0.95 + 높은 인기도 + 경쟁 후보 없음
    * 이 조건을 만족하면 AI 호출 스킵 가능
    */
   private findHighConfidenceMatch(
     tmdbCandidates: TMDBMatchResult[],
     titleCandidates: string[],
   ): TMDBMatchResult | null {
-    if (tmdbCandidates.length !== 1) {
+    if (tmdbCandidates.length === 0) {
       return null;
     }
 
-    const candidate = tmdbCandidates[0];
-    const tmdbTitle = (candidate.data.title || candidate.data.name || '').toLowerCase();
-    const tmdbOriginalTitle = (candidate.data.originalTitle || candidate.data.originalName || '').toLowerCase();
+    // 유효한 제목 후보만 필터 (3자 이상)
+    const validTitles = titleCandidates.filter((t) => t.trim().length >= 3);
+    if (validTitles.length === 0) {
+      return null;
+    }
 
-    // 제목 정확히 매칭 체크
-    const hasExactMatch = titleCandidates.some((title) => {
-      const normalizedTitle = title.toLowerCase().trim();
-      return (
-        tmdbTitle === normalizedTitle ||
-        tmdbOriginalTitle === normalizedTitle ||
-        tmdbTitle.includes(normalizedTitle) ||
-        tmdbOriginalTitle.includes(normalizedTitle)
-      );
+    // 각 후보의 최고 유사도 계산
+    const scored = tmdbCandidates.map((candidate) => {
+      const tmdbTitle = (candidate.data.title || candidate.data.name || '').toLowerCase();
+      const tmdbOriginalTitle = (candidate.data.originalTitle || candidate.data.originalName || '').toLowerCase();
+      const titlesToCompare = [tmdbTitle, tmdbOriginalTitle].filter((t) => t.length > 0);
+
+      let bestSimilarity = 0;
+      for (const title of validTitles) {
+        const normalized = title.toLowerCase().trim();
+        for (const tmdb of titlesToCompare) {
+          const similarity = compareTwoStrings(normalized, tmdb);
+          bestSimilarity = Math.max(bestSimilarity, similarity);
+        }
+      }
+
+      return { candidate, similarity: bestSimilarity };
     });
 
-    if (!hasExactMatch) {
+    // 유사도 내림차순 정렬
+    scored.sort((a, b) => b.similarity - a.similarity);
+
+    const best = scored[0];
+
+    // 최고 유사도가 0.95 미만이면 고신뢰 아님
+    if (best.similarity < 0.95) {
+      return null;
+    }
+
+    // 경쟁 후보 체크: 2번째 후보의 유사도가 0.7 이상이면 애매하므로 AI에 위임
+    if (scored.length >= 2 && scored[1].similarity >= 0.7) {
       return null;
     }
 
     // 인기도 체크
-    const popularity = candidate.data.popularity || 0;
+    const popularity = best.candidate.data.popularity || 0;
     if (popularity < TMDB_CONFIG.MIN_POPULARITY_THRESHOLD) {
       return null;
     }
 
-    return candidate;
+    return best.candidate;
+  }
+
+  /**
+   * 제목 후보 또는 설명에서 연도 힌트 추출
+   */
+  private extractYearHint(titleCandidates: string[], description?: string): string | null {
+    // 제목 후보에서 연도 패턴 추출 (예: "인셉션 2010", "제목(2023)")
+    for (const candidate of titleCandidates) {
+      const yearMatch = candidate.match(/\(?(\d{4})\)?/);
+      if (yearMatch) {
+        const year = parseInt(yearMatch[1], 10);
+        if (year >= 1900 && year <= 2030) {
+          return yearMatch[1];
+        }
+      }
+    }
+
+    // 설명에서 연도 패턴 추출
+    if (description) {
+      const descYearMatch = description.match(/\((\d{4})\)/);
+      if (descYearMatch) {
+        const year = parseInt(descYearMatch[1], 10);
+        if (year >= 1900 && year <= 2030) {
+          return descYearMatch[1];
+        }
+      }
+    }
+
+    return null;
   }
 
   private async determinePrimaryStatus(

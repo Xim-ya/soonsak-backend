@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ContentTypeValue } from '../value-objects';
 import { SELECTION_SCORE_WEIGHTS } from '@/shared/constants';
+import { compareTwoStrings } from '@/shared/utils/string.util';
 
 /**
  * TMDB 검색 결과 타입
@@ -109,11 +110,16 @@ export class PrimaryVideoSelectionService {
 
     const tmdbTitle =
       candidate.type === 'movie' ? candidate.data.title : candidate.data.name;
+    const tmdbOriginalTitle =
+      candidate.type === 'movie' ? candidate.data.originalTitle : candidate.data.originalName;
 
-    // 제목 일치 점수
-    if (titleCandidates.some((t) => t.toLowerCase() === tmdbTitle?.toLowerCase())) {
-      score += SELECTION_SCORE_WEIGHTS.EXACT_TITLE_MATCH;
-    }
+    // 제목 유사도 점수 (정확일치 > 높은 유사도 > 중간 유사도)
+    const titleScore = this.calculateTitleSimilarityScore(
+      titleCandidates,
+      tmdbTitle,
+      tmdbOriginalTitle,
+    );
+    score += titleScore;
 
     // 영화 이모지 보너스
     if (hasMovieEmoji && candidate.type === 'movie') {
@@ -140,6 +146,38 @@ export class PrimaryVideoSelectionService {
     }
 
     return score;
+  }
+
+  private calculateTitleSimilarityScore(
+    titleCandidates: string[],
+    tmdbTitle?: string,
+    tmdbOriginalTitle?: string,
+  ): number {
+    const titlesToCompare = [tmdbTitle, tmdbOriginalTitle].filter(Boolean) as string[];
+    if (titlesToCompare.length === 0 || titleCandidates.length === 0) return 0;
+
+    let bestScore = 0;
+
+    for (const candidate of titleCandidates) {
+      if (candidate.length < 2) continue;
+      for (const tmdb of titlesToCompare) {
+        // 정확 일치
+        if (candidate.toLowerCase() === tmdb.toLowerCase()) {
+          return SELECTION_SCORE_WEIGHTS.EXACT_TITLE_MATCH;
+        }
+        // Dice 계수 유사도 (4자 이상인 경우만)
+        if (candidate.length >= 4) {
+          const similarity = compareTwoStrings(candidate, tmdb);
+          if (similarity >= 0.8) {
+            bestScore = Math.max(bestScore, SELECTION_SCORE_WEIGHTS.HIGH_SIMILARITY_MATCH);
+          } else if (similarity >= 0.6) {
+            bestScore = Math.max(bestScore, SELECTION_SCORE_WEIGHTS.MODERATE_SIMILARITY_MATCH);
+          }
+        }
+      }
+    }
+
+    return bestScore;
   }
 
   private extractYearHint(description?: string): number | null {

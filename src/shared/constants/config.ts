@@ -15,6 +15,10 @@ export const TMDB_CONFIG = {
   MAX_TITLE_LENGTH: 30,
   /** 고신뢰도 매칭을 위한 최소 인기도 */
   MIN_POPULARITY_THRESHOLD: 10,
+  /** 한국어 검색 결과 최대 개수 */
+  SEARCH_LIMIT_KO: 5,
+  /** 전체 검색 결과 최대 개수 (한국어 + 영어) */
+  SEARCH_LIMIT_TOTAL: 8,
 } as const;
 
 /**
@@ -33,6 +37,10 @@ export const AI_CONFIG = {
 export const SELECTION_SCORE_WEIGHTS = {
   /** 제목 정확 일치 점수 */
   EXACT_TITLE_MATCH: 10,
+  /** 제목 높은 유사도 (Dice >= 0.8) */
+  HIGH_SIMILARITY_MATCH: 7,
+  /** 제목 중간 유사도 (Dice >= 0.6) */
+  MODERATE_SIMILARITY_MATCH: 4,
   /** 영화 이모지 보너스 점수 */
   MOVIE_EMOJI_BONUS: 5,
   /** 연도 일치 점수 */

@@ -7,6 +7,8 @@ import {
   ContentDetails,
 } from '@/application/ports';
 import { ContentTypeValue } from '@/domain/value-objects';
+import { TMDB_CONFIG } from '@/shared/constants';
+import { retryWithBackoff } from '@/shared/utils/async.util';
 
 /**
  * TMDB API 응답 타입
@@ -174,29 +176,38 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       if (value) url.searchParams.set(key, value);
     });
 
-    const response = await fetch(url.toString());
-
-    if (!response.ok) {
-      throw new Error(`TMDB request failed with status ${response.status}`);
-    }
-
-    return (await response.json()) as T;
+    return retryWithBackoff(
+      async () => {
+        const response = await fetch(url.toString());
+        if (!response.ok) {
+          throw new Error(`TMDB request failed with status ${response.status}`);
+        }
+        return (await response.json()) as T;
+      },
+      { maxRetries: 3, baseDelay: 500 },
+    );
   }
 
-  async searchMulti(query: string): Promise<ContentMatchResult[]> {
+  async searchMulti(query: string, year?: string): Promise<ContentMatchResult[]> {
     const candidates: ContentMatchResult[] = [];
+
+    const params: Record<string, string> = {
+      query,
+      include_adult: 'false',
+      page: '1',
+    };
+    if (year) {
+      params.year = year;
+    }
 
     const response = await this.makeRequest<TMDBSearchResponse<TMDBMultiSearchResultItem>>(
       '/search/multi',
-      {
-        query,
-        include_adult: 'false',
-        page: '1',
-      },
+      params,
     );
 
     if (response.results?.length > 0) {
-      for (const result of response.results.slice(0, 3)) {
+      for (const result of response.results) {
+        if (candidates.length >= TMDB_CONFIG.SEARCH_LIMIT_KO) break;
         if (this.isContentResult(result)) {
           candidates.push({
             type: result.media_type,
@@ -206,7 +217,7 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       }
     }
 
-    if (candidates.length < 3) {
+    if (candidates.length < TMDB_CONFIG.SEARCH_LIMIT_KO) {
       const enResponse = await this.makeRequest<TMDBSearchResponse<TMDBMultiSearchResultItem>>(
         '/search/multi',
         {
@@ -218,7 +229,8 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       );
 
       if (enResponse.results?.length > 0) {
-        for (const result of enResponse.results.slice(0, 5 - candidates.length)) {
+        for (const result of enResponse.results) {
+          if (candidates.length >= TMDB_CONFIG.SEARCH_LIMIT_TOTAL) break;
           if (this.isContentResult(result)) {
             if (!candidates.find((c) => c.data.id === result.id)) {
               candidates.push({

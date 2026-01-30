@@ -65,7 +65,7 @@ export interface IContentSearchPort {
   /**
    * 멀티 검색 (영화 + TV)
    */
-  searchMulti(query: string): Promise<ContentMatchResult[]>;
+  searchMulti(query: string, year?: string): Promise<ContentMatchResult[]>;
 
   /**
    * 영화만 검색
