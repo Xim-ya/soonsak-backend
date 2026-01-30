@@ -48,13 +48,9 @@ export class PrimaryVideoSelectionService {
     candidates: TMDBMatchResult[],
     titleCandidates: string[],
     description?: string,
-  ): TMDBMatchResult {
+  ): TMDBMatchResult | null {
     if (candidates.length === 0) {
-      throw new Error('No candidates to select from');
-    }
-
-    if (candidates.length === 1) {
-      return candidates[0];
+      return null;
     }
 
     const yearHint = this.extractYearHint(description);
@@ -73,7 +69,12 @@ export class PrimaryVideoSelectionService {
 
     scoredCandidates.sort((a, b) => b.score - a.score);
 
-    return scoredCandidates[0].candidate;
+    const best = scoredCandidates[0];
+    if (best.score < SELECTION_SCORE_WEIGHTS.MIN_MATCH_SCORE) {
+      return null;
+    }
+
+    return best.candidate;
   }
 
   /**

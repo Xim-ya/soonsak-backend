@@ -29,6 +29,7 @@ export interface AIAnalysisResult {
   reasoning: string;
   extractedContent: string;
   extractedTitles?: string[];
+  inferredTitles?: string[];
   selectedTMDBMatch?: SelectedTMDBMatch;
 }
 

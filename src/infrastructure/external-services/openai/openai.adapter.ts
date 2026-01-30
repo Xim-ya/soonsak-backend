@@ -66,12 +66,13 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
             {
               role: 'system',
               content:
-                '당신은 YouTube 영화/드라마 콘텐츠 분석 전문가입니다. 주어진 텍스트에서 정확한 영화/드라마 제목을 추출하고, 스포일러나 결말 내용 포함 여부를 판단하며, TMDB 후보들 중 가장 적합한 작품을 선택해주세요.',
+                '당신은 YouTube 영화/드라마 콘텐츠 분석 전문가입니다. 주어진 텍스트에서 정확한 영화/드라마 제목을 추출하고, 스포일러나 결말 내용 포함 여부를 판단하며, TMDB 후보들 중 가장 적합한 작품을 선택해주세요. 반드시 JSON으로 응답하세요.',
             },
             { role: 'user', content: prompt },
           ],
-          temperature: 0.3,
+          temperature: 0.1,
           max_tokens: 1200,
+          response_format: { type: 'json_object' },
         }),
         { maxRetries: 2, baseDelay: 1000 },
       );
@@ -142,7 +143,7 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
     const description = videoInfo.description || '';
 
     this.lastFullTranscript = videoInfo.transcript || '';
-    const transcriptText = this.lastFullTranscript.substring(0, 2000);
+    const transcriptText = this.lastFullTranscript.substring(0, 5000);
 
     return [
       `제목: ${title}`,
@@ -153,36 +154,59 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
       .join('\n\n');
   }
 
-  private getTranscriptSegments(): { start: string; middle: string; end: string } {
-    if (!this.lastFullTranscript || this.lastFullTranscript.length < 600) {
-      return { start: this.lastFullTranscript, middle: '', end: '' };
+  private getTranscriptSegments(): {
+    start: string;
+    earlyMid: string;
+    middle: string;
+    lateMid: string;
+    end: string;
+  } {
+    if (!this.lastFullTranscript || this.lastFullTranscript.length < 1000) {
+      return { start: this.lastFullTranscript, earlyMid: '', middle: '', lateMid: '', end: '' };
     }
 
     const len = this.lastFullTranscript.length;
-    // 중간 세그먼트: 전체 길이의 40% 지점 (리뷰어가 제목을 언급하는 구간)
+
+    // 시작 구간: 0~800자 (리뷰어가 영화 제목을 소개하는 구간)
+    const start = this.lastFullTranscript.substring(0, 800);
+
+    // 초반 중간: 20% 지점, 500자
+    const earlyMidStart = Math.max(0, Math.floor(len * 0.2) - 250);
+    const earlyMid = this.lastFullTranscript.substring(earlyMidStart, earlyMidStart + 500);
+
+    // 중간: 40% 지점, 500자 (리뷰어가 제목을 재언급하는 구간)
     const middleStart = Math.max(0, Math.floor(len * 0.4) - 250);
     const middle = this.lastFullTranscript.substring(middleStart, middleStart + 500);
 
-    return {
-      start: this.lastFullTranscript.substring(0, 300),
-      middle,
-      end: this.lastFullTranscript.substring(len - 300),
-    };
+    // 후반 중간: 65% 지점, 500자
+    const lateMidStart = Math.max(0, Math.floor(len * 0.65) - 250);
+    const lateMid = this.lastFullTranscript.substring(lateMidStart, lateMidStart + 500);
+
+    // 끝: 마지막 400자 (결론부, 제목 재언급 가능)
+    const end = this.lastFullTranscript.substring(len - 400);
+
+    return { start, earlyMid, middle, lateMid, end };
   }
 
   private buildEnhancedContent(
     content: string,
-    segments: { start: string; middle: string; end: string },
+    segments: { start: string; earlyMid: string; middle: string; lateMid: string; end: string },
   ): string {
     const parts = [content];
     if (segments.start) {
-      parts.push(`\n=== 자막 시작 부분 ===\n${segments.start}`);
+      parts.push(`\n=== 자막 시작 부분 (0%) ===\n${segments.start}`);
+    }
+    if (segments.earlyMid) {
+      parts.push(`\n=== 자막 초반 중간 (20%) ===\n${segments.earlyMid}`);
     }
     if (segments.middle) {
-      parts.push(`\n=== 자막 중간 부분 ===\n${segments.middle}`);
+      parts.push(`\n=== 자막 중간 부분 (40%) ===\n${segments.middle}`);
+    }
+    if (segments.lateMid) {
+      parts.push(`\n=== 자막 후반 중간 (65%) ===\n${segments.lateMid}`);
     }
     if (segments.end) {
-      parts.push(`\n=== 자막 끝 부분 ===\n${segments.end}`);
+      parts.push(`\n=== 자막 끝 부분 (100%) ===\n${segments.end}`);
     }
     return parts.join('\n\n');
   }
@@ -192,34 +216,31 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
     originalContent: string,
   ): AIAnalysisResult {
     try {
-      const jsonStr = this.extractBalancedJSON(aiResponse.trim());
-      if (jsonStr) {
-        const parsed = JSON.parse(jsonStr);
+      const parsed = JSON.parse(aiResponse.trim());
 
-        const result: AIAnalysisResult = {
-          includesEnding: parsed.includes_ending || false,
-          confidence: parsed.confidence || 50,
-          reasoning: parsed.reasoning || '통합 분석 완료',
-          extractedContent: originalContent.substring(0, 500),
-          extractedTitles: parsed.extracted_titles || [],
+      const result: AIAnalysisResult = {
+        includesEnding: parsed.includes_ending || false,
+        confidence: parsed.confidence || 50,
+        reasoning: parsed.reasoning || '통합 분석 완료',
+        extractedContent: originalContent.substring(0, 500),
+        extractedTitles: parsed.extracted_titles || [],
+        inferredTitles: parsed.inferred_titles || [],
+      };
+
+      if (parsed.selected_tmdb) {
+        result.selectedTMDBMatch = {
+          tmdbId: parsed.selected_tmdb.tmdb_id,
+          type: parsed.selected_tmdb.type,
+          confidence: parsed.selected_tmdb.confidence || 0,
+          reasoning: parsed.selected_tmdb.reasoning || 'AI 선택',
         };
-
-        if (parsed.selected_tmdb) {
-          result.selectedTMDBMatch = {
-            tmdbId: parsed.selected_tmdb.tmdb_id,
-            type: parsed.selected_tmdb.type,
-            confidence: parsed.selected_tmdb.confidence || 0,
-            reasoning: parsed.selected_tmdb.reasoning || 'AI 선택',
-          };
-        }
-
-        return result;
       }
-    } catch {
-      this.logger.warn('Failed to parse AI response as JSON');
-    }
 
-    return this.keywordAnalysis(originalContent);
+      return result;
+    } catch {
+      this.logger.warn('Failed to parse AI response as JSON, falling back to keyword analysis');
+      return this.keywordAnalysis(originalContent);
+    }
   }
 
   private keywordAnalysis(content: string): AIAnalysisResult {
@@ -260,47 +281,4 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
     };
   }
 
-  /**
-   * 균형 잡힌 중괄호를 추적하여 첫 번째 완전한 JSON 객체를 추출
-   * 탐욕적 정규식 `{[\s\S]*}` 대신 사용하여 오파싱 방지
-   */
-  private extractBalancedJSON(text: string): string | null {
-    const startIdx = text.indexOf('{');
-    if (startIdx === -1) return null;
-
-    let depth = 0;
-    let inString = false;
-    let escape = false;
-
-    for (let i = startIdx; i < text.length; i++) {
-      const ch = text[i];
-
-      if (escape) {
-        escape = false;
-        continue;
-      }
-
-      if (ch === '\\' && inString) {
-        escape = true;
-        continue;
-      }
-
-      if (ch === '"') {
-        inString = !inString;
-        continue;
-      }
-
-      if (inString) continue;
-
-      if (ch === '{') depth++;
-      else if (ch === '}') {
-        depth--;
-        if (depth === 0) {
-          return text.substring(startIdx, i + 1);
-        }
-      }
-    }
-
-    return null;
-  }
 }

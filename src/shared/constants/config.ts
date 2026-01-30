@@ -47,4 +47,6 @@ export const SELECTION_SCORE_WEIGHTS = {
   YEAR_MATCH: 8,
   /** 첫 번째 후보 보너스 점수 */
   FIRST_CANDIDATE_BONUS: 2,
+  /** 매칭 수락을 위한 최소 점수 (이 점수 미만이면 매칭 실패 처리) */
+  MIN_MATCH_SCORE: 4,
 } as const;

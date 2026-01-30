@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class TitleExtractionService {
   private readonly excludeKeywords = [
+    // 장르/카테고리
     '영화리뷰',
     '결말포함',
     '결말',
@@ -15,7 +16,34 @@ export class TitleExtractionService {
     '영화추천',
     '드라마',
     '영화',
+    '한국영화',
+    '한국드라마',
+    '코미디영화',
+    '액션영화',
+    '공포영화',
+    '스릴러영화',
+    '로맨스영화',
+    '범죄영화',
+    '일본영화',
+    '중국영화',
+    '미국영화',
+    '외국영화',
+    '한국명작',
+    '명작영화',
+    '신작영화',
+    // 수식어/포맷 키워드
+    '명작',
+    '수작',
+    '몰아보기',
+    '드라마몰아보기',
+    '폭풍감동',
+    // 플랫폼
+    '애플tv',
+    '애플TV',
   ];
+
+  /** 일반적인 장르/카테고리 접미사 — 이 접미사로 끝나는 짧은 후보는 제외 */
+  private readonly genericSuffixes = ['영화', '드라마', '시리즈', '리뷰', '추천'];
 
   /**
    * YouTube 제목과 설명에서 영화/TV 제목 후보 추출
@@ -31,7 +59,21 @@ export class TitleExtractionService {
 
     this.extractHashtags(youtubeTitle, description, candidates);
 
-    return [...new Set(candidates)].filter((c) => c.length >= 2);
+    return [...new Set(candidates)].filter(
+      (c) => c.length >= 2 && !this.isGenericTerm(c),
+    );
+  }
+
+  /**
+   * 일반적인 장르/카테고리 용어인지 판별
+   * "한국영화", "코미디영화" 등 TMDB 검색에 불필요한 일반 키워드 제외
+   */
+  private isGenericTerm(text: string): boolean {
+    const lower = text.toLowerCase().trim();
+    if (this.excludeKeywords.includes(lower)) return true;
+    return this.genericSuffixes.some(
+      (suffix) => lower.endsWith(suffix) && lower.length <= suffix.length + 4,
+    );
   }
 
   private extractFromTitle(title: string, candidates: string[]): void {
@@ -241,7 +283,7 @@ export class TitleExtractionService {
         if (
           cleaned.length >= 2 &&
           cleaned.length <= 20 &&
-          !this.excludeKeywords.includes(cleaned) &&
+          !this.isGenericTerm(cleaned) &&
           !candidates.includes(cleaned)
         ) {
           candidates.push(cleaned);
