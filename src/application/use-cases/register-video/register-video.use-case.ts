@@ -68,7 +68,7 @@ export class RegisterVideoUseCase {
         };
       }
 
-      this.logger.log(`  Video duration: ${Math.round(videoInfo.duration / 60)}분`);
+      this.logger.log(`  Video duration: ${videoInfo.duration}초 (${Math.round(videoInfo.duration / 60)}분)`);
 
       let selectedMatch: TMDBMatchResult | null = null;
       let includesEnding = this.endingDetectionService.detectFromContent(
@@ -222,7 +222,7 @@ export class RegisterVideoUseCase {
 
       const contentId = await this.contentRepository.save(content);
 
-      const newVideoRuntime = Math.round(videoInfo.duration / 60);
+      const newVideoRuntime = videoInfo.duration; // 초 단위 그대로 저장
       const existingVideos = await this.videoRepository.findByContentId(
         TMDBId.fromNumber(contentId),
       );
@@ -546,13 +546,13 @@ export class RegisterVideoUseCase {
     if (newVideoRuntime > currentRuntime) {
       await this.videoRepository.updatePrimaryStatus(currentPrimary.id, false);
       this.logger.log(
-        `  런타임 비교 (${newVideoRuntime}분 > ${currentRuntime}분) → isPrimary: true`,
+        `  런타임 비교 (${newVideoRuntime}초 > ${currentRuntime}초) → isPrimary: true`,
       );
       return true;
     }
 
     this.logger.log(
-      `  런타임 비교 (${newVideoRuntime}분 <= ${currentRuntime}분) → isPrimary: false`,
+      `  런타임 비교 (${newVideoRuntime}초 <= ${currentRuntime}초) → isPrimary: false`,
     );
     return false;
   }

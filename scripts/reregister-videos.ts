@@ -3,7 +3,9 @@ import { AppModule } from '../src/app.module';
 import { RegisterVideoUseCase } from '../src/application/use-cases/register-video/register-video.use-case';
 
 const VIDEO_IDS = [
-  'VKr8eVc8OLo',
+  'wQ2SVs1mfp0',
+  'oJkdPB1o6qU',
+  '1eb61GVhXHE',
 ];
 
 async function main() {
