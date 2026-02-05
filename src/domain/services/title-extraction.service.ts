@@ -59,9 +59,36 @@ export class TitleExtractionService {
 
     this.extractHashtags(youtubeTitle, description, candidates);
 
-    return [...new Set(candidates)].filter(
-      (c) => c.length >= 2 && !this.isGenericTerm(c),
-    );
+    // 중복 단어 정제 및 필터링
+    return [...new Set(candidates)]
+      .map((c) => this.cleanDuplicateWords(c))
+      .filter((c) => c.length >= 2 && !this.isGenericTerm(c));
+  }
+
+  /**
+   * 중복 단어 정제
+   * "국가원수영화 국가원수" → "국가원수"
+   * "딥커버딥커버" → "딥커버"
+   */
+  private cleanDuplicateWords(text: string): string {
+    const trimmed = text.trim();
+
+    // 패턴 1: "제목영화 제목" 형식 (접미사 + 공백 + 반복)
+    for (const suffix of this.genericSuffixes) {
+      const regex = new RegExp(`^(.+?)${suffix}\\s+\\1$`);
+      const match = trimmed.match(regex);
+      if (match) {
+        return match[1].trim();
+      }
+    }
+
+    // 패턴 2: 완전 중복 "제목제목" → "제목" (2-10자 반복)
+    const repeatMatch = trimmed.match(/^(.{2,10})\1$/);
+    if (repeatMatch) {
+      return repeatMatch[1];
+    }
+
+    return trimmed;
   }
 
   /**
@@ -207,6 +234,7 @@ export class TitleExtractionService {
   }
 
   private extractInlineTitles(description: string, candidates: string[]): void {
+    // 패턴 1: "제목(2024)" 형식
     const inlineTitleMatches = description.match(
       /(?:^|[\s,."'·:])([가-힣a-zA-Z][가-힣a-zA-Z0-9]{0,15})\s*\((\d{4})\)/g,
     );
@@ -223,15 +251,46 @@ export class TitleExtractionService {
         }
       });
     }
+
+    // 패턴 2: "제목 (2024년)" 형식 (연도 뒤에 '년' 포함)
+    const yearWithSuffixMatches = description.match(
+      /(?:^|[\s,."'·:])([가-힣a-zA-Z][가-힣a-zA-Z0-9]{0,15})\s*\((\d{4})년\)/g,
+    );
+    if (yearWithSuffixMatches) {
+      yearWithSuffixMatches.forEach((match) => {
+        const titleMatch = match.match(
+          /([가-힣a-zA-Z][가-힣a-zA-Z0-9]{0,15})\s*\(\d{4}년\)/,
+        );
+        if (titleMatch?.[1]) {
+          const title = titleMatch[1].trim();
+          if (title.length >= 2 && title.length <= 15 && !candidates.includes(title)) {
+            candidates.push(title);
+          }
+        }
+      });
+    }
   }
 
   private extractLabeledTitles(description: string, candidates: string[]): void {
+    // 패턴 1: "영화 : 제목" 또는 "영상 영화 : 제목"
     const labeledTitle = description.match(
       /(?:영상[-\s]*)?(?:영화|드라마|작품|시리즈)\s*[:：]\s*([^\n]{2,30})/,
     );
     if (labeledTitle?.[1]?.trim()) {
       const cleaned = labeledTitle[1].trim();
       if (!candidates.includes(cleaned)) {
+        candidates.push(cleaned);
+      }
+    }
+
+    // 패턴 2: "★영화 제목" 또는 "★영화 제목(연도)" 형식
+    // 예: "★영화 딥커버(2025)" → "딥커버"
+    const starPattern = description.match(
+      /[★☆✦✧⭐]\s*(?:영화|드라마)\s+([가-힣a-zA-Z0-9\s]+?)(?:\s*\(\d{4}(?:년)?\))?(?:\s|$|리뷰)/,
+    );
+    if (starPattern?.[1]?.trim()) {
+      const cleaned = starPattern[1].trim();
+      if (cleaned.length >= 2 && cleaned.length <= 20 && !candidates.includes(cleaned)) {
         candidates.push(cleaned);
       }
     }

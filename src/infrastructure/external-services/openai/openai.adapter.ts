@@ -225,6 +225,7 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
         extractedContent: originalContent.substring(0, 500),
         extractedTitles: parsed.extracted_titles || [],
         inferredTitles: parsed.inferred_titles || [],
+        englishTitles: parsed.english_titles || [],
       };
 
       if (parsed.selected_tmdb) {

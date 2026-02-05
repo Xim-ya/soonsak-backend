@@ -88,6 +88,7 @@ export class RegisterVideoUseCase {
       );
       let aiExtractedTitles: string[] = [];
       let aiInferredTitles: string[] = [];
+      let aiEnglishTitles: string[] = [];
       const allTmdbCandidates: TMDBMatchResult[] = [];
 
       // 1. AI 자막 분석 (항상 먼저 실행 — TMDB 후보 없이 순수 추출)
@@ -102,6 +103,7 @@ export class RegisterVideoUseCase {
         includesEnding = aiAnalysis.includesEnding;
         aiExtractedTitles = aiAnalysis.extractedTitles || [];
         aiInferredTitles = aiAnalysis.inferredTitles || [];
+        aiEnglishTitles = aiAnalysis.englishTitles || [];
 
         // 1-1. 직접 언급 제목으로 매칭 시도
         if (aiExtractedTitles.length > 0) {
@@ -115,6 +117,12 @@ export class RegisterVideoUseCase {
         if (!selectedMatch && aiInferredTitles.length > 0) {
           this.logger.log(`  [AI] Inferred titles (plot-based): ${aiInferredTitles.join(', ')}`);
           selectedMatch = await this.matchFromTitles(aiInferredTitles, allTmdbCandidates, videoInfo.description, 'ai-inferred');
+        }
+
+        // 1-3. 영어 원제로 폴백 (한글 제목 검색 실패 시)
+        if (!selectedMatch && aiEnglishTitles.length > 0) {
+          this.logger.log(`  [AI] English titles fallback: ${aiEnglishTitles.join(', ')}`);
+          selectedMatch = await this.matchFromTitles(aiEnglishTitles, allTmdbCandidates, videoInfo.description, 'ai-english');
         }
 
         this.logger.log(`  AI ending: ${includesEnding ? '결말포함' : '결말없음'}`);
@@ -146,11 +154,12 @@ export class RegisterVideoUseCase {
           this.logger.log(`  [MATCH] YT high confidence → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=yt-high-confidence)`);
         }
 
-        // Scoring fallback (AI 추출 제목 + 추론 제목 + YouTube 제목 합산)
+        // Scoring fallback (AI 추출 제목 + 추론 제목 + 영어 원제 + YouTube 제목 합산)
         if (!selectedMatch && allTmdbCandidates.length > 0) {
           const combinedTitles = [
             ...aiExtractedTitles,
             ...aiInferredTitles,
+            ...aiEnglishTitles,
             ...titleCandidates,
           ].filter((t, i, arr): t is string =>
             typeof t === 'string' && t.length > 0 && arr.indexOf(t) === i,

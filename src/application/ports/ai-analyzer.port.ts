@@ -30,6 +30,8 @@ export interface AIAnalysisResult {
   extractedContent: string;
   extractedTitles?: string[];
   inferredTitles?: string[];
+  /** 영어 원제 목록 (한글 제목의 영어 원제 또는 직접 언급된 영어 제목) */
+  englishTitles?: string[];
   selectedTMDBMatch?: SelectedTMDBMatch;
 }
 
