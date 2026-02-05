@@ -83,6 +83,7 @@ function getCountryNames(codes?: string[]): string[] {
 
 /**
  * 콘텐츠 메타데이터를 AI 프롬프트용 텍스트로 변환
+ * (토큰 절약을 위해 간소화: 감독/출연진 제외, overview 80자 제한)
  */
 function formatContentForPrompt(content: ContentMetadataForSection): string {
   const genres = getGenreNames(content.genreIds).join(', ');
@@ -91,34 +92,24 @@ function formatContentForPrompt(content: ContentMetadataForSection): string {
     : 'N/A';
   const type = content.contentType === 'movie' ? '영화' : 'TV';
 
-  // 추가 정보 구성
+  // 추가 정보 구성 (간소화)
   const additionalInfo: string[] = [];
   if (content.voteAverage) {
     additionalInfo.push(`평점:${content.voteAverage.toFixed(1)}`);
   }
   if (content.originCountry?.length) {
-    additionalInfo.push(`국가:${getCountryNames(content.originCountry).join('/')}`);
-  }
-  if (content.popularity && content.popularity > 100) {
-    additionalInfo.push('인기↑');
+    // 국가는 최대 2개까지만 표시
+    additionalInfo.push(`국가:${getCountryNames(content.originCountry).slice(0, 2).join('/')}`);
   }
 
   const infoLine = additionalInfo.length > 0 ? `[${additionalInfo.join(' | ')}]` : '';
 
-  // 감독/출연진 정보
-  const credits: string[] = [];
-  if (content.directors?.length) {
-    credits.push(`감독: ${content.directors.map((d) => d.name).join(', ')}`);
-  }
-  if (content.mainCast?.length) {
-    credits.push(`출연: ${content.mainCast.slice(0, 3).map((c) => c.name).join(', ')}`);
-  }
-  const creditsLine = credits.length > 0 ? credits.join(' / ') : '';
+  // 설명: tagline 우선, 없으면 overview 80자
+  const description = content.tagline || (content.overview || '').substring(0, 80);
+  const descSuffix = !content.tagline && (content.overview || '').length > 80 ? '...' : '';
 
   return `[ID:${content.id}] ${content.title} (${type}, ${year}) ${infoLine}
-  장르: ${genres || '미분류'}
-  ${creditsLine ? `${creditsLine}\n  ` : ''}태그라인: ${content.tagline || '없음'}
-  줄거리: ${(content.overview || '').substring(0, 150)}...`;
+  장르: ${genres || '미분류'} | ${description}${descSuffix}`;
 }
 
 /**

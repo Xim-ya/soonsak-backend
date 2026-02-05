@@ -142,38 +142,74 @@ export class GenerateHomeSectionsUseCase {
   }
 
   /**
-   * 전체 콘텐츠 메타데이터 조회
+   * 콘텐츠 메타데이터 조회 (토큰 절약을 위해 제한)
+   * - 최신순 200개 + 인기순 200개 혼합
+   * - 중복 제거 후 최대 400개 반환
+   * - directors, main_cast 필드 제외 (토큰 절약)
    */
   private async fetchAllContents(): Promise<ContentMetadataForSection[]> {
-    const { data, error } = await this.supabaseProvider
-      .getClient()
-      .from('contents')
-      .select(`
-        id, content_type, title, genre_ids, tagline, overview,
-        original_language, release_date,
-        vote_average, popularity, origin_country, directors, main_cast
-      `)
-      .order('uploaded_at', { ascending: false });
+    const MAX_CONTENTS = 400;
+    const HALF_LIMIT = 200;
 
-    if (error) {
-      this.logger.error(`Failed to fetch contents: ${error.message}`);
-      return [];
+    // 필드 선택 (directors, main_cast 제외하여 토큰 절약)
+    const selectFields = `
+      id, content_type, title, genre_ids, tagline, overview,
+      original_language, release_date, vote_average, popularity, origin_country
+    `;
+
+    // 병렬로 최신순 200개 + 인기순 200개 조회
+    const [recentResult, popularResult] = await Promise.all([
+      this.supabaseProvider
+        .getClient()
+        .from('contents')
+        .select(selectFields)
+        .order('uploaded_at', { ascending: false })
+        .limit(HALF_LIMIT),
+      this.supabaseProvider
+        .getClient()
+        .from('contents')
+        .select(selectFields)
+        .order('popularity', { ascending: false })
+        .limit(HALF_LIMIT),
+    ]);
+
+    if (recentResult.error) {
+      this.logger.error(`Failed to fetch recent contents: ${recentResult.error.message}`);
+    }
+    if (popularResult.error) {
+      this.logger.error(`Failed to fetch popular contents: ${popularResult.error.message}`);
     }
 
-    return (data || []).map((row) => ({
-      id: row.id,
-      contentType: row.content_type as 'movie' | 'tv',
-      title: row.title,
-      genreIds: row.genre_ids,
-      tagline: row.tagline,
-      overview: row.overview,
-      originalLanguage: row.original_language,
-      releaseDate: row.release_date,
-      voteAverage: row.vote_average,
-      popularity: row.popularity,
-      originCountry: row.origin_country,
-      directors: row.directors,
-      mainCast: row.main_cast,
-    }));
+    // 중복 제거 및 병합
+    const seen = new Set<number>();
+    const merged: ContentMetadataForSection[] = [];
+
+    const allData = [...(recentResult.data || []), ...(popularResult.data || [])];
+
+    for (const row of allData) {
+      if (seen.has(row.id)) continue;
+      if (merged.length >= MAX_CONTENTS) break;
+
+      seen.add(row.id);
+      merged.push({
+        id: row.id,
+        contentType: row.content_type as 'movie' | 'tv',
+        title: row.title,
+        genreIds: row.genre_ids,
+        tagline: row.tagline,
+        overview: row.overview,
+        originalLanguage: row.original_language,
+        releaseDate: row.release_date,
+        voteAverage: row.vote_average,
+        popularity: row.popularity,
+        originCountry: row.origin_country,
+      });
+    }
+
+    this.logger.log(
+      `Fetched ${merged.length} contents (recent: ${recentResult.data?.length || 0}, popular: ${popularResult.data?.length || 0})`,
+    );
+
+    return merged;
   }
 }
