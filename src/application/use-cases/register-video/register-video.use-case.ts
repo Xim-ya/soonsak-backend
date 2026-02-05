@@ -333,9 +333,35 @@ export class RegisterVideoUseCase {
       return match;
     }
 
-    // 단일 결과 신뢰
+    // 단일 결과 신뢰 (AI 추론 제목은 유사도 검증 필수)
     if (tmdbCandidates.length === 1) {
       match = tmdbCandidates[0];
+      const isInferredPath = pathPrefix.includes('inferred');
+
+      if (isInferredPath) {
+        // AI 추론 제목: 유사도 검증 필수 (환각 방지)
+        const tmdbTitle = (match.data.title || match.data.name || '').toLowerCase();
+        const tmdbOriginalTitle = (match.data.originalTitle || match.data.originalName || '').toLowerCase();
+        let bestSimilarity = 0;
+
+        for (const title of titles) {
+          const normalized = title.toLowerCase().trim();
+          const simTitle = compareTwoStrings(normalized, tmdbTitle);
+          const simOriginal = tmdbOriginalTitle ? compareTwoStrings(normalized, tmdbOriginalTitle) : 0;
+          bestSimilarity = Math.max(bestSimilarity, simTitle, simOriginal);
+        }
+
+        // AI 추론 단일 결과는 유사도 0.6 이상 필요
+        if (bestSimilarity >= 0.6) {
+          this.logger.log(`  [MATCH] ${pathPrefix} single result (verified, sim=${bestSimilarity.toFixed(2)}) → ${match.data.title || match.data.name} (id=${match.data.id}, path=${pathPrefix}-single)`);
+          return match;
+        } else {
+          this.logger.log(`  [SKIP] ${pathPrefix} single result rejected (sim=${bestSimilarity.toFixed(2)} < 0.6) → ${match.data.title || match.data.name}`);
+          return null;
+        }
+      }
+
+      // 직접 추출 제목: 기존대로 단일 결과 신뢰
       this.logger.log(`  [MATCH] ${pathPrefix} single result (trusted) → ${match.data.title || match.data.name} (id=${match.data.id}, path=${pathPrefix}-single)`);
       return match;
     }

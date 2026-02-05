@@ -17,12 +17,15 @@ import { extractVideoId } from '@/shared/utils';
 
 const execAsync = promisify(exec);
 
-/** 429 에러 재시도 설정 */
+/** 429 에러 재시도 설정 (강화) */
 const RATE_LIMIT_RETRY_CONFIG = {
-  maxRetries: 3,
-  baseDelayMs: 5000, // 5초
-  maxDelayMs: 30000, // 최대 30초
+  maxRetries: 5,        // 3 → 5 (총 6회 시도)
+  baseDelayMs: 8000,    // 5초 → 8초
+  maxDelayMs: 60000,    // 30초 → 60초
 };
+
+/** 선제적 요청 간 딜레이 (rate limit 방지) */
+const PROACTIVE_DELAY_MS = 2000; // 2초
 
 /** 딜레이 헬퍼 */
 const delay = (ms: number): Promise<void> =>
@@ -159,7 +162,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   }
 
   /**
-   * yt-dlp 명령어 실행 (429 에러 시 지수 백오프 재시도)
+   * yt-dlp 명령어 실행 (429 에러 시 지수 백오프 재시도 + 선제적 딜레이)
    */
   private async execYtDlpWithRetry(
     command: string,
@@ -169,7 +172,10 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        return await execAsync(command, options);
+        const result = await execAsync(command, options);
+        // 성공 후 선제적 딜레이 (다음 요청 전 rate limit 방지)
+        await delay(PROACTIVE_DELAY_MS);
+        return result;
       } catch (error) {
         const err = error as Error;
 
@@ -184,9 +190,10 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
           throw error;
         }
 
-        // 지수 백오프 딜레이 계산
-        const delayMs = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
-        this.logger.warn(`Rate limited (429), retrying in ${delayMs / 1000}s (attempt ${attempt + 1}/${maxRetries + 1})`);
+        // 지수 백오프 딜레이 계산 (jitter 추가로 요청 분산)
+        const jitter = Math.random() * 2000; // 0-2초 랜덤
+        const delayMs = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs) + jitter;
+        this.logger.warn(`Rate limited (429), retrying in ${(delayMs / 1000).toFixed(1)}s (attempt ${attempt + 1}/${maxRetries + 1})`);
         await delay(delayMs);
       }
     }
