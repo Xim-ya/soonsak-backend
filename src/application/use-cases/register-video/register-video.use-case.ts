@@ -152,7 +152,9 @@ export class RegisterVideoUseCase {
             ...aiExtractedTitles,
             ...aiInferredTitles,
             ...titleCandidates,
-          ].filter((t, i, arr) => arr.indexOf(t) === i);
+          ].filter((t, i, arr): t is string =>
+            typeof t === 'string' && t.length > 0 && arr.indexOf(t) === i,
+          );
 
           const scores = this.primaryVideoSelectionService.getCandidateScores(
             allTmdbCandidates,

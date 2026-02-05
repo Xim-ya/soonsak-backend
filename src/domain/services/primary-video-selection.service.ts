@@ -160,7 +160,8 @@ export class PrimaryVideoSelectionService {
     let bestScore = 0;
 
     for (const candidate of titleCandidates) {
-      if (candidate.length < 2) continue;
+      // 타입 검증: 문자열이 아닌 값은 스킵
+      if (typeof candidate !== 'string' || candidate.length < 2) continue;
       for (const tmdb of titlesToCompare) {
         // 정확 일치
         if (candidate.toLowerCase() === tmdb.toLowerCase()) {
