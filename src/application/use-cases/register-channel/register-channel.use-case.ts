@@ -9,7 +9,7 @@ import { RegisterChannelInput, RegisterChannelResult } from './register-channel.
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
 
 /** API 레이트 리미팅 방지를 위한 딜레이 (밀리초) */
-const VIDEO_PROCESSING_DELAY_MS = 2000;
+const VIDEO_PROCESSING_DELAY_MS = 3000;
 
 /** 딜레이 헬퍼 */
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));

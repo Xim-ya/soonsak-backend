@@ -17,6 +17,21 @@ import { extractVideoId } from '@/shared/utils';
 
 const execAsync = promisify(exec);
 
+/** 429 에러 재시도 설정 */
+const RATE_LIMIT_RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 5000, // 5초
+  maxDelayMs: 30000, // 최대 30초
+};
+
+/** 딜레이 헬퍼 */
+const delay = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+/** 429 에러 여부 확인 */
+const isRateLimitError = (error: Error): boolean =>
+  error.message.includes('429') || error.message.includes('Too Many Requests');
+
 interface YtDlpOutput {
   id: string;
   title: string;
@@ -106,12 +121,85 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     return info;
   }
 
+  /**
+   * 쇼츠 여부를 빠르게 확인 (youtubei.js 사용, rate limit 영향 적음)
+   * yt-dlp 호출 전에 사용하여 불필요한 API 호출 방지
+   */
+  async checkIfShorts(videoId: string): Promise<{ isShorts: boolean; duration: number }> {
+    const normalizedId = extractVideoId(videoId);
+    if (!normalizedId) {
+      return { isShorts: false, duration: 0 };
+    }
+
+    try {
+      const youtube = await this.getYouTubeInstance();
+      const info = await youtube.getInfo(normalizedId);
+
+      if (!info.basic_info) {
+        return { isShorts: false, duration: 0 };
+      }
+
+      const basicInfo = info.basic_info as any;
+      let duration = 0;
+
+      if (basicInfo.duration) {
+        if (typeof basicInfo.duration === 'number') {
+          duration = basicInfo.duration;
+        } else if (basicInfo.duration.seconds_total) {
+          duration = basicInfo.duration.seconds_total;
+        }
+      }
+
+      const isShorts = duration > 0 && duration <= 180;
+      return { isShorts, duration };
+    } catch (error) {
+      this.logger.debug(`Shorts check failed for ${videoId}: ${(error as Error).message}`);
+      return { isShorts: false, duration: 0 };
+    }
+  }
+
+  /**
+   * yt-dlp 명령어 실행 (429 에러 시 지수 백오프 재시도)
+   */
+  private async execYtDlpWithRetry(
+    command: string,
+    options: { timeout: number; maxBuffer?: number },
+  ): Promise<{ stdout: string; stderr: string }> {
+    const { maxRetries, baseDelayMs, maxDelayMs } = RATE_LIMIT_RETRY_CONFIG;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await execAsync(command, options);
+      } catch (error) {
+        const err = error as Error;
+
+        // 429 에러가 아니면 즉시 throw
+        if (!isRateLimitError(err)) {
+          throw error;
+        }
+
+        // 마지막 시도였으면 throw
+        if (attempt === maxRetries) {
+          this.logger.warn(`Rate limit exceeded after ${maxRetries + 1} attempts`);
+          throw error;
+        }
+
+        // 지수 백오프 딜레이 계산
+        const delayMs = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
+        this.logger.warn(`Rate limited (429), retrying in ${delayMs / 1000}s (attempt ${attempt + 1}/${maxRetries + 1})`);
+        await delay(delayMs);
+      }
+    }
+
+    throw new Error('Unexpected retry loop exit');
+  }
+
   private async extractWithYtDlp(videoId: string): Promise<YouTubeVideoInfo | null> {
     const tmpDir = os.tmpdir();
     const outputPath = path.join(tmpDir, `yt-video-${videoId}`);
 
     try {
-      const { stdout } = await execAsync(
+      const { stdout } = await this.execYtDlpWithRetry(
         `yt-dlp --print-json --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
         { timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
       );
@@ -285,9 +373,9 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     const outputPath = path.join(tmpDir, `yt-transcript-${videoId}`);
 
     try {
-      await execAsync(
+      await this.execYtDlpWithRetry(
         `yt-dlp --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
-        { timeout: 30000 },
+        { timeout: 60000 },
       );
 
       const vttPath = `${outputPath}.ko.vtt`;

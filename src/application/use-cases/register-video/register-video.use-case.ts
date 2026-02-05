@@ -57,9 +57,20 @@ export class RegisterVideoUseCase {
         };
       }
 
+      // 쇼츠 조기 감지 (youtubei.js 사용, rate limit 영향 적음)
+      // yt-dlp 호출 전에 체크하여 API 호출 최소화
+      const shortsCheck = await this.youtubeExtractor.checkIfShorts(videoId);
+      if (shortsCheck.isShorts) {
+        this.logger.log(`  Skipping Shorts video: ${title} (${shortsCheck.duration}초)`);
+        return {
+          success: false,
+          message: '쇼츠 영상은 등록 대상이 아닙니다',
+        };
+      }
+
       const videoInfo = await this.youtubeExtractor.getVideoInfo(videoId);
 
-      // 쇼츠 영상 제외
+      // 이중 체크: 쇼츠 조기 감지 실패 시 대비
       if (videoInfo.isShorts) {
         this.logger.log(`  Skipping Shorts video: ${videoInfo.title}`);
         return {

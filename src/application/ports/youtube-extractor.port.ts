@@ -52,6 +52,14 @@ export interface ChannelMetadata {
 }
 
 /**
+ * 쇼츠 체크 결과
+ */
+export interface ShortsCheckResult {
+  isShorts: boolean;
+  duration: number;
+}
+
+/**
  * YouTube 추출기 포트
  */
 export interface IYouTubeExtractorPort {
@@ -69,6 +77,12 @@ export interface IYouTubeExtractorPort {
    * 비디오 정보 + 자막 함께 조회
    */
   getVideoInfoWithTranscript(videoId: string): Promise<YouTubeVideoInfo>;
+
+  /**
+   * 쇼츠 여부 빠른 체크 (youtubei.js 사용, rate limit 영향 적음)
+   * yt-dlp 호출 전에 사용하여 불필요한 API 호출 방지
+   */
+  checkIfShorts(videoId: string): Promise<ShortsCheckResult>;
 
   /**
    * 채널의 모든 비디오 목록 조회
