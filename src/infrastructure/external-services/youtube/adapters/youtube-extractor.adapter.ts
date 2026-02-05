@@ -27,6 +27,9 @@ const RATE_LIMIT_RETRY_CONFIG = {
 /** 선제적 요청 간 딜레이 (rate limit 방지) */
 const PROACTIVE_DELAY_MS = 2000; // 2초
 
+/** 쿠키 파일 경로 */
+const COOKIES_FILE_PATH = '/tmp/youtube_cookies.txt';
+
 /** 딜레이 헬퍼 */
 const delay = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
@@ -69,7 +72,39 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   }
 
   onModuleInit() {
+    this.initializeCookiesFile();
     this.logger.log('YouTubeExtractorAdapter initialized');
+  }
+
+  /**
+   * 환경 변수에서 YouTube 쿠키 파일 생성
+   * Railway에서 YOUTUBE_COOKIES_BASE64 환경변수로 쿠키 전달
+   */
+  private initializeCookiesFile(): void {
+    const cookiesBase64 = this.configService.get<string>('YOUTUBE_COOKIES_BASE64');
+
+    if (!cookiesBase64) {
+      this.logger.log('YOUTUBE_COOKIES_BASE64 not set, skipping cookies setup');
+      return;
+    }
+
+    try {
+      const cookiesContent = Buffer.from(cookiesBase64, 'base64').toString('utf-8');
+      fs.writeFileSync(COOKIES_FILE_PATH, cookiesContent, 'utf-8');
+      this.logger.log(`YouTube cookies file created at ${COOKIES_FILE_PATH}`);
+    } catch (error) {
+      this.logger.error(`Failed to create cookies file: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * 쿠키 파일이 존재하면 --cookies 플래그 반환
+   */
+  private getCookiesFlag(): string {
+    if (fs.existsSync(COOKIES_FILE_PATH)) {
+      return `--cookies "${COOKIES_FILE_PATH}"`;
+    }
+    return '';
   }
 
   private async getYouTubeInstance(): Promise<Innertube> {
@@ -206,8 +241,9 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     const outputPath = path.join(tmpDir, `yt-video-${videoId}`);
 
     try {
+      const cookiesFlag = this.getCookiesFlag();
       const { stdout } = await this.execYtDlpWithRetry(
-        `yt-dlp --print-json --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
+        `yt-dlp ${cookiesFlag} --print-json --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
         { timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
       );
 
@@ -380,8 +416,9 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     const outputPath = path.join(tmpDir, `yt-transcript-${videoId}`);
 
     try {
+      const cookiesFlag = this.getCookiesFlag();
       await this.execYtDlpWithRetry(
-        `yt-dlp --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
+        `yt-dlp ${cookiesFlag} --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
         { timeout: 60000 },
       );
 
@@ -494,8 +531,9 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
   private async extractChannelMetadataWithYtDlp(channelId: string): Promise<ChannelMetadata | null> {
     try {
+      const cookiesFlag = this.getCookiesFlag();
       const { stdout } = await execAsync(
-        `yt-dlp --dump-json --playlist-items 1 "https://www.youtube.com/channel/${channelId}/videos"`,
+        `yt-dlp ${cookiesFlag} --dump-json --playlist-items 1 "https://www.youtube.com/channel/${channelId}/videos"`,
         { timeout: 60000 }
       );
 
@@ -665,8 +703,9 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     }
 
     try {
+      const cookiesFlag = this.getCookiesFlag();
       const { stdout } = await execAsync(
-        `yt-dlp --print channel_id "${url}" 2>/dev/null | head -1`,
+        `yt-dlp ${cookiesFlag} --print channel_id "${url}" 2>/dev/null | head -1`,
         { timeout: 30000 },
       );
 
