@@ -19,13 +19,13 @@ const execAsync = promisify(exec);
 
 /** 429 에러 재시도 설정 (강화) */
 const RATE_LIMIT_RETRY_CONFIG = {
-  maxRetries: 5,        // 3 → 5 (총 6회 시도)
-  baseDelayMs: 8000,    // 5초 → 8초
-  maxDelayMs: 60000,    // 30초 → 60초
+  maxRetries: 5,
+  baseDelayMs: 15000,   // 8초 → 15초
+  maxDelayMs: 120000,   // 60초 → 120초 (2분)
 };
 
 /** 선제적 요청 간 딜레이 (rate limit 방지) */
-const PROACTIVE_DELAY_MS = 2000; // 2초
+const PROACTIVE_DELAY_MS = 5000; // 2초 → 5초
 
 /** 쿠키 파일 경로 */
 const COOKIES_FILE_PATH = '/tmp/youtube_cookies.txt';
