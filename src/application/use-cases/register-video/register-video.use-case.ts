@@ -155,7 +155,7 @@ export class RegisterVideoUseCase {
           // 한글 제목이 추론되었는데 영어 제목으로만 매칭된 경우, 줄거리 검증 수행
           if (englishMatch && aiInferredTitles.length > 0) {
             this.logger.log(`  [Verify] English match found, validating with plot comparison...`);
-            const plotMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates);
+            const plotMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates, videoInfo.title, videoInfo.description);
             if (plotMatch && plotMatch.data.id !== englishMatch.data.id) {
               this.logger.log(`  [Verify] Plot comparison suggests different movie: ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
               selectedMatch = plotMatch;
@@ -221,11 +221,37 @@ export class RegisterVideoUseCase {
               this.logger.log(`    → ${name} (id=${candidate.data.id}, score=${score})`);
             });
 
-          selectedMatch = this.primaryVideoSelectionService.selectBestCandidate(
+          const scoringMatch = this.primaryVideoSelectionService.selectBestCandidate(
             allTmdbCandidates,
             combinedTitles,
             videoInfo.description,
           );
+
+          // AI 제목이 TMDB에서 결과를 찾았는지 확인
+          const aiTitlesFoundMatch = allTmdbCandidates.some((c) =>
+            c.searchTerm && (
+              aiExtractedTitles.includes(c.searchTerm) ||
+              aiInferredTitles.includes(c.searchTerm) ||
+              aiEnglishTitles.includes(c.searchTerm)
+            )
+          );
+          // AI 제목이 없거나 TMDB에서 못 찾은 경우 → 줄거리 비교로 검증
+          if (scoringMatch && !aiTitlesFoundMatch && allTmdbCandidates.length >= 2) {
+            this.logger.log(`  [Step 3.5] No AI titles, validating with plot comparison...`);
+            const plotMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates, videoInfo.title, videoInfo.description);
+            if (plotMatch && plotMatch.data.id !== scoringMatch.data.id) {
+              this.logger.log(`  [Verify] Plot suggests different movie: ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
+              selectedMatch = plotMatch;
+            } else if (plotMatch) {
+              this.logger.log(`  [Verify] Plot confirms: ${scoringMatch.data.title || scoringMatch.data.name}`);
+              selectedMatch = scoringMatch;
+            } else {
+              selectedMatch = scoringMatch;
+            }
+          } else {
+            selectedMatch = scoringMatch;
+          }
+
           if (selectedMatch) {
             this.logger.log(`  [MATCH] Scoring → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=scoring-fallback)`);
           }
@@ -234,7 +260,7 @@ export class RegisterVideoUseCase {
         // Step 4: 줄거리 비교 폴백 (Scoring 실패 시, 후보가 2개 이상일 때)
         if (!selectedMatch && allTmdbCandidates.length >= 2) {
           this.logger.log(`  [Step 4] Plot comparison fallback...`);
-          selectedMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates);
+          selectedMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates, videoInfo.title, videoInfo.description);
           if (selectedMatch) {
             this.logger.log(`  [MATCH] Plot comparison → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=plot-comparison)`);
           }
@@ -749,19 +775,31 @@ export class RegisterVideoUseCase {
   private async findBestMatchByPlotComparison(
     videoId: string,
     candidates: TMDBMatchResult[],
+    videoTitle?: string,
+    videoDescription?: string,
   ): Promise<TMDBMatchResult | null> {
     try {
       // 자막 조회
       const videoWithTranscript = await this.youtubeExtractor.getVideoInfoWithTranscript(videoId);
-      const transcript = videoWithTranscript.transcript;
+      let transcript = videoWithTranscript.transcript || '';
 
-      if (!transcript || transcript.length < 100) {
-        this.logger.log(`  [Plot] Transcript too short or unavailable`);
+      // 자막이 부족하면 제목 + 설명으로 보완
+      if (transcript.length < 500) {
+        const titleDesc = [
+          videoTitle || videoWithTranscript.title,
+          videoDescription || videoWithTranscript.description,
+        ].filter(Boolean).join(' ');
+        transcript = `${transcript} ${titleDesc}`.trim();
+        this.logger.log(`  [Plot] Transcript short, augmented with title/description (${transcript.length} chars)`);
+      }
+
+      if (transcript.length < 50) {
+        this.logger.log(`  [Plot] Content too short (${transcript.length} chars)`);
         return null;
       }
 
       // 각 후보의 overview와 비교
-      const MIN_PLOT_SIMILARITY = 0.15; // 최소 유사도 임계값
+      const MIN_PLOT_SIMILARITY = 0.10; // 임계값 낮춤 (0.15 → 0.10)
       const scored = candidates
         .filter((c) => c.data.overview && c.data.overview.length > 20)
         .map((candidate) => {
@@ -792,13 +830,18 @@ export class RegisterVideoUseCase {
         return null;
       }
 
-      // 2위와의 차이가 충분한지 확인 (모호한 경우 거부)
+      // 2위와의 차이가 충분한지 확인
       if (scored.length >= 2) {
         const secondBest = scored[1];
         const gap = best.similarity - secondBest.similarity;
-        if (gap < 0.05 && best.similarity < 0.3) {
-          this.logger.log(`  [Plot] Too close to second candidate (gap=${(gap * 100).toFixed(1)}%), skipping`);
-          return null;
+
+        // 차이가 작으면 장르/인기도로 구분 시도
+        if (gap < 0.03) {
+          this.logger.log(`  [Plot] Very close scores (gap=${(gap * 100).toFixed(1)}%), using popularity as tiebreaker`);
+          // 인기도가 더 높은 것 선택
+          if ((secondBest.candidate.data.popularity || 0) > (best.candidate.data.popularity || 0) * 1.5) {
+            return secondBest.candidate;
+          }
         }
       }
 
