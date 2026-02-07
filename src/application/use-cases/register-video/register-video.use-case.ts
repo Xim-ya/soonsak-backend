@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS, MESSAGES, TMDB_CONFIG } from '@/shared/constants';
-import { compareTwoStrings } from '@/shared/utils/string.util';
+import { compareTwoStrings, comparePlotContent } from '@/shared/utils/string.util';
 import { Video, Content, Channel } from '@/domain/entities';
 import { VideoId, TMDBId } from '@/domain/value-objects';
 import { IVideoRepository, IContentRepository, IChannelRepository } from '@/domain/repositories';
@@ -132,12 +132,39 @@ export class RegisterVideoUseCase {
         if (!selectedMatch && aiInferredTitles.length > 0) {
           this.logger.log(`  [AI] Inferred titles (plot-based): ${aiInferredTitles.join(', ')}`);
           selectedMatch = await this.matchFromTitles(aiInferredTitles, allTmdbCandidates, videoInfo.description, 'ai-inferred', aiInference);
+
+          // 짧은 한글 제목(1-2자)이 TMDB에서 못 찾아진 경우, 로마자 변환 후 재검색
+          if (!selectedMatch) {
+            const shortKoreanTitles = aiInferredTitles.filter(t => /^[가-힣]{1,2}$/.test(t));
+            if (shortKoreanTitles.length > 0) {
+              const romanizedTitles = shortKoreanTitles.map(t => this.romanizeKorean(t)).filter(Boolean) as string[];
+              if (romanizedTitles.length > 0) {
+                this.logger.log(`  [AI] Romanized short titles: ${romanizedTitles.join(', ')}`);
+                selectedMatch = await this.matchFromTitles(romanizedTitles, allTmdbCandidates, videoInfo.description, 'ai-romanized', aiInference);
+              }
+            }
+          }
         }
 
         // 1-3. 영어 원제로 폴백 (한글 제목 검색 실패 시)
+        // 단, 한글 제목이 추론되었으나 TMDB에서 못 찾은 경우, 영어 제목 매칭은 줄거리 검증 필요
         if (!selectedMatch && aiEnglishTitles.length > 0) {
           this.logger.log(`  [AI] English titles fallback: ${aiEnglishTitles.join(', ')}`);
-          selectedMatch = await this.matchFromTitles(aiEnglishTitles, allTmdbCandidates, videoInfo.description, 'ai-english', aiInference);
+          const englishMatch = await this.matchFromTitles(aiEnglishTitles, allTmdbCandidates, videoInfo.description, 'ai-english', aiInference);
+
+          // 한글 제목이 추론되었는데 영어 제목으로만 매칭된 경우, 줄거리 검증 수행
+          if (englishMatch && aiInferredTitles.length > 0) {
+            this.logger.log(`  [Verify] English match found, validating with plot comparison...`);
+            const plotMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates);
+            if (plotMatch && plotMatch.data.id !== englishMatch.data.id) {
+              this.logger.log(`  [Verify] Plot comparison suggests different movie: ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
+              selectedMatch = plotMatch;
+            } else {
+              selectedMatch = englishMatch;
+            }
+          } else {
+            selectedMatch = englishMatch;
+          }
         }
 
         this.logger.log(`  AI ending: ${includesEnding ? '결말포함' : '결말없음'}`);
@@ -201,6 +228,15 @@ export class RegisterVideoUseCase {
           );
           if (selectedMatch) {
             this.logger.log(`  [MATCH] Scoring → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=scoring-fallback)`);
+          }
+        }
+
+        // Step 4: 줄거리 비교 폴백 (Scoring 실패 시, 후보가 2개 이상일 때)
+        if (!selectedMatch && allTmdbCandidates.length >= 2) {
+          this.logger.log(`  [Step 4] Plot comparison fallback...`);
+          selectedMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates);
+          if (selectedMatch) {
+            this.logger.log(`  [MATCH] Plot comparison → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=plot-comparison)`);
           }
         }
       }
@@ -658,6 +694,118 @@ export class RegisterVideoUseCase {
       this.logger.warn(`  Failed to fetch channel metadata: ${(error as Error).message}`);
       // 폴백: 기본 정보로 저장
       return this.channelRepository.getOrCreate(channelId, channelName);
+    }
+  }
+
+  /**
+   * 짧은 한글 제목을 로마자로 변환 (기본적인 변환)
+   * 예: "루" → "Lou", "셀" → "Cell"
+   */
+  private romanizeKorean(korean: string): string | null {
+    // 기본 한글 → 로마자 매핑 (발음 기반)
+    const ROMANIZATION_MAP: Record<string, string> = {
+      // 1자 제목들
+      '루': 'Lou',
+      '셀': 'Cell',
+      '잇': 'It',
+      '원': 'One',
+      '썬': 'Sun',
+      '런': 'Run',
+      '폰': 'Phone',
+      '캣': 'Cat',
+      '독': 'Doc',
+      '잼': 'Jam',
+      '허': 'Her',
+      '잡': 'Job',
+      '넷': 'Net',
+      '펫': 'Pet',
+      '맘': 'Mom',
+      '맨': 'Man',
+      '선': 'Sun',
+      '문': 'Moon',
+      '빅': 'Big',
+      '탑': 'Top',
+      '라이프': 'Life',
+      '조커': 'Joker',
+      '덩크': 'Dunk',
+      '고스트': 'Ghost',
+      '히트': 'Heat',
+      '키드': 'Kid',
+      // 2자 제목들
+      '쏘우': 'Saw',
+      '키스': 'Kiss',
+      '에이리언': 'Alien',
+      '조스': 'Jaws',
+      '테넷': 'Tenet',
+    };
+
+    return ROMANIZATION_MAP[korean] || null;
+  }
+
+  /**
+   * 줄거리 비교를 통한 최적 TMDB 후보 선택
+   * 자막 내용과 TMDB overview를 비교하여 가장 유사한 후보 반환
+   */
+  private async findBestMatchByPlotComparison(
+    videoId: string,
+    candidates: TMDBMatchResult[],
+  ): Promise<TMDBMatchResult | null> {
+    try {
+      // 자막 조회
+      const videoWithTranscript = await this.youtubeExtractor.getVideoInfoWithTranscript(videoId);
+      const transcript = videoWithTranscript.transcript;
+
+      if (!transcript || transcript.length < 100) {
+        this.logger.log(`  [Plot] Transcript too short or unavailable`);
+        return null;
+      }
+
+      // 각 후보의 overview와 비교
+      const MIN_PLOT_SIMILARITY = 0.15; // 최소 유사도 임계값
+      const scored = candidates
+        .filter((c) => c.data.overview && c.data.overview.length > 20)
+        .map((candidate) => {
+          const similarity = comparePlotContent(transcript, candidate.data.overview);
+          return { candidate, similarity };
+        });
+
+      if (scored.length === 0) {
+        this.logger.log(`  [Plot] No candidates with valid overview`);
+        return null;
+      }
+
+      // 유사도 내림차순 정렬
+      scored.sort((a, b) => b.similarity - a.similarity);
+
+      // 상위 3개 후보 로그
+      this.logger.log(`  [Plot] Similarity scores:`);
+      scored.slice(0, 3).forEach(({ candidate, similarity }) => {
+        const name = candidate.data.title || candidate.data.name;
+        this.logger.log(`    → ${name} (id=${candidate.data.id}, sim=${(similarity * 100).toFixed(1)}%)`);
+      });
+
+      const best = scored[0];
+
+      // 최소 유사도 체크
+      if (best.similarity < MIN_PLOT_SIMILARITY) {
+        this.logger.log(`  [Plot] Best similarity ${(best.similarity * 100).toFixed(1)}% < ${MIN_PLOT_SIMILARITY * 100}% threshold`);
+        return null;
+      }
+
+      // 2위와의 차이가 충분한지 확인 (모호한 경우 거부)
+      if (scored.length >= 2) {
+        const secondBest = scored[1];
+        const gap = best.similarity - secondBest.similarity;
+        if (gap < 0.05 && best.similarity < 0.3) {
+          this.logger.log(`  [Plot] Too close to second candidate (gap=${(gap * 100).toFixed(1)}%), skipping`);
+          return null;
+        }
+      }
+
+      return best.candidate;
+    } catch (error) {
+      this.logger.warn(`  [Plot] Comparison failed: ${(error as Error).message}`);
+      return null;
     }
   }
 }
