@@ -53,21 +53,25 @@ export function buildUnifiedAnalysisPrompt(
   "extracted_titles": ["기생충"],
   "inferred_titles": [],
   "english_titles": ["Parasite"],
+  "inferred_year": 2019,
+  "inferred_genres": ["드라마", "스릴러"],
   "includes_ending": false,
   "confidence": 95,
-  "reasoning": "자막에서 '오늘 리뷰할 영화는 기생충입니다'로 제목 직접 언급됨"
+  "reasoning": "자막에서 '오늘 리뷰할 영화는 기생충입니다'로 제목 직접 언급됨. 2019년 작품 명시."
 }
 
-**예시 2: 클릭베이트 + 줄거리 역추론**
-입력 자막: "강아지 키워야 하는 이유... 주인공 마일로는 귀여운 고양이고, 친구 오티스는 퍼그예요. 둘이 농장에서 모험을..."
+**예시 2: 클릭베이트 + 줄거리 역추론 (탱크/전쟁 영화)**
+입력 자막: "2차 세계대전 당시 독일군의 최강 전차 티거... 연합군을 상대로 홀로 맞서 싸우는 장면이..."
 출력:
 {
   "extracted_titles": [],
-  "inferred_titles": ["마일로와 오티스"],
-  "english_titles": ["The Adventures of Milo and Otis"],
+  "inferred_titles": ["전차 티거"],
+  "english_titles": ["Tiger"],
+  "inferred_year": 2025,
+  "inferred_genres": ["전쟁", "액션", "역사"],
   "includes_ending": false,
-  "confidence": 70,
-  "reasoning": "제목 직접 언급 없음. 캐릭터명(마일로-고양이, 오티스-강아지)과 농장 모험 설정이 1986년 영화 '마일로와 오티스'와 일치"
+  "confidence": 75,
+  "reasoning": "제목 직접 언급 없음. 2차 대전 독일 티거 전차 배경, 전쟁/액션 장르. '신작' 언급으로 2025년 추정."
 }
 
 **예시 3: 비리뷰 콘텐츠**
@@ -77,6 +81,8 @@ export function buildUnifiedAnalysisPrompt(
   "extracted_titles": [],
   "inferred_titles": [],
   "english_titles": [],
+  "inferred_year": null,
+  "inferred_genres": [],
   "includes_ending": false,
   "confidence": 10,
   "reasoning": "영화/드라마 리뷰가 아닌 정보성 콘텐츠로 판단됨. 특정 작품을 리뷰하는 내용 없음"
@@ -113,6 +119,22 @@ ${fewShotExamples}
 - 언급된 배우, 감독, 플랫폼, 개봉연도 단서 활용
 - 당신이 아는 영화/드라마 지식과 매칭
 → 실제 존재하는 작품만 inferred_titles에 저장
+
+**2-1단계: 연도 추론 → inferred_year**
+자막에서 개봉/방영 연도 힌트 찾기:
+- 직접 언급: "2025년 개봉", "작년에 나온", "올해 신작"
+- 간접 힌트: "신작", "최신", "공개와 동시에" → 최근 1-2년 내 작품
+- 시대 배경과 혼동 주의: "1940년대 배경"은 개봉연도가 아님
+→ 추정 연도를 inferred_year에 저장 (확실하지 않으면 null)
+
+**2-2단계: 장르 추론 → inferred_genres**
+자막 내용에서 장르 추론 (TMDB 후보 선택에 활용):
+- 전쟁/탱크/군대 → ["전쟁", "액션"]
+- 로맨스/사랑 → ["로맨스", "드라마"]
+- 살인/수사/범인 → ["범죄", "스릴러"]
+- 귀신/공포/저주 → ["공포"]
+- 우주/외계인/SF → ["SF"]
+→ 1-3개 장르를 inferred_genres에 저장
 
 **3단계: 영어 원제 추출 → english_titles**
 위에서 찾은 제목들의 영어 원제를 제공:
@@ -152,6 +174,8 @@ ${hasCandidates ? `
   "extracted_titles": ["직접 언급된 한글 제목들"],
   "inferred_titles": ["줄거리 추론 한글 제목들"],
   "english_titles": ["영어 원제들"],
+  "inferred_year": 2025 또는 null,
+  "inferred_genres": ["전쟁", "액션"] 또는 [],
   "includes_ending": true/false,
   "confidence": 0-100,
   "reasoning": "0단계→1단계→2단계→... 순서로 분석 과정 기술"${hasCandidates ? `,

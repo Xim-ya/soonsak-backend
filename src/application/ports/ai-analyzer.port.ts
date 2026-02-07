@@ -32,6 +32,10 @@ export interface AIAnalysisResult {
   inferredTitles?: string[];
   /** 영어 원제 목록 (한글 제목의 영어 원제 또는 직접 언급된 영어 제목) */
   englishTitles?: string[];
+  /** AI가 추론한 개봉/방영 연도 (동명 영화 구분용) */
+  inferredYear?: number | null;
+  /** AI가 추론한 장르 목록 (TMDB 후보 선택 가중치용) */
+  inferredGenres?: string[];
   selectedTMDBMatch?: SelectedTMDBMatch;
 }
 

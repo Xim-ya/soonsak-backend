@@ -1,7 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ContentTypeValue } from '../value-objects';
-import { SELECTION_SCORE_WEIGHTS } from '@/shared/constants';
+import { SELECTION_SCORE_WEIGHTS, TMDB_GENRE_MAP } from '@/shared/constants';
 import { compareTwoStrings } from '@/shared/utils/string.util';
+
+/**
+ * AI 추론 정보 (장르/연도 가중치용)
+ */
+export interface AIInferenceInfo {
+  inferredYear?: number | null;
+  inferredGenres?: string[];
+}
 
 /**
  * TMDB 검색 결과 타입
@@ -48,6 +56,7 @@ export class PrimaryVideoSelectionService {
     candidates: TMDBMatchResult[],
     titleCandidates: string[],
     description?: string,
+    aiInference?: AIInferenceInfo,
   ): TMDBMatchResult | null {
     if (candidates.length === 0) {
       return null;
@@ -63,6 +72,7 @@ export class PrimaryVideoSelectionService {
         yearHint,
         hasMovieEmoji,
         index,
+        aiInference,
       );
       return { candidate, score };
     });
@@ -106,6 +116,7 @@ export class PrimaryVideoSelectionService {
     yearHint: number | null,
     hasMovieEmoji: boolean,
     index: number,
+    aiInference?: AIInferenceInfo,
   ): number {
     let score = 0;
 
@@ -127,23 +138,67 @@ export class PrimaryVideoSelectionService {
       score += SELECTION_SCORE_WEIGHTS.MOVIE_EMOJI_BONUS;
     }
 
-    // 연도 일치 점수
-    if (yearHint) {
-      const releaseDate =
-        candidate.type === 'movie'
-          ? candidate.data.releaseDate
-          : candidate.data.firstAirDate;
-      if (releaseDate) {
-        const releaseYear = parseInt(releaseDate.split('-')[0], 10);
-        if (releaseYear === yearHint) {
-          score += SELECTION_SCORE_WEIGHTS.YEAR_MATCH;
-        }
+    // 연도 일치 점수 (description에서 추출)
+    const releaseDate =
+      candidate.type === 'movie'
+        ? candidate.data.releaseDate
+        : candidate.data.firstAirDate;
+    const releaseYear = releaseDate ? parseInt(releaseDate.split('-')[0], 10) : null;
+
+    if (yearHint && releaseYear) {
+      if (releaseYear === yearHint) {
+        score += SELECTION_SCORE_WEIGHTS.YEAR_MATCH;
       }
+    }
+
+    // AI 추론 연도 가중치 (동명 영화 구분에 중요)
+    if (aiInference?.inferredYear && releaseYear) {
+      const yearDiff = Math.abs(releaseYear - aiInference.inferredYear);
+      if (yearDiff === 0) {
+        score += SELECTION_SCORE_WEIGHTS.AI_YEAR_MATCH;
+      } else if (yearDiff === 1) {
+        score += SELECTION_SCORE_WEIGHTS.AI_YEAR_CLOSE;
+      }
+    }
+
+    // AI 추론 장르 가중치 (TMDB 장르와 비교)
+    if (aiInference?.inferredGenres && aiInference.inferredGenres.length > 0 && candidate.data.genreIds) {
+      const genreMatchScore = this.calculateGenreMatchScore(
+        candidate.data.genreIds,
+        aiInference.inferredGenres,
+      );
+      score += genreMatchScore;
     }
 
     // 첫 번째 후보 보너스
     if (index === 0) {
       score += SELECTION_SCORE_WEIGHTS.FIRST_CANDIDATE_BONUS;
+    }
+
+    return score;
+  }
+
+  /**
+   * AI 추론 장르와 TMDB 장르 일치 점수 계산
+   */
+  private calculateGenreMatchScore(
+    tmdbGenreIds: number[],
+    inferredGenres: string[],
+  ): number {
+    const tmdbGenreNames = tmdbGenreIds
+      .map((id) => TMDB_GENRE_MAP[id])
+      .filter(Boolean);
+
+    let matchCount = 0;
+    for (const inferredGenre of inferredGenres) {
+      if (tmdbGenreNames.includes(inferredGenre)) {
+        matchCount++;
+      }
+    }
+
+    let score = matchCount * SELECTION_SCORE_WEIGHTS.AI_GENRE_MATCH;
+    if (matchCount >= 2) {
+      score += SELECTION_SCORE_WEIGHTS.AI_GENRE_MULTI_MATCH_BONUS;
     }
 
     return score;

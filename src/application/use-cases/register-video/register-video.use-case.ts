@@ -9,6 +9,7 @@ import {
   EndingDetectionService,
   PrimaryVideoSelectionService,
   TMDBMatchResult,
+  AIInferenceInfo,
 } from '@/domain/services';
 import {
   IYouTubeExtractorPort,
@@ -105,10 +106,24 @@ export class RegisterVideoUseCase {
         aiInferredTitles = aiAnalysis.inferredTitles || [];
         aiEnglishTitles = aiAnalysis.englishTitles || [];
 
+        // AI 추론 정보 (장르/연도 가중치용)
+        const aiInference: AIInferenceInfo = {
+          inferredYear: aiAnalysis.inferredYear,
+          inferredGenres: aiAnalysis.inferredGenres,
+        };
+
+        // 디버그: AI 추론 정보 로그
+        if (aiInference.inferredYear) {
+          this.logger.log(`  [AI] Inferred year: ${aiInference.inferredYear}`);
+        }
+        if (aiInference.inferredGenres && aiInference.inferredGenres.length > 0) {
+          this.logger.log(`  [AI] Inferred genres: ${aiInference.inferredGenres.join(', ')}`);
+        }
+
         // 1-1. 직접 언급 제목으로 매칭 시도
         if (aiExtractedTitles.length > 0) {
           this.logger.log(`  [AI] Extracted titles: ${aiExtractedTitles.join(', ')}`);
-          selectedMatch = await this.matchFromTitles(aiExtractedTitles, allTmdbCandidates, videoInfo.description, 'ai');
+          selectedMatch = await this.matchFromTitles(aiExtractedTitles, allTmdbCandidates, videoInfo.description, 'ai', aiInference);
         } else {
           this.logger.log(`  [AI] No titles directly extracted`);
         }
@@ -116,13 +131,13 @@ export class RegisterVideoUseCase {
         // 1-2. 직접 언급 실패 → 줄거리 추론 제목으로 폴백
         if (!selectedMatch && aiInferredTitles.length > 0) {
           this.logger.log(`  [AI] Inferred titles (plot-based): ${aiInferredTitles.join(', ')}`);
-          selectedMatch = await this.matchFromTitles(aiInferredTitles, allTmdbCandidates, videoInfo.description, 'ai-inferred');
+          selectedMatch = await this.matchFromTitles(aiInferredTitles, allTmdbCandidates, videoInfo.description, 'ai-inferred', aiInference);
         }
 
         // 1-3. 영어 원제로 폴백 (한글 제목 검색 실패 시)
         if (!selectedMatch && aiEnglishTitles.length > 0) {
           this.logger.log(`  [AI] English titles fallback: ${aiEnglishTitles.join(', ')}`);
-          selectedMatch = await this.matchFromTitles(aiEnglishTitles, allTmdbCandidates, videoInfo.description, 'ai-english');
+          selectedMatch = await this.matchFromTitles(aiEnglishTitles, allTmdbCandidates, videoInfo.description, 'ai-english', aiInference);
         }
 
         this.logger.log(`  AI ending: ${includesEnding ? '결말포함' : '결말없음'}`);
@@ -305,6 +320,7 @@ export class RegisterVideoUseCase {
     allTmdbCandidates: TMDBMatchResult[],
     description: string,
     pathPrefix: string,
+    aiInference?: AIInferenceInfo,
   ): Promise<TMDBMatchResult | null> {
     // 괄호 안 원제를 별도 제목으로 분리: "한국제목 (Original)" → ["한국제목", "Original"]
     const expandedTitles = this.expandParenthesizedTitles(titles);
@@ -326,8 +342,8 @@ export class RegisterVideoUseCase {
       return match;
     }
 
-    // 스코어링 매칭
-    match = this.primaryVideoSelectionService.selectBestCandidate(tmdbCandidates, titles, description);
+    // 스코어링 매칭 (AI 추론 장르/연도 가중치 적용)
+    match = this.primaryVideoSelectionService.selectBestCandidate(tmdbCandidates, titles, description, aiInference);
     if (match) {
       this.logger.log(`  [MATCH] ${pathPrefix} scoring → ${match.data.title || match.data.name} (id=${match.data.id}, path=${pathPrefix}-extracted)`);
       return match;

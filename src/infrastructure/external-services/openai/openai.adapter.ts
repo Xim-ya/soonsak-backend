@@ -78,6 +78,8 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
       );
 
       const result = response.choices[0]?.message?.content || '';
+      // 디버그: AI 응답 원본 로그 (장르/연도 필드 확인용)
+      this.logger.log(`AI raw response (first 800 chars): ${result.substring(0, 800)}`);
       return this.parseAnalysisResponse(result, content);
     } catch (error) {
       const errorMessage = (error as Error).message;
@@ -226,6 +228,8 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
         extractedTitles: parsed.extracted_titles || [],
         inferredTitles: parsed.inferred_titles || [],
         englishTitles: parsed.english_titles || [],
+        inferredYear: parsed.inferred_year || null,
+        inferredGenres: parsed.inferred_genres || [],
       };
 
       if (parsed.selected_tmdb) {
