@@ -286,6 +286,15 @@ export class RegisterVideoUseCase {
 
       this.logger.log(`  [RESULT] Selected: ${tmdbTitle} (${selectedMatch.type}, id=${tmdbData.id})`);
 
+      // 포스터 이미지 없으면 실패 처리
+      if (!tmdbData.posterPath) {
+        this.logger.warn(`  [RESULT] No poster image for: ${tmdbTitle}`);
+        return {
+          success: false,
+          message: 'TMDB 매칭 실패 - 포스터 이미지 없음',
+        };
+      }
+
       // 5. 상세 정보 조회 (tagline)
       const details = await this.contentSearch.getDetails(tmdbData.id, selectedMatch.type);
 
