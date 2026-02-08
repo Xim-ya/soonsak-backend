@@ -8,6 +8,7 @@ export const INJECTION_TOKENS = {
   CONTENT_REPOSITORY: Symbol('ContentRepository'),
   CHANNEL_REPOSITORY: Symbol('ChannelRepository'),
   HOME_SECTION_REPOSITORY: Symbol('HomeSectionRepository'),
+  FAILED_VIDEO_REPOSITORY: Symbol('FailedVideoRepository'),
 
   // 외부 서비스 (포트)
   YOUTUBE_EXTRACTOR: Symbol('YouTubeExtractor'),

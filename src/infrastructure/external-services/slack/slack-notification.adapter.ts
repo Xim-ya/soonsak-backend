@@ -2,6 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
+ * 실패한 비디오 정보
+ */
+export interface FailedVideoNotificationInfo {
+  videoId: string;
+  title: string;
+  failureReason: string;
+  retryCount: number;
+  isNewFailure: boolean;
+}
+
+/**
  * 배치 결과 알림 데이터
  */
 export interface BatchNotificationData {
@@ -10,7 +21,9 @@ export interface BatchNotificationData {
   totalSuccess: number;
   totalFailed: number;
   totalSkippedShorts: number;
+  totalSkippedPermanentlyFailed?: number;
   durationMs: number;
+  failedVideos?: FailedVideoNotificationInfo[];
 }
 
 /**
@@ -57,6 +70,9 @@ export class SlackNotificationAdapter {
       ? Math.round((data.totalSuccess / data.totalVideosProcessed) * 100)
       : 0;
 
+    // 실패 비디오 목록 생성 (최대 5개만 표시)
+    const failedVideosBlocks = this.buildFailedVideosBlocks(data.failedVideos || []);
+
     const message = {
       blocks: [
         {
@@ -88,17 +104,23 @@ export class SlackNotificationAdapter {
             },
           ],
         },
-        ...(data.totalSkippedShorts > 0
+        ...(data.totalSkippedShorts > 0 || (data.totalSkippedPermanentlyFailed && data.totalSkippedPermanentlyFailed > 0)
           ? [
               {
                 type: 'section',
                 text: {
                   type: 'mrkdwn',
-                  text: `🎬 *스킵된 쇼츠*: ${data.totalSkippedShorts}개`,
+                  text: [
+                    data.totalSkippedShorts > 0 ? `🎬 *스킵된 쇼츠*: ${data.totalSkippedShorts}개` : '',
+                    data.totalSkippedPermanentlyFailed && data.totalSkippedPermanentlyFailed > 0
+                      ? `🚫 *영구 실패 스킵*: ${data.totalSkippedPermanentlyFailed}개`
+                      : '',
+                  ].filter(Boolean).join('\n'),
                 },
               },
             ]
           : []),
+        ...failedVideosBlocks,
         {
           type: 'context',
           elements: [
@@ -126,6 +148,65 @@ export class SlackNotificationAdapter {
     } catch (error) {
       this.logger.error(`Failed to send Slack notification: ${(error as Error).message}`);
     }
+  }
+
+  /**
+   * 실패 비디오 목록 블록 생성
+   */
+  private buildFailedVideosBlocks(failedVideos: FailedVideoNotificationInfo[]): object[] {
+    if (failedVideos.length === 0) {
+      return [];
+    }
+
+    const blocks: object[] = [
+      {
+        type: 'divider',
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `❌ *실패한 비디오 목록* (${failedVideos.length}개)`,
+        },
+      },
+    ];
+
+    // 최대 5개만 표시
+    const displayVideos = failedVideos.slice(0, 5);
+
+    for (const video of displayVideos) {
+      const retryInfo = video.retryCount >= 3
+        ? '🚫 영구 실패'
+        : `🔄 재시도 ${video.retryCount}/3`;
+      const truncatedTitle = video.title.length > 40
+        ? `${video.title.substring(0, 40)}...`
+        : video.title;
+      const truncatedReason = video.failureReason.length > 50
+        ? `${video.failureReason.substring(0, 50)}...`
+        : video.failureReason;
+
+      blocks.push({
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: `• *${truncatedTitle}*\n  └ ID: \`${video.videoId}\`\n  └ 사유: ${truncatedReason}\n  └ ${retryInfo}`,
+        },
+      });
+    }
+
+    if (failedVideos.length > 5) {
+      blocks.push({
+        type: 'context',
+        elements: [
+          {
+            type: 'mrkdwn',
+            text: `... 외 ${failedVideos.length - 5}개`,
+          },
+        ],
+      });
+    }
+
+    return blocks;
   }
 
   /**

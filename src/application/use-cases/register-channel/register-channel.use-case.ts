@@ -1,9 +1,10 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS, MESSAGES } from '@/shared/constants';
-import { IVideoRepository, IChannelRepository } from '@/domain/repositories';
+import { IVideoRepository, IChannelRepository, IFailedVideoRepository } from '@/domain/repositories';
+import { FailedVideo } from '@/domain/entities';
 import { IRSSFeedPort, RSSFeedEntry } from '@/application/ports';
 import { RegisterVideoUseCase } from '../register-video';
-import { RegisterChannelInput, RegisterChannelResult } from './register-channel.dto';
+import { RegisterChannelInput, RegisterChannelResult, FailedVideoInfo } from './register-channel.dto';
 
 /** 밀리초 단위 상수 */
 const MILLISECONDS_PER_HOUR = 60 * 60 * 1000;
@@ -27,6 +28,8 @@ export class RegisterChannelUseCase {
     private readonly channelRepository: IChannelRepository,
     @Inject(INJECTION_TOKENS.VIDEO_REPOSITORY)
     private readonly videoRepository: IVideoRepository,
+    @Inject(INJECTION_TOKENS.FAILED_VIDEO_REPOSITORY)
+    private readonly failedVideoRepository: IFailedVideoRepository,
     @Inject(INJECTION_TOKENS.RSS_FEED)
     private readonly rssFeed: IRSSFeedPort,
     private readonly registerVideoUseCase: RegisterVideoUseCase,
@@ -44,7 +47,9 @@ export class RegisterChannelUseCase {
       failedCount: 0,
       skippedCount: 0,
       skippedShortsCount: 0,
+      skippedPermanentlyFailedCount: 0,
       errors: [],
+      failedVideos: [],
     };
 
     try {
@@ -62,7 +67,19 @@ export class RegisterChannelUseCase {
 
       const processedVideoIds = await this.getProcessedVideoIds(channelId);
 
+      // 영구 실패한 비디오 ID 목록 조회
+      const videoIds = filteredVideos.map((v) => v.videoId);
+      const permanentlyFailedIds = await this.failedVideoRepository.filterPermanentlyFailed(videoIds);
+      const permanentlyFailedSet = new Set(permanentlyFailedIds);
+
       for (const rssEntry of filteredVideos) {
+        // 영구 실패한 비디오 스킵
+        if (permanentlyFailedSet.has(rssEntry.videoId)) {
+          result.skippedPermanentlyFailedCount++;
+          this.logger.debug(`  Skipping permanently failed video: ${rssEntry.videoId}`);
+          continue;
+        }
+
         if (processedVideoIds.has(rssEntry.videoId)) {
           result.skippedCount++;
           continue;
@@ -85,6 +102,8 @@ export class RegisterChannelUseCase {
 
           if (registerResult.success) {
             result.successCount++;
+            // 성공 시 실패 기록 삭제 (재시도 성공 케이스)
+            await this.failedVideoRepository.deleteByVideoId(rssEntry.videoId);
           } else {
             if (registerResult.message === MESSAGES.VIDEO.ALREADY_PROCESSED) {
               result.skippedCount++;
@@ -95,11 +114,28 @@ export class RegisterChannelUseCase {
             } else {
               result.failedCount++;
               result.errors.push(`${rssEntry.videoId}: ${registerResult.message}`);
+              // 실패 기록 저장
+              const failedVideoInfo = await this.recordFailure(
+                rssEntry.videoId,
+                rssEntry.title,
+                rssEntry.channelId,
+                registerResult.message || 'Unknown error',
+              );
+              result.failedVideos.push(failedVideoInfo);
             }
           }
         } catch (error) {
           result.failedCount++;
-          result.errors.push(`${rssEntry.videoId}: ${(error as Error).message}`);
+          const errorMessage = (error as Error).message;
+          result.errors.push(`${rssEntry.videoId}: ${errorMessage}`);
+          // 실패 기록 저장
+          const failedVideoInfo = await this.recordFailure(
+            rssEntry.videoId,
+            rssEntry.title,
+            rssEntry.channelId,
+            errorMessage,
+          );
+          result.failedVideos.push(failedVideoInfo);
         }
 
         // API 레이트 리미팅 방지를 위한 딜레이
@@ -107,7 +143,7 @@ export class RegisterChannelUseCase {
       }
 
       this.logger.log(
-        `  Channel completed: ${result.successCount} success, ${result.failedCount} failed, ${result.skippedCount} skipped, ${result.skippedShortsCount} shorts`,
+        `  Channel completed: ${result.successCount} success, ${result.failedCount} failed, ${result.skippedCount} skipped, ${result.skippedShortsCount} shorts, ${result.skippedPermanentlyFailedCount} perm-failed`,
       );
     } catch (error) {
       result.errors.push(`Channel error: ${(error as Error).message}`);
@@ -115,6 +151,64 @@ export class RegisterChannelUseCase {
     }
 
     return result;
+  }
+
+  /**
+   * 실패 기록 저장/업데이트
+   */
+  private async recordFailure(
+    videoId: string,
+    title: string,
+    channelId: string,
+    failureReason: string,
+  ): Promise<FailedVideoInfo> {
+    try {
+      const existing = await this.failedVideoRepository.findByVideoId(videoId);
+
+      if (existing) {
+        // 기존 실패 기록 업데이트 (재시도 횟수 증가)
+        const updated = existing.incrementRetry().updateFailureReason(failureReason);
+        await this.failedVideoRepository.save(updated);
+
+        if (updated.isPermanentlyFailed) {
+          this.logger.warn(`  Video permanently failed after ${updated.retryCount} attempts: ${videoId}`);
+        }
+
+        return {
+          videoId,
+          title,
+          failureReason,
+          retryCount: updated.retryCount,
+          isNewFailure: false,
+        };
+      } else {
+        // 새 실패 기록 생성
+        const failedVideo = FailedVideo.create({
+          videoId,
+          title,
+          channelId,
+          failureReason,
+        });
+        await this.failedVideoRepository.save(failedVideo);
+
+        return {
+          videoId,
+          title,
+          failureReason,
+          retryCount: 0,
+          isNewFailure: true,
+        };
+      }
+    } catch (error) {
+      this.logger.error(`  Failed to record failure: ${(error as Error).message}`);
+      return {
+        videoId,
+        title,
+        failureReason,
+        retryCount: 0,
+        isNewFailure: true,
+      };
+    }
   }
 
   private async getProcessedVideoIds(channelId: string): Promise<Set<string>> {

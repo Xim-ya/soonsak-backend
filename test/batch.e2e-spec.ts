@@ -110,8 +110,12 @@ describe('BatchController (e2e)', () => {
         totalSuccess: 45,
         totalFailed: 5,
         totalSkippedShorts: 3,
+        totalSkippedPermanentlyFailed: 0,
+        totalRetried: 0,
+        totalRetrySuccess: 0,
         channelResults: [],
         errors: [],
+        failedVideos: [],
       };
 
       mockBatchProcessingService.isRunning.mockReturnValue(false);

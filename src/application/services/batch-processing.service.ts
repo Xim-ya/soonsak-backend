@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS } from '@/shared/constants';
-import { IChannelRepository } from '@/domain/repositories';
-import { RegisterChannelUseCase, BatchProcessResult } from '@/application/use-cases';
+import { IChannelRepository, IFailedVideoRepository } from '@/domain/repositories';
+import { RegisterChannelUseCase, BatchProcessResult, FailedVideoInfo } from '@/application/use-cases';
 import { SlackNotificationAdapter } from '@/infrastructure/external-services/slack';
 
 /** 배치 처리 기본 설정 */
@@ -44,6 +44,8 @@ export class BatchProcessingService {
   constructor(
     @Inject(INJECTION_TOKENS.CHANNEL_REPOSITORY)
     private readonly channelRepository: IChannelRepository,
+    @Inject(INJECTION_TOKENS.FAILED_VIDEO_REPOSITORY)
+    private readonly failedVideoRepository: IFailedVideoRepository,
     @Inject(INJECTION_TOKENS.SLACK_NOTIFIER)
     private readonly slackNotifier: SlackNotificationAdapter,
     private readonly registerChannelUseCase: RegisterChannelUseCase,
@@ -76,8 +78,12 @@ export class BatchProcessingService {
       totalSuccess: 0,
       totalFailed: 0,
       totalSkippedShorts: 0,
+      totalSkippedPermanentlyFailed: 0,
+      totalRetried: 0,
+      totalRetrySuccess: 0,
       channelResults: [],
       errors: [],
+      failedVideos: [],
     };
 
     try {
@@ -100,6 +106,10 @@ export class BatchProcessingService {
           result.totalSuccess += channelResult.successCount;
           result.totalFailed += channelResult.failedCount;
           result.totalSkippedShorts += channelResult.skippedShortsCount;
+          result.totalSkippedPermanentlyFailed += channelResult.skippedPermanentlyFailedCount;
+
+          // 실패한 비디오 정보 집계
+          result.failedVideos.push(...channelResult.failedVideos);
 
           this.jobStatus.processedChannels++;
           this.jobStatus.processedVideos += channelResult.processedCount;
@@ -125,6 +135,16 @@ export class BatchProcessingService {
         `Batch completed: ${result.totalSuccess} success, ${result.totalFailed} failed`,
       );
 
+      // 최근 실패 비디오 목록 조회 (슬랙 알림용)
+      const recentFailures = await this.failedVideoRepository.findRecentFailures(10);
+      const failedVideoInfos: FailedVideoInfo[] = recentFailures.map((fv) => ({
+        videoId: fv.videoId,
+        title: fv.title,
+        failureReason: fv.failureReason,
+        retryCount: fv.retryCount,
+        isNewFailure: false,
+      }));
+
       // Slack 알림 전송
       await this.slackNotifier.sendBatchCompletionNotification({
         totalChannels: result.totalChannels,
@@ -132,7 +152,9 @@ export class BatchProcessingService {
         totalSuccess: result.totalSuccess,
         totalFailed: result.totalFailed,
         totalSkippedShorts: result.totalSkippedShorts,
+        totalSkippedPermanentlyFailed: result.totalSkippedPermanentlyFailed,
         durationMs: result.completedAt.getTime() - startedAt.getTime(),
+        failedVideos: failedVideoInfos,
       });
     } finally {
       this.jobStatus.isRunning = false;

@@ -58,7 +58,9 @@ describe('ChannelsController (e2e)', () => {
         failedCount: 2,
         skippedCount: 0,
         skippedShortsCount: 0,
+        skippedPermanentlyFailedCount: 0,
         errors: [],
+        failedVideos: [],
       };
 
       mockRegisterChannelUseCase.execute.mockResolvedValue(mockResponse);
@@ -92,7 +94,9 @@ describe('ChannelsController (e2e)', () => {
         failedCount: 2,
         skippedCount: 0,
         skippedShortsCount: 0,
+        skippedPermanentlyFailedCount: 0,
         errors: ['Video ABC failed', 'Video XYZ failed'],
+        failedVideos: [],
       };
 
       mockRegisterChannelUseCase.execute.mockResolvedValue(mockResponse);

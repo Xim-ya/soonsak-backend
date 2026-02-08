@@ -7,6 +7,7 @@ import {
   SupabaseContentRepository,
   SupabaseChannelRepository,
   SupabaseHomeSectionRepository,
+  SupabaseFailedVideoRepository,
 } from './persistence/supabase/repositories';
 import { YouTubeExtractorAdapter, RSSFeedAdapter } from './external-services/youtube/adapters';
 import { TMDBAdapter } from './external-services/tmdb/tmdb.adapter';
@@ -38,6 +39,10 @@ import { SlackNotificationAdapter } from './external-services/slack';
     {
       provide: INJECTION_TOKENS.HOME_SECTION_REPOSITORY,
       useClass: SupabaseHomeSectionRepository,
+    },
+    {
+      provide: INJECTION_TOKENS.FAILED_VIDEO_REPOSITORY,
+      useClass: SupabaseFailedVideoRepository,
     },
     // External Services
     {
@@ -71,6 +76,7 @@ import { SlackNotificationAdapter } from './external-services/slack';
     INJECTION_TOKENS.CONTENT_REPOSITORY,
     INJECTION_TOKENS.CHANNEL_REPOSITORY,
     INJECTION_TOKENS.HOME_SECTION_REPOSITORY,
+    INJECTION_TOKENS.FAILED_VIDEO_REPOSITORY,
     INJECTION_TOKENS.YOUTUBE_EXTRACTOR,
     INJECTION_TOKENS.RSS_FEED,
     INJECTION_TOKENS.CONTENT_SEARCH,

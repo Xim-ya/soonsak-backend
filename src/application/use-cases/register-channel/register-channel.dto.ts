@@ -13,6 +13,17 @@ export interface RegisterChannelInput {
 }
 
 /**
+ * 실패한 비디오 정보 DTO
+ */
+export interface FailedVideoInfo {
+  videoId: string;
+  title: string;
+  failureReason: string;
+  retryCount: number;
+  isNewFailure: boolean;
+}
+
+/**
  * 채널 등록 결과 DTO
  */
 export interface RegisterChannelResult {
@@ -23,7 +34,9 @@ export interface RegisterChannelResult {
   failedCount: number;
   skippedCount: number;
   skippedShortsCount: number;
+  skippedPermanentlyFailedCount: number;
   errors: string[];
+  failedVideos: FailedVideoInfo[];
 }
 
 /**
@@ -37,6 +50,10 @@ export interface BatchProcessResult {
   totalSuccess: number;
   totalFailed: number;
   totalSkippedShorts: number;
+  totalSkippedPermanentlyFailed: number;
+  totalRetried: number;
+  totalRetrySuccess: number;
   channelResults: RegisterChannelResult[];
   errors: string[];
+  failedVideos: FailedVideoInfo[];
 }
