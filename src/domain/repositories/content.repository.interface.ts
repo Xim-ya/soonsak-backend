@@ -20,4 +20,9 @@ export interface IContentRepository {
    * 콘텐츠 ID로 존재 여부 확인
    */
   exists(id: TMDBId): Promise<boolean>;
+
+  /**
+   * 콘텐츠 삭제
+   */
+  delete(id: TMDBId): Promise<void>;
 }

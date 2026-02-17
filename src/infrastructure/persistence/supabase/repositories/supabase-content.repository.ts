@@ -63,4 +63,16 @@ export class SupabaseContentRepository implements IContentRepository {
 
     return !error && !!data;
   }
+
+  async delete(id: TMDBId): Promise<void> {
+    const { error } = await this.supabaseProvider.getClient()
+      .from(SUPABASE_TABLES.CONTENTS)
+      .delete()
+      .eq('id', id.getValue());
+
+    if (error) {
+      this.logger.error(`Failed to delete content: ${error.message}`);
+      throw new Error(`Failed to delete content: ${error.message}`);
+    }
+  }
 }

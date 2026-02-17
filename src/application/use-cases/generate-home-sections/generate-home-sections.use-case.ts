@@ -158,17 +158,18 @@ export class GenerateHomeSectionsUseCase {
     `;
 
     // 병렬로 최신순 200개 + 인기순 200개 조회
+    // videos!inner 조인으로 비디오가 있는 콘텐츠만 조회 (고아 콘텐츠 필터링)
     const [recentResult, popularResult] = await Promise.all([
       this.supabaseProvider
         .getClient()
         .from('contents')
-        .select(selectFields)
+        .select(`${selectFields}, videos!inner(id)`)
         .order('uploaded_at', { ascending: false })
         .limit(HALF_LIMIT),
       this.supabaseProvider
         .getClient()
         .from('contents')
-        .select(selectFields)
+        .select(`${selectFields}, videos!inner(id)`)
         .order('popularity', { ascending: false })
         .limit(HALF_LIMIT),
     ]);

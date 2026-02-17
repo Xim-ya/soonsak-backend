@@ -328,6 +328,10 @@ export class RegisterVideoUseCase {
         mainCast: details.mainCast,
       });
 
+      // 콘텐츠 저장 전 기존 존재 여부 확인 (롤백 판단용)
+      const existingContent = await this.contentRepository.findById(TMDBId.fromNumber(tmdbData.id));
+      const isNewContent = !existingContent;
+
       const contentId = await this.contentRepository.save(content);
 
       const newVideoRuntime = videoInfo.duration; // 초 단위 그대로 저장
@@ -357,7 +361,21 @@ export class RegisterVideoUseCase {
         youtubeLikeCount: videoInfo.likeCount,
       });
 
-      await this.videoRepository.save(video);
+      // 비디오 저장 (실패 시 새로 생성된 콘텐츠 롤백)
+      try {
+        await this.videoRepository.save(video);
+      } catch (videoSaveError) {
+        this.logger.error(`Video save failed: ${(videoSaveError as Error).message}`);
+        if (isNewContent) {
+          this.logger.warn(`Rolling back newly created content: ${contentId}`);
+          try {
+            await this.contentRepository.delete(TMDBId.fromNumber(contentId));
+          } catch (rollbackError) {
+            this.logger.error(`Failed to rollback content: ${(rollbackError as Error).message}`);
+          }
+        }
+        throw videoSaveError;
+      }
 
       this.logger.log(`  Saved: ${videoInfo.title} → ${tmdbTitle}`);
 
