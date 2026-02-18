@@ -78,8 +78,8 @@ export class GenerateHomeSectionsUseCase {
 
     this.logger.log(`Found ${contents.length} contents for analysis`);
 
-    // 3. 이전 섹션 정보 조회 (중복 방지용)
-    const previousSections = await this.homeSectionRepository.findPreviousSections(30);
+    // 3. 이전 섹션 정보 조회 (중복 방지용, 최근 20개만)
+    const previousSections = await this.homeSectionRepository.findPreviousSections(20);
     this.logger.log(`Found ${previousSections.length} previous sections for deduplication`);
 
     // 4. AI 기반 섹션 생성
