@@ -5,8 +5,9 @@ import {
   ContentSearchResult,
   ContentMatchResult,
   ContentDetails,
+  TitleLogoResult,
 } from '@/application/ports';
-import { ContentTypeValue } from '@/domain/value-objects';
+import { ContentTypeValue, LogoLanguage } from '@/domain/value-objects';
 import { TMDB_CONFIG } from '@/shared/constants';
 import { retryWithBackoff } from '@/shared/utils/async.util';
 
@@ -113,6 +114,27 @@ interface TMDBCrewMember {
 interface TMDBCredits {
   cast?: TMDBCastMember[];
   crew?: TMDBCrewMember[];
+}
+
+/**
+ * TMDB 로고 이미지 항목
+ */
+interface TMDBLogoItem {
+  file_path: string;
+  iso_639_1: string | null;
+  aspect_ratio: number;
+  vote_average: number;
+  vote_count: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * TMDB Images API 응답
+ */
+interface TMDBImagesResponse {
+  id: number;
+  logos?: TMDBLogoItem[];
 }
 
 /**
@@ -347,6 +369,59 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       directors,
       mainCast,
     };
+  }
+
+  /**
+   * 타이틀 로고 이미지 조회
+   * 한국어 로고 우선, 없으면 영어 로고, 둘 다 없으면 null
+   */
+  async getTitleLogo(id: number, type: ContentTypeValue): Promise<TitleLogoResult> {
+    const endpoint = type === 'movie' ? `/movie/${id}/images` : `/tv/${id}/images`;
+
+    try {
+      // 언어 파라미터 없이 호출하면 모든 언어의 이미지를 반환
+      const response = await this.makeRequest<TMDBImagesResponse>(endpoint, {
+        include_image_language: 'ko,en,null',
+      });
+
+      const logos = response.logos || [];
+
+      if (logos.length === 0) {
+        return { path: null, lang: null };
+      }
+
+      // 한국어 로고 찾기 (vote_average 높은 순)
+      const koLogo = logos
+        .filter((logo) => logo.iso_639_1 === 'ko')
+        .sort((a, b) => b.vote_average - a.vote_average)[0];
+
+      if (koLogo) {
+        return { path: koLogo.file_path, lang: LogoLanguage.KO };
+      }
+
+      // 영어 로고 찾기 (vote_average 높은 순)
+      const enLogo = logos
+        .filter((logo) => logo.iso_639_1 === 'en')
+        .sort((a, b) => b.vote_average - a.vote_average)[0];
+
+      if (enLogo) {
+        return { path: enLogo.file_path, lang: LogoLanguage.EN };
+      }
+
+      // 언어 없는 로고 (null) 찾기 → 기본값 EN으로 폴백
+      const nullLogo = logos
+        .filter((logo) => logo.iso_639_1 === null)
+        .sort((a, b) => b.vote_average - a.vote_average)[0];
+
+      if (nullLogo) {
+        return { path: nullLogo.file_path, lang: LogoLanguage.EN };
+      }
+
+      return { path: null, lang: null };
+    } catch (error) {
+      this.logger.warn(`Failed to fetch title logo for ${type}/${id}: ${error}`);
+      return { path: null, lang: null };
+    }
   }
 
   /**

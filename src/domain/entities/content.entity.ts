@@ -1,4 +1,4 @@
-import { TMDBId, ContentType, ContentTypeValue } from '../value-objects';
+import { TMDBId, ContentType, ContentTypeValue, LogoLanguage } from '../value-objects';
 
 /**
  * 인물 정보 (감독/배우)
@@ -26,6 +26,9 @@ export interface ContentProps {
   originCountry?: string[];
   directors?: PersonInfo[];
   mainCast?: PersonInfo[];
+  // 타이틀 로고
+  titleLogo?: string;
+  titleLogoLang?: LogoLanguage;
 }
 
 /**
@@ -49,6 +52,9 @@ export class Content {
   private readonly _originCountry?: string[];
   private readonly _directors?: PersonInfo[];
   private readonly _mainCast?: PersonInfo[];
+  // 타이틀 로고
+  private readonly _titleLogo?: string;
+  private readonly _titleLogoLang?: LogoLanguage;
 
   private constructor(props: ContentProps) {
     this._id = TMDBId.fromNumber(props.id);
@@ -67,6 +73,8 @@ export class Content {
     this._originCountry = props.originCountry;
     this._directors = props.directors;
     this._mainCast = props.mainCast;
+    this._titleLogo = props.titleLogo;
+    this._titleLogoLang = props.titleLogoLang;
   }
 
   static create(props: ContentProps): Content {
@@ -141,6 +149,14 @@ export class Content {
     return this._mainCast;
   }
 
+  get titleLogo(): string | undefined {
+    return this._titleLogo;
+  }
+
+  get titleLogoLang(): LogoLanguage | undefined {
+    return this._titleLogoLang;
+  }
+
   toProps(): ContentProps {
     return {
       id: this._id.getValue(),
@@ -159,6 +175,8 @@ export class Content {
       originCountry: this._originCountry,
       directors: this._directors,
       mainCast: this._mainCast,
+      titleLogo: this._titleLogo,
+      titleLogoLang: this._titleLogoLang,
     };
   }
 }

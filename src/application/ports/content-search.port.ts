@@ -1,4 +1,4 @@
-import { ContentTypeValue } from '@/domain/value-objects';
+import { ContentTypeValue, LogoLanguage } from '@/domain/value-objects';
 
 /**
  * TMDB 검색 결과
@@ -59,6 +59,14 @@ export interface ContentDetails {
 }
 
 /**
+ * 타이틀 로고 결과
+ */
+export interface TitleLogoResult {
+  path: string | null;
+  lang: LogoLanguage | null;
+}
+
+/**
  * 콘텐츠 검색 포트 (TMDB 추상화)
  */
 export interface IContentSearchPort {
@@ -81,4 +89,10 @@ export interface IContentSearchPort {
    * 콘텐츠 상세 정보 조회 (tagline 등)
    */
   getDetails(id: number, type: ContentTypeValue): Promise<ContentDetails>;
+
+  /**
+   * 타이틀 로고 이미지 조회
+   * 한국어 로고 우선, 없으면 영어 로고
+   */
+  getTitleLogo(id: number, type: ContentTypeValue): Promise<TitleLogoResult>;
 }

@@ -295,8 +295,11 @@ export class RegisterVideoUseCase {
         };
       }
 
-      // 5. 상세 정보 조회 (tagline)
-      const details = await this.contentSearch.getDetails(tmdbData.id, selectedMatch.type);
+      // 5. 상세 정보 조회 (tagline) + 타이틀 로고 (병렬)
+      const [details, titleLogo] = await Promise.all([
+        this.contentSearch.getDetails(tmdbData.id, selectedMatch.type),
+        this.contentSearch.getTitleLogo(tmdbData.id, selectedMatch.type),
+      ]);
 
       // 6. 채널 정보 저장 (새 채널이면 메타데이터 가져오기)
       const channelId = await this.getOrCreateChannelWithMetadata(
@@ -326,6 +329,9 @@ export class RegisterVideoUseCase {
         originCountry: details.originCountry,
         directors: details.directors,
         mainCast: details.mainCast,
+        // 타이틀 로고
+        titleLogo: titleLogo.path || undefined,
+        titleLogoLang: titleLogo.lang || undefined,
       });
 
       // 콘텐츠 저장 전 기존 존재 여부 확인 (롤백 판단용)

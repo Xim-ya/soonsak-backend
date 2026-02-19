@@ -1,5 +1,5 @@
 import { Content, ContentProps, PersonInfo } from '@/domain/entities';
-import { ContentTypeValue } from '@/domain/value-objects';
+import { ContentTypeValue, toLogoLanguage } from '@/domain/value-objects';
 
 /**
  * 콘텐츠 DB 레코드 타입
@@ -22,6 +22,9 @@ export interface ContentDBRecord {
   origin_country?: string[];
   directors?: PersonInfo[];
   main_cast?: PersonInfo[];
+  // 타이틀 로고
+  title_logo?: string;
+  title_logo_lang?: string;
 }
 
 /**
@@ -50,6 +53,8 @@ export class ContentMapper {
       originCountry: record.origin_country,
       directors: record.directors,
       mainCast: record.main_cast,
+      titleLogo: record.title_logo,
+      titleLogoLang: toLogoLanguage(record.title_logo_lang) ?? undefined,
     });
   }
 
@@ -75,6 +80,8 @@ export class ContentMapper {
       origin_country: props.originCountry,
       directors: props.directors,
       main_cast: props.mainCast,
+      title_logo: props.titleLogo || undefined,
+      title_logo_lang: props.titleLogoLang || undefined,
     };
   }
 
@@ -99,6 +106,8 @@ export class ContentMapper {
       origin_country: props.originCountry,
       directors: props.directors,
       main_cast: props.mainCast,
+      title_logo: props.titleLogo || undefined,
+      title_logo_lang: props.titleLogoLang || undefined,
     };
   }
 }
