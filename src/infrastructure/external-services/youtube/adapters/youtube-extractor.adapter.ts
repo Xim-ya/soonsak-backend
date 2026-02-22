@@ -187,23 +187,36 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       throw new Error(`Invalid video ID: ${videoId}`);
     }
 
+    let result: YouTubeVideoInfo;
+
     const ytdlpResult = await this.extractWithYtDlp(normalizedId);
     if (ytdlpResult) {
       const missingFields = this.getMissingFields(ytdlpResult);
       if (missingFields.length === 0) {
-        return ytdlpResult;
+        result = ytdlpResult;
+      } else {
+        try {
+          const fallbackData = await this.extractWithYoutubeiJs(normalizedId);
+          result = this.mergeVideoInfo(ytdlpResult, fallbackData, missingFields);
+        } catch (error) {
+          this.logger.debug(`youtubei.js fallback failed for ${normalizedId}: ${(error as Error).message}`);
+          result = ytdlpResult;
+        }
       }
+    } else {
+      result = await this.extractWithYoutubeiJs(normalizedId);
+    }
 
-      try {
-        const fallbackData = await this.extractWithYoutubeiJs(normalizedId);
-        return this.mergeVideoInfo(ytdlpResult, fallbackData, missingFields);
-      } catch (error) {
-        this.logger.debug(`youtubei.js fallback failed for ${normalizedId}: ${(error as Error).message}`);
-        return ytdlpResult;
+    // 최종 제목 검증: 제목이 없거나 너무 짧으면 oEmbed로 재시도
+    if (!result.title || result.title.length < 3) {
+      const oembedTitle = await this.fetchTitleFromOembed(normalizedId);
+      if (oembedTitle) {
+        this.logger.log(`[${normalizedId}] Title recovered from oEmbed: ${oembedTitle}`);
+        result.title = oembedTitle;
       }
     }
 
-    return this.extractWithYoutubeiJs(normalizedId);
+    return result;
   }
 
   async getTranscript(videoId: string): Promise<TranscriptResult | null> {
@@ -462,6 +475,16 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
     const basicInfo = info.basic_info as any;
 
+    // 제목이 없거나 유효하지 않으면 oEmbed API로 폴백
+    let title = basicInfo.title || '';
+    if (!title || title.length < 3) {
+      const oembedTitle = await this.fetchTitleFromOembed(videoId);
+      if (oembedTitle) {
+        title = oembedTitle;
+        this.logger.log(`[${videoId}] Title fetched from oEmbed: ${title}`);
+      }
+    }
+
     let duration = 0;
     if (basicInfo.duration) {
       if (typeof basicInfo.duration === 'number') {
@@ -519,7 +542,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
     return {
       id: videoId,
-      title: basicInfo.title || '',
+      title,
       description: basicInfo.description || basicInfo.short_description || '',
       duration,
       publishedAt:
@@ -532,6 +555,27 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       isShorts,
       transcript,
     };
+  }
+
+  /**
+   * YouTube oEmbed API로 제목 가져오기 (인증 불필요)
+   * youtubei.js/yt-dlp 제목 추출 실패 시 폴백
+   */
+  private async fetchTitleFromOembed(videoId: string): Promise<string | null> {
+    try {
+      const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+      const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json() as { title?: string };
+      return data.title || null;
+    } catch (error) {
+      this.logger.debug(`[${videoId}] oEmbed title fetch failed: ${(error as Error).message}`);
+      return null;
+    }
   }
 
   private mergeVideoInfo(
