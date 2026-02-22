@@ -207,12 +207,20 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   }
 
   async getTranscript(videoId: string): Promise<TranscriptResult | null> {
+    // 1차: yt-dlp로 자막 추출 시도
     const transcript = await this.extractTranscriptWithYtDlp(videoId);
-    if (!transcript) {
-      return null;
+    if (transcript) {
+      return { text: transcript };
     }
 
-    return { text: transcript };
+    // 2차: youtubei.js로 자막 추출 폴백 (쿠키 불필요)
+    this.logger.log(`[${videoId}] yt-dlp failed, trying youtubei.js for transcript`);
+    const youtubeiTranscript = await this.extractTranscriptWithYoutubeiJs(videoId);
+    if (youtubeiTranscript) {
+      return { text: youtubeiTranscript };
+    }
+
+    return null;
   }
 
   async getVideoInfoWithTranscript(videoId: string): Promise<YouTubeVideoInfo> {
@@ -466,6 +474,49 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     // 쇼츠 감지: is_short 플래그 사용 (duration만으로 판단하지 않음)
     const isShorts = basicInfo.is_short === true;
 
+    // 자막 추출 시도 (youtubei.js는 쿠키 없이도 자막 가져올 수 있음)
+    let transcript: string | undefined;
+    try {
+      const captions = info.captions;
+      const captionTracks = captions?.caption_tracks;
+      if (captionTracks && captionTracks.length > 0) {
+        // 한국어 우선, 없으면 영어, 없으면 첫 번째
+        let targetTrack = captionTracks.find(
+          (track: any) => track.language_code?.startsWith('ko')
+        );
+        if (!targetTrack) {
+          targetTrack = captionTracks.find(
+            (track: any) => track.language_code?.startsWith('en')
+          );
+        }
+        if (!targetTrack) {
+          targetTrack = captionTracks[0];
+        }
+
+        if (targetTrack) {
+          const transcriptData = await (targetTrack as any).fetch();
+          if (transcriptData?.cues) {
+            const textLines: string[] = [];
+            const seenTexts = new Set<string>();
+            for (const cue of transcriptData.cues) {
+              const text = (cue.text || '').replace(/<[^>]+>/g, '').trim();
+              if (text && !seenTexts.has(text)) {
+                seenTexts.add(text);
+                textLines.push(text);
+              }
+            }
+            transcript = textLines.join(' ').replace(/\s+/g, ' ').trim();
+            if (transcript) {
+              transcript = transcript.substring(0, this.maxTranscriptLength);
+              this.logger.log(`[${videoId}] youtubei.js transcript in getInfo: ${transcript.length} chars`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      this.logger.debug(`[${videoId}] Transcript extraction in extractWithYoutubeiJs failed: ${(error as Error).message}`);
+    }
+
     return {
       id: videoId,
       title: basicInfo.title || '',
@@ -479,6 +530,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       viewCount: basicInfo.view_count,
       likeCount: basicInfo.like_count,
       isShorts,
+      transcript,
     };
   }
 
@@ -539,6 +591,73 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       files.forEach((f) => fs.unlinkSync(path.join(tmpDir, f)));
     } catch (error) {
       this.logger.debug(`Transcript file cleanup failed for ${videoId}: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * youtubei.js를 사용한 자막 추출 (쿠키 불필요)
+   * yt-dlp 실패 시 폴백으로 사용
+   */
+  private async extractTranscriptWithYoutubeiJs(videoId: string): Promise<string> {
+    try {
+      const youtube = await this.getYouTubeInstance();
+      const info = await youtube.getInfo(videoId);
+
+      // 자막 트랙 찾기 (한국어 우선)
+      const captions = info.captions;
+      if (!captions || !captions.caption_tracks || captions.caption_tracks.length === 0) {
+        this.logger.debug(`[${videoId}] No captions available via youtubei.js`);
+        return '';
+      }
+
+      // 한국어 자막 찾기 (ko, ko-KR 등)
+      let targetTrack = captions.caption_tracks.find(
+        (track: any) => track.language_code?.startsWith('ko')
+      );
+
+      // 한국어 없으면 영어 시도
+      if (!targetTrack) {
+        targetTrack = captions.caption_tracks.find(
+          (track: any) => track.language_code?.startsWith('en')
+        );
+      }
+
+      // 둘 다 없으면 첫 번째 트랙 사용
+      if (!targetTrack) {
+        targetTrack = captions.caption_tracks[0];
+      }
+
+      if (!targetTrack) {
+        return '';
+      }
+
+      this.logger.debug(`[${videoId}] Using caption track: ${targetTrack.language_code}`);
+
+      // 자막 내용 가져오기
+      const transcript = await (targetTrack as any).fetch();
+      if (!transcript || !transcript.cues) {
+        return '';
+      }
+
+      // 자막 텍스트 추출 및 결합
+      const textLines: string[] = [];
+      const seenTexts = new Set<string>();
+
+      for (const cue of transcript.cues) {
+        const text = (cue.text || '').replace(/<[^>]+>/g, '').trim();
+        if (text && !seenTexts.has(text)) {
+          seenTexts.add(text);
+          textLines.push(text);
+        }
+      }
+
+      const result = textLines.join(' ').replace(/\s+/g, ' ').trim();
+      this.logger.log(`[${videoId}] youtubei.js transcript extracted: ${result.length} chars`);
+
+      return result.substring(0, this.maxTranscriptLength);
+    } catch (error) {
+      this.logger.debug(`[${videoId}] youtubei.js transcript extraction failed: ${(error as Error).message}`);
+      return '';
     }
   }
 
