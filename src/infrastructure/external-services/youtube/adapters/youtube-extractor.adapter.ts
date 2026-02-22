@@ -38,6 +38,12 @@ const delay = (ms: number): Promise<void> =>
 const isRateLimitError = (error: Error): boolean =>
   error.message.includes('429') || error.message.includes('Too Many Requests');
 
+/** 쿠키 만료/봇 감지 에러 여부 확인 */
+const isCookieError = (error: Error): boolean =>
+  error.message.includes('Sign in to confirm') ||
+  error.message.includes('not a bot') ||
+  error.message.includes('cookies');
+
 interface YtDlpOutput {
   id: string;
   title: string;
@@ -63,12 +69,15 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   private readonly logger = new Logger(YouTubeExtractorAdapter.name);
   private youtube: Innertube | null = null;
   private maxTranscriptLength: number;
+  private slackWebhookUrl: string | undefined;
+  private cookieErrorNotified = false; // 쿠키 오류 알림 중복 방지
 
   constructor(private readonly configService: ConfigService) {
     this.maxTranscriptLength = this.configService.get<number>(
       'YOUTUBE_MAX_TRANSCRIPT_LENGTH',
       5000,
     );
+    this.slackWebhookUrl = this.configService.get<string>('SLACK_WEBHOOK_URL');
   }
 
   onModuleInit() {
@@ -105,6 +114,64 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       return `--cookies "${COOKIES_FILE_PATH}"`;
     }
     return '';
+  }
+
+  /**
+   * 쿠키 오류 발생 시 Slack 알림 전송 (1회만)
+   */
+  private async notifyCookieError(errorMessage: string): Promise<void> {
+    if (this.cookieErrorNotified || !this.slackWebhookUrl) {
+      return;
+    }
+
+    this.cookieErrorNotified = true;
+    this.logger.warn('YouTube cookie error detected, sending Slack notification');
+
+    const message = {
+      blocks: [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: '🚨 YouTube 쿠키 만료/인증 오류',
+            emoji: true,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: '*yt-dlp에서 쿠키 인증 오류가 발생했습니다.*\n\n쿠키를 갱신해주세요:\n1. 브라우저에서 YouTube 로그인\n2. 쿠키 추출 후 Base64 인코딩\n3. Railway `YOUTUBE_COOKIES_BASE64` 환경변수 업데이트',
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `\`\`\`${errorMessage.substring(0, 300)}\`\`\``,
+          },
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `🕐 발생 시각: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`,
+            },
+          ],
+        },
+      ],
+    };
+
+    try {
+      await fetch(this.slackWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message),
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send cookie error notification: ${(error as Error).message}`);
+    }
   }
 
   private async getYouTubeInstance(): Promise<Innertube> {
@@ -162,6 +229,10 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   /**
    * 쇼츠 여부를 빠르게 확인 (youtubei.js 사용, rate limit 영향 적음)
    * yt-dlp 호출 전에 사용하여 불필요한 API 호출 방지
+   *
+   * 보수적 접근: duration만으로 판단하지 않음
+   * - is_short 플래그가 true면 쇼츠
+   * - 확실하지 않으면 쇼츠 아님으로 처리 (false negative 허용)
    */
   async checkIfShorts(videoId: string): Promise<{ isShorts: boolean; duration: number }> {
     const normalizedId = extractVideoId(videoId);
@@ -188,10 +259,15 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
         }
       }
 
-      const isShorts = duration > 0 && duration <= 180;
+      // is_short 플래그 확인 (youtubei.js에서 제공)
+      // duration만으로 판단하지 않음 (3분 이하 일반 영상 오탐 방지)
+      const isShorts = basicInfo.is_short === true;
+
+      this.logger.debug(`Shorts check for ${videoId}: is_short=${basicInfo.is_short}, duration=${duration}s`);
       return { isShorts, duration };
     } catch (error) {
       this.logger.debug(`Shorts check failed for ${videoId}: ${(error as Error).message}`);
+      // 에러 시 쇼츠 아님으로 처리 (보수적 접근)
       return { isShorts: false, duration: 0 };
     }
   }
@@ -272,14 +348,18 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
       this.cleanupTempFiles(tmpDir, videoId);
 
-      // 쇼츠 감지: 3분 이하 영상
-      const isShorts = (ytdlpData.duration || 0) <= 180;
+      // 쇼츠 감지: 세로 영상 (aspect_ratio < 1) AND 3분 이하
+      // aspect_ratio가 9:16이면 0.5625, 16:9면 1.78
+      const aspectRatio = ytdlpData.aspect_ratio;
+      const duration = ytdlpData.duration || 0;
+      const isVertical = aspectRatio !== undefined && aspectRatio < 1;
+      const isShorts = isVertical && duration > 0 && duration <= 180;
 
       return {
         id: videoId,
         title: ytdlpData.title || '',
         description: ytdlpData.description || '',
-        duration: ytdlpData.duration || 0,
+        duration,
         publishedAt,
         channelId: ytdlpData.channel_id || '',
         channelTitle: ytdlpData.channel || ytdlpData.uploader || '',
@@ -293,9 +373,14 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       };
     } catch (error) {
       this.cleanupTempFiles(tmpDir, videoId);
-      this.logger.warn(
-        `yt-dlp extraction failed for ${videoId}: ${(error as Error).message}`,
-      );
+      const errorMessage = (error as Error).message;
+      this.logger.warn(`yt-dlp extraction failed for ${videoId}: ${errorMessage}`);
+
+      // 쿠키 오류 감지 시 Slack 알림
+      if (isCookieError(error as Error)) {
+        this.notifyCookieError(errorMessage);
+      }
+
       return null;
     }
   }
@@ -378,8 +463,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
     }
 
-    // 쇼츠 감지: 3분 이하 영상
-    const isShorts = duration <= 180;
+    // 쇼츠 감지: is_short 플래그 사용 (duration만으로 판단하지 않음)
+    const isShorts = basicInfo.is_short === true;
 
     return {
       id: videoId,

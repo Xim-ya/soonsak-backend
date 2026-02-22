@@ -210,6 +210,72 @@ export class SlackNotificationAdapter {
   }
 
   /**
+   * 긴급 오류 알림 전송
+   */
+  async sendErrorNotification(title: string, message: string, details?: string): Promise<void> {
+    if (!this.webhookUrl) {
+      this.logger.debug('Slack notification skipped - webhook URL not configured');
+      return;
+    }
+
+    const slackMessage = {
+      blocks: [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: `🚨 ${title}`,
+            emoji: true,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: message,
+          },
+        },
+        ...(details
+          ? [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `\`\`\`${details.substring(0, 500)}\`\`\``,
+                },
+              },
+            ]
+          : []),
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `🕐 발생 시각: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`,
+            },
+          ],
+        },
+      ],
+    };
+
+    try {
+      const response = await fetch(this.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(slackMessage),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Slack API error: ${response.status}`);
+      }
+
+      this.logger.log('Error notification sent to Slack');
+    } catch (error) {
+      this.logger.error(`Failed to send Slack notification: ${(error as Error).message}`);
+    }
+  }
+
+  /**
    * 홈 큐레이션 생성 완료 알림 전송
    */
   async sendHomeCurationNotification(data: HomeCurationNotificationData): Promise<void> {
