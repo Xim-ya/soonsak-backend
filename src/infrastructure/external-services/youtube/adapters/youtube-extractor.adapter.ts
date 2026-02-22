@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Innertube } from 'youtubei.js';
+import { YoutubeTranscript } from 'youtube-transcript';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs';
@@ -497,44 +498,12 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     // 쇼츠 감지: is_short 플래그 사용 (duration만으로 판단하지 않음)
     const isShorts = basicInfo.is_short === true;
 
-    // 자막 추출 시도 (youtubei.js는 쿠키 없이도 자막 가져올 수 있음)
+    // 자막 추출 시도 (youtube-transcript 패키지 사용)
     let transcript: string | undefined;
     try {
-      const captions = info.captions;
-      const captionTracks = captions?.caption_tracks;
-      if (captionTracks && captionTracks.length > 0) {
-        // 한국어 우선, 없으면 영어, 없으면 첫 번째
-        let targetTrack = captionTracks.find(
-          (track: any) => track.language_code?.startsWith('ko')
-        );
-        if (!targetTrack) {
-          targetTrack = captionTracks.find(
-            (track: any) => track.language_code?.startsWith('en')
-          );
-        }
-        if (!targetTrack) {
-          targetTrack = captionTracks[0];
-        }
-
-        if (targetTrack) {
-          const transcriptData = await (targetTrack as any).fetch();
-          if (transcriptData?.cues) {
-            const textLines: string[] = [];
-            const seenTexts = new Set<string>();
-            for (const cue of transcriptData.cues) {
-              const text = (cue.text || '').replace(/<[^>]+>/g, '').trim();
-              if (text && !seenTexts.has(text)) {
-                seenTexts.add(text);
-                textLines.push(text);
-              }
-            }
-            transcript = textLines.join(' ').replace(/\s+/g, ' ').trim();
-            if (transcript) {
-              transcript = transcript.substring(0, this.maxTranscriptLength);
-              this.logger.log(`[${videoId}] youtubei.js transcript in getInfo: ${transcript.length} chars`);
-            }
-          }
-        }
+      transcript = await this.extractTranscriptWithYoutubeTranscript(videoId);
+      if (transcript) {
+        this.logger.log(`[${videoId}] Transcript in getInfo: ${transcript.length} chars`);
       }
     } catch (error) {
       this.logger.debug(`[${videoId}] Transcript extraction in extractWithYoutubeiJs failed: ${(error as Error).message}`);
@@ -639,70 +608,105 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   }
 
   /**
-   * youtubei.js를 사용한 자막 추출 (쿠키 불필요)
-   * yt-dlp 실패 시 폴백으로 사용
+   * youtube-transcript 패키지를 사용한 자막 추출 (IP 차단에 강함)
    */
-  private async extractTranscriptWithYoutubeiJs(videoId: string): Promise<string> {
+  private async extractTranscriptWithYoutubeTranscript(videoId: string): Promise<string> {
+    // 1차: 한국어 자막 시도
     try {
-      const youtube = await this.getYouTubeInstance();
-      const info = await youtube.getInfo(videoId);
+      const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId, {
+        lang: 'ko',
+      });
 
-      // 자막 트랙 찾기 (한국어 우선)
-      const captions = info.captions;
-      if (!captions || !captions.caption_tracks || captions.caption_tracks.length === 0) {
-        this.logger.debug(`[${videoId}] No captions available via youtubei.js`);
-        return '';
-      }
+      if (transcriptItems && transcriptItems.length > 0) {
+        const textLines: string[] = [];
+        const seenTexts = new Set<string>();
 
-      // 한국어 자막 찾기 (ko, ko-KR 등)
-      let targetTrack = captions.caption_tracks.find(
-        (track: any) => track.language_code?.startsWith('ko')
-      );
+        for (const item of transcriptItems) {
+          const text = (item.text || '').replace(/<[^>]+>/g, '').trim();
+          if (text && !seenTexts.has(text)) {
+            seenTexts.add(text);
+            textLines.push(text);
+          }
+        }
 
-      // 한국어 없으면 영어 시도
-      if (!targetTrack) {
-        targetTrack = captions.caption_tracks.find(
-          (track: any) => track.language_code?.startsWith('en')
-        );
-      }
-
-      // 둘 다 없으면 첫 번째 트랙 사용
-      if (!targetTrack) {
-        targetTrack = captions.caption_tracks[0];
-      }
-
-      if (!targetTrack) {
-        return '';
-      }
-
-      this.logger.debug(`[${videoId}] Using caption track: ${targetTrack.language_code}`);
-
-      // 자막 내용 가져오기
-      const transcript = await (targetTrack as any).fetch();
-      if (!transcript || !transcript.cues) {
-        return '';
-      }
-
-      // 자막 텍스트 추출 및 결합
-      const textLines: string[] = [];
-      const seenTexts = new Set<string>();
-
-      for (const cue of transcript.cues) {
-        const text = (cue.text || '').replace(/<[^>]+>/g, '').trim();
-        if (text && !seenTexts.has(text)) {
-          seenTexts.add(text);
-          textLines.push(text);
+        const result = textLines.join(' ').replace(/\s+/g, ' ').trim();
+        if (result) {
+          this.logger.debug(`[${videoId}] youtube-transcript (ko) extracted: ${result.length} chars`);
+          return result.substring(0, this.maxTranscriptLength);
         }
       }
-
-      const result = textLines.join(' ').replace(/\s+/g, ' ').trim();
-      this.logger.log(`[${videoId}] youtubei.js transcript extracted: ${result.length} chars`);
-
-      return result.substring(0, this.maxTranscriptLength);
     } catch (error) {
-      this.logger.debug(`[${videoId}] youtubei.js transcript extraction failed: ${(error as Error).message}`);
-      return '';
+      this.logger.debug(`[${videoId}] youtube-transcript (ko) failed: ${(error as Error).message}`);
     }
+
+    // 2차: 영어 자막 시도
+    try {
+      const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId, {
+        lang: 'en',
+      });
+
+      if (transcriptItems && transcriptItems.length > 0) {
+        const textLines: string[] = [];
+        const seenTexts = new Set<string>();
+
+        for (const item of transcriptItems) {
+          const text = (item.text || '').replace(/<[^>]+>/g, '').trim();
+          if (text && !seenTexts.has(text)) {
+            seenTexts.add(text);
+            textLines.push(text);
+          }
+        }
+
+        const result = textLines.join(' ').replace(/\s+/g, ' ').trim();
+        if (result) {
+          this.logger.debug(`[${videoId}] youtube-transcript (en) extracted: ${result.length} chars`);
+          return result.substring(0, this.maxTranscriptLength);
+        }
+      }
+    } catch (error) {
+      this.logger.debug(`[${videoId}] youtube-transcript (en) failed: ${(error as Error).message}`);
+    }
+
+    // 3차: 언어 지정 없이 기본 자막 시도
+    try {
+      const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId);
+
+      if (transcriptItems && transcriptItems.length > 0) {
+        const textLines: string[] = [];
+        const seenTexts = new Set<string>();
+
+        for (const item of transcriptItems) {
+          const text = (item.text || '').replace(/<[^>]+>/g, '').trim();
+          if (text && !seenTexts.has(text)) {
+            seenTexts.add(text);
+            textLines.push(text);
+          }
+        }
+
+        const result = textLines.join(' ').replace(/\s+/g, ' ').trim();
+        if (result) {
+          this.logger.debug(`[${videoId}] youtube-transcript (default) extracted: ${result.length} chars`);
+          return result.substring(0, this.maxTranscriptLength);
+        }
+      }
+    } catch (error) {
+      this.logger.debug(`[${videoId}] youtube-transcript (default) failed: ${(error as Error).message}`);
+    }
+
+    return '';
+  }
+
+  /**
+   * yt-dlp 실패 시 폴백으로 사용하는 자막 추출
+   */
+  private async extractTranscriptWithYoutubeiJs(videoId: string): Promise<string> {
+    const result = await this.extractTranscriptWithYoutubeTranscript(videoId);
+    if (result) {
+      this.logger.log(`[${videoId}] Transcript extracted via youtube-transcript: ${result.length} chars`);
+      return result;
+    }
+    this.logger.debug(`[${videoId}] All transcript extraction methods failed`);
+    return '';
   }
 
   async getChannelVideos(
