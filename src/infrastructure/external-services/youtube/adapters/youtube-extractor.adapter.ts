@@ -727,18 +727,26 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       return input;
     }
 
-    // @핸들이나 URL이면 변환 필요
-    const needsResolve = input.startsWith('@') || input.includes('youtube.com');
-
-    if (!needsResolve) {
-      return input;
+    // 핸들 형식 자동 감지: @ 없이 전달된 핸들에 @ 추가
+    // 채널 ID가 아닌데 (UC로 시작 안함) URL도 아니면 핸들로 간주
+    let normalizedInput = input;
+    if (!input.startsWith('@') && !input.includes('youtube.com') && !input.startsWith('UC')) {
+      normalizedInput = `@${input}`;
+      this.logger.log(`Auto-prefixing handle: ${input} → ${normalizedInput}`);
     }
 
-    this.logger.log(`Resolving channel ID for: ${input}`);
+    // @핸들이나 URL이면 변환 필요
+    const needsResolve = normalizedInput.startsWith('@') || normalizedInput.includes('youtube.com');
+
+    if (!needsResolve) {
+      return normalizedInput;
+    }
+
+    this.logger.log(`Resolving channel ID for: ${normalizedInput}`);
 
     // 1차: youtubei.js로 시도
     try {
-      const channelId = await this.resolveWithYoutubeiJs(input);
+      const channelId = await this.resolveWithYoutubeiJs(normalizedInput);
       if (channelId) {
         this.logger.log(`Resolved via youtubei.js: ${channelId}`);
         return channelId;
@@ -749,7 +757,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
     // 2차: yt-dlp로 폴백
     try {
-      const channelId = await this.resolveWithYtDlp(input);
+      const channelId = await this.resolveWithYtDlp(normalizedInput);
       if (channelId) {
         this.logger.log(`Resolved via yt-dlp: ${channelId}`);
         return channelId;
@@ -758,7 +766,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       this.logger.warn(`yt-dlp resolution failed: ${(error as Error).message}`);
     }
 
-    throw new Error(`Failed to resolve channel ID for: ${input}`);
+    throw new Error(`Failed to resolve channel ID for: ${normalizedInput}`);
   }
 
   private async resolveWithYoutubeiJs(input: string): Promise<string | null> {
