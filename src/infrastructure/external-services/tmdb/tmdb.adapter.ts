@@ -6,6 +6,7 @@ import {
   ContentMatchResult,
   ContentDetails,
   TitleLogoResult,
+  DiscoverParams,
 } from '@/application/ports';
 import { ContentTypeValue, LogoLanguage } from '@/domain/value-objects';
 import { TMDB_CONFIG } from '@/shared/constants';
@@ -422,6 +423,108 @@ export class TMDBAdapter implements IContentSearchPort, OnModuleInit {
       this.logger.warn(`Failed to fetch title logo for ${type}/${id}: ${error}`);
       return { path: null, lang: null };
     }
+  }
+
+  /**
+   * Discover API로 영화 검색 (장르 + 연도 기반)
+   */
+  async discoverMovies(params: DiscoverParams): Promise<ContentMatchResult[]> {
+    const queryParams: Record<string, string> = {
+      include_adult: 'false',
+      sort_by: params.sortBy || 'popularity.desc',
+    };
+
+    // 장르 필터
+    if (params.genreIds && params.genreIds.length > 0) {
+      queryParams.with_genres = params.genreIds.join(',');
+    }
+
+    // 연도 필터
+    if (params.year) {
+      queryParams.primary_release_year = params.year.toString();
+    } else {
+      if (params.yearFrom) {
+        queryParams['primary_release_date.gte'] = `${params.yearFrom}-01-01`;
+      }
+      if (params.yearTo) {
+        queryParams['primary_release_date.lte'] = `${params.yearTo}-12-31`;
+      }
+    }
+
+    const response = await this.makeRequest<TMDBSearchResponse<TMDBMovieResultItem>>(
+      '/discover/movie',
+      queryParams,
+    );
+
+    return response.results.slice(0, TMDB_CONFIG.SEARCH_LIMIT_TOTAL).map((movie) => ({
+      type: 'movie' as const,
+      data: {
+        id: movie.id,
+        title: movie.title,
+        originalTitle: movie.original_title,
+        releaseDate: movie.release_date,
+        overview: movie.overview || '',
+        posterPath: movie.poster_path,
+        backdropPath: movie.backdrop_path,
+        popularity: movie.popularity || 0,
+        voteAverage: movie.vote_average || 0,
+        voteCount: movie.vote_count || 0,
+        genreIds: movie.genre_ids,
+        originalLanguage: movie.original_language,
+        mediaType: 'movie' as const,
+      },
+    }));
+  }
+
+  /**
+   * Discover API로 TV 검색 (장르 + 연도 기반)
+   */
+  async discoverTV(params: DiscoverParams): Promise<ContentMatchResult[]> {
+    const queryParams: Record<string, string> = {
+      include_adult: 'false',
+      sort_by: params.sortBy || 'popularity.desc',
+    };
+
+    // 장르 필터
+    if (params.genreIds && params.genreIds.length > 0) {
+      queryParams.with_genres = params.genreIds.join(',');
+    }
+
+    // 연도 필터
+    if (params.year) {
+      queryParams.first_air_date_year = params.year.toString();
+    } else {
+      if (params.yearFrom) {
+        queryParams['first_air_date.gte'] = `${params.yearFrom}-01-01`;
+      }
+      if (params.yearTo) {
+        queryParams['first_air_date.lte'] = `${params.yearTo}-12-31`;
+      }
+    }
+
+    const response = await this.makeRequest<TMDBSearchResponse<TMDBTVResultItem>>(
+      '/discover/tv',
+      queryParams,
+    );
+
+    return response.results.slice(0, TMDB_CONFIG.SEARCH_LIMIT_TOTAL).map((tv) => ({
+      type: 'tv' as const,
+      data: {
+        id: tv.id,
+        name: tv.name,
+        originalName: tv.original_name,
+        firstAirDate: tv.first_air_date,
+        overview: tv.overview || '',
+        posterPath: tv.poster_path,
+        backdropPath: tv.backdrop_path,
+        popularity: tv.popularity || 0,
+        voteAverage: tv.vote_average || 0,
+        voteCount: tv.vote_count || 0,
+        genreIds: tv.genre_ids,
+        originalLanguage: tv.original_language,
+        mediaType: 'tv' as const,
+      },
+    }));
   }
 
   /**

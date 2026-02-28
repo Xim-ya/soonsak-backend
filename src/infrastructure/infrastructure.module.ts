@@ -13,6 +13,7 @@ import { YouTubeExtractorAdapter, RSSFeedAdapter } from './external-services/you
 import { TMDBAdapter } from './external-services/tmdb/tmdb.adapter';
 import { OpenAIAdapter, OpenAIHomeSectionAdapter } from './external-services/openai';
 import { SlackNotificationAdapter } from './external-services/slack';
+import { WebSearchAdapter } from './external-services/web-search';
 
 /**
  * 인프라스트럭처 모듈
@@ -69,6 +70,10 @@ import { SlackNotificationAdapter } from './external-services/slack';
       provide: INJECTION_TOKENS.HOME_SECTION_GENERATOR,
       useClass: OpenAIHomeSectionAdapter,
     },
+    {
+      provide: INJECTION_TOKENS.WEB_SEARCH,
+      useClass: WebSearchAdapter,
+    },
   ],
   exports: [
     SupabaseClientProvider,
@@ -83,6 +88,7 @@ import { SlackNotificationAdapter } from './external-services/slack';
     INJECTION_TOKENS.AI_ANALYZER,
     INJECTION_TOKENS.SLACK_NOTIFIER,
     INJECTION_TOKENS.HOME_SECTION_GENERATOR,
+    INJECTION_TOKENS.WEB_SEARCH,
   ],
 })
 export class InfrastructureModule {}

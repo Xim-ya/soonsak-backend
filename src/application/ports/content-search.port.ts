@@ -67,6 +67,24 @@ export interface TitleLogoResult {
 }
 
 /**
+ * Discover API 파라미터
+ */
+export interface DiscoverParams {
+  /** 장르 ID 목록 (OR 조건) */
+  genreIds?: number[];
+  /** 개봉 연도 */
+  year?: number;
+  /** 개봉 연도 범위 (시작) */
+  yearFrom?: number;
+  /** 개봉 연도 범위 (끝) */
+  yearTo?: number;
+  /** 키워드 (콤마 구분) */
+  keywords?: string;
+  /** 정렬 기준 */
+  sortBy?: 'popularity.desc' | 'release_date.desc' | 'vote_average.desc';
+}
+
+/**
  * 콘텐츠 검색 포트 (TMDB 추상화)
  */
 export interface IContentSearchPort {
@@ -84,6 +102,16 @@ export interface IContentSearchPort {
    * TV만 검색
    */
   searchTV(query: string): Promise<ContentSearchResult[]>;
+
+  /**
+   * Discover API로 영화 검색 (장르 + 연도 기반)
+   */
+  discoverMovies(params: DiscoverParams): Promise<ContentMatchResult[]>;
+
+  /**
+   * Discover API로 TV 검색 (장르 + 연도 기반)
+   */
+  discoverTV(params: DiscoverParams): Promise<ContentMatchResult[]>;
 
   /**
    * 콘텐츠 상세 정보 조회 (tagline 등)

@@ -1,4 +1,4 @@
-import { Video, VideoProps } from '@/domain/entities';
+import { Video, VideoProps, VideoStatus } from '@/domain/entities';
 import { ContentTypeValue } from '@/domain/value-objects';
 
 /**
@@ -18,6 +18,7 @@ export interface VideoDBRecord {
   updated_at: string;
   youtube_view_count?: number;
   youtube_like_count?: number;
+  status?: string;
 }
 
 /**
@@ -43,6 +44,7 @@ export class VideoMapper {
       updatedAt: record.updated_at,
       youtubeViewCount: record.youtube_view_count,
       youtubeLikeCount: record.youtube_like_count,
+      status: (record.status as VideoStatus) || 'pending',
     });
   }
 
@@ -65,6 +67,7 @@ export class VideoMapper {
       updated_at: props.updatedAt,
       youtube_view_count: props.youtubeViewCount,
       youtube_like_count: props.youtubeLikeCount,
+      status: props.status,
     };
   }
 
@@ -86,6 +89,7 @@ export class VideoMapper {
       updated_at: props.updatedAt,
       youtube_view_count: props.youtubeViewCount,
       youtube_like_count: props.youtubeLikeCount,
+      status: props.status,
     };
   }
 }

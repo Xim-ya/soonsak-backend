@@ -49,10 +49,18 @@ export const SELECTION_SCORE_WEIGHTS = {
   AI_YEAR_MATCH: 12,
   /** AI 추론 연도 근접 (±1년) */
   AI_YEAR_CLOSE: 6,
+  /** AI 추론 연도 불일치 페널티 (5년 초과 차이) */
+  AI_YEAR_MISMATCH_PENALTY: -15,
+  /** AI 추론 연도 대형 불일치 페널티 (10년 초과 차이) */
+  AI_YEAR_MAJOR_MISMATCH_PENALTY: -30,
   /** AI 추론 장르 일치 점수 (장르당) */
   AI_GENRE_MATCH: 5,
   /** AI 추론 장르 2개 이상 일치 보너스 */
   AI_GENRE_MULTI_MATCH_BONUS: 3,
+  /** 미디어 타입 불일치 페널티 (YouTube 제목이 "드라마"인데 영화로 매칭 등) */
+  MEDIA_TYPE_MISMATCH_PENALTY: -20,
+  /** 미디어 타입 일치 보너스 (Phase 1 mediaType 힌트와 일치) */
+  MEDIA_TYPE_MATCH_BONUS: 5,
   /** 첫 번째 후보 보너스 점수 */
   FIRST_CANDIDATE_BONUS: 2,
   /** 매칭 수락을 위한 최소 점수 (이 점수 미만이면 매칭 실패 처리) */
@@ -91,4 +99,29 @@ export const TMDB_GENRE_MAP: Record<number, string> = {
   10766: '드라마',
   10767: '토크',
   10768: '전쟁',
+};
+
+/**
+ * 한국어 장르 -> TMDB 장르 ID 역방향 매핑 (Discover API용)
+ */
+export const TMDB_GENRE_REVERSE_MAP: Record<string, number> = {
+  '액션': 28,
+  '모험': 12,
+  '애니메이션': 16,
+  '코미디': 35,
+  '범죄': 80,
+  '다큐멘터리': 99,
+  '드라마': 18,
+  '가족': 10751,
+  '판타지': 14,
+  '역사': 36,
+  '공포': 27,
+  '호러': 27,
+  '음악': 10402,
+  '미스터리': 9648,
+  '로맨스': 10749,
+  'SF': 878,
+  '스릴러': 53,
+  '전쟁': 10752,
+  '서부': 37,
 };

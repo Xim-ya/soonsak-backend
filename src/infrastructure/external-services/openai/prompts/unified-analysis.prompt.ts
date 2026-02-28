@@ -42,7 +42,7 @@ export function buildUnifiedAnalysisPrompt(
         .join('\n\n')
     : '(후보 없음 - 제목 추출 필요)';
 
-  // Few-shot 예시 (클릭베이트 대응 강화)
+  // Few-shot 예시 (클릭베이트 대응 강화 + 웹 검색어 생성)
   const fewShotExamples = `
 === 분석 예시 ===
 
@@ -55,26 +55,60 @@ export function buildUnifiedAnalysisPrompt(
   "english_titles": ["Parasite"],
   "inferred_year": 2019,
   "inferred_genres": ["드라마", "스릴러"],
+  "search_queries": [],
   "includes_ending": false,
   "confidence": 95,
   "reasoning": "자막에서 '오늘 리뷰할 영화는 기생충입니다'로 제목 직접 언급됨. 2019년 작품 명시."
 }
 
-**예시 2: 클릭베이트 + 줄거리 역추론 (탱크/전쟁 영화)**
-입력 자막: "2차 세계대전 당시 독일군의 최강 전차 티거... 연합군을 상대로 홀로 맞서 싸우는 장면이..."
+**예시 2: 클릭베이트 + 제목 모름 → 줄거리 기반 웹 검색어**
+입력 제목: "전직 레인저를 건드려버린 곰의 최후..."
+입력 자막: "은퇴한 레인저가 산속에서 은둔 생활 중 거대한 곰에게 습격당하고... 복수를 위해..."
 출력:
 {
   "extracted_titles": [],
-  "inferred_titles": ["전차 티거"],
-  "english_titles": ["Tiger"],
-  "inferred_year": 2025,
-  "inferred_genres": ["전쟁", "액션", "역사"],
-  "includes_ending": false,
-  "confidence": 75,
-  "reasoning": "제목 직접 언급 없음. 2차 대전 독일 티거 전차 배경, 전쟁/액션 장르. '신작' 언급으로 2025년 추정."
+  "inferred_titles": [],
+  "english_titles": [],
+  "inferred_year": null,
+  "inferred_genres": ["스릴러", "액션"],
+  "search_queries": ["bear attack ranger revenge movie", "forest bear survival movie", "곰 공격 레인저 영화"],
+  "includes_ending": true,
+  "confidence": 30,
+  "reasoning": "제목 직접 언급 없음. 줄거리 키워드(곰, 레인저, 복수)로 검색어 생성. 연도 불확실하여 생략."
 }
 
-**예시 3: 비리뷰 콘텐츠**
+**예시 2-1: 종말 영화 + 독특한 설정 → 설정 기반 검색어**
+입력 제목: "클릭하면 멈출 수 없는 수작..."
+입력 자막: "호주에 운석이 충돌하면서... 남은 시간은 12시간... 마지막 파티를 즐기려는..."
+출력:
+{
+  "extracted_titles": [],
+  "inferred_titles": [],
+  "english_titles": [],
+  "inferred_year": null,
+  "inferred_genres": ["드라마", "SF"],
+  "search_queries": ["Australia meteor apocalypse movie", "final hours end of world movie", "호주 종말 영화", "last party apocalypse film"],
+  "includes_ending": true,
+  "confidence": 30,
+  "reasoning": "제목 불명. 호주+운석+종말+파티 설정으로 검색어 생성. 독특한 국가 설정(호주) 포함."
+}
+
+**예시 3: 배우/감독 힌트 활용**
+입력 자막: "라이언 고슬링이 CIA 암살 요원으로 등장하는... 추격전이 전 세계로 확대되면서..."
+출력:
+{
+  "extracted_titles": [],
+  "inferred_titles": ["그레이 맨"],
+  "english_titles": ["The Gray Man"],
+  "inferred_year": 2022,
+  "inferred_genres": ["액션", "스릴러"],
+  "search_queries": ["Ryan Gosling CIA assassin movie", "라이언 고슬링 CIA 영화"],
+  "includes_ending": false,
+  "confidence": 80,
+  "reasoning": "라이언 고슬링 + CIA 암살 요원 → '그레이 맨' 추론. 배우+역할 조합으로 높은 신뢰도."
+}
+
+**예시 4: 비리뷰 콘텐츠**
 입력 자막: "2026년 현재 지상 최악의 감옥 TOP 8을 알아봅니다. 첫 번째는 ADX 플로렌스..."
 출력:
 {
@@ -83,6 +117,7 @@ export function buildUnifiedAnalysisPrompt(
   "english_titles": [],
   "inferred_year": null,
   "inferred_genres": [],
+  "search_queries": [],
   "includes_ending": false,
   "confidence": 10,
   "reasoning": "영화/드라마 리뷰가 아닌 정보성 콘텐츠로 판단됨. 특정 작품을 리뷰하는 내용 없음"
@@ -108,9 +143,13 @@ ${fewShotExamples}
 
 **1단계: 직접 언급 탐색 → extracted_titles**
 자막에서 작품 제목이 명시적으로 언급되는지 찾으세요:
-- "오늘 소개할 영화는 XXX", "이 영화는 XXX", "XXX라는 영화"
-- "오늘의 영화 XXX", "XXX를 리뷰", "XXX 리뷰입니다"
-- "넷플릭스 영화 XXX", "XXX라는 작품"
+- 리뷰어가 직접 말함: "오늘 소개할 영화는 XXX", "이 영화는 XXX", "XXX라는 영화"
+- 제목 언급 패턴: "오늘의 영화 XXX", "XXX를 리뷰", "XXX 리뷰입니다"
+- 플랫폼 언급: "넷플릭스 영화 XXX", "XXX라는 작품"
+- ⚠️ **작중 대사에서 제목 추출** (중요!):
+  - "저 XXX 기자예요" → XXX가 방송사/신문사 이름이면 드라마 제목일 가능성
+  - "XXX 방송국", "XXX 신문사" 언급 → 드라마 배경이 언론사인 경우 제목 힌트
+  - 예: "저 타임즈 기자예요" → "타임즈"가 드라마 제목
 → 찾은 한글 제목을 extracted_titles에 저장
 
 **2단계: 줄거리 역추론 → inferred_titles**
@@ -120,12 +159,14 @@ ${fewShotExamples}
 - 당신이 아는 영화/드라마 지식과 매칭
 → 실제 존재하는 작품만 inferred_titles에 저장
 
-**2-1단계: 연도 추론 → inferred_year**
+**2-1단계: 연도 추론 → inferred_year (중요!)**
 자막에서 개봉/방영 연도 힌트 찾기:
 - 직접 언급: "2025년 개봉", "작년에 나온", "올해 신작"
-- 간접 힌트: "신작", "최신", "공개와 동시에" → 최근 1-2년 내 작품
+- 간접 힌트: "신작", "최신", "공개와 동시에", "넷플릭스 신작" → 2025년
+- 아무 연도 힌트가 없지만 알려지지 않은 영화 → 2025년 추정 (최근 업로드된 리뷰는 보통 신작)
 - 시대 배경과 혼동 주의: "1940년대 배경"은 개봉연도가 아님
-→ 추정 연도를 inferred_year에 저장 (확실하지 않으면 null)
+- 유명하지 않거나 처음 듣는 영화 → 높은 확률로 2024-2025년 신작
+→ 추정 연도를 inferred_year에 저장
 
 **2-2단계: 장르 추론 → inferred_genres**
 자막 내용에서 장르 추론 (TMDB 후보 선택에 활용):
@@ -141,6 +182,29 @@ ${fewShotExamples}
 - 한글 음차 제목 → 실제 영어 원제 (예: "딥커버" → "Deep Cover")
 - 한국 영화도 영어 제목 제공 (예: "기생충" → "Parasite")
 → english_titles에 저장 (TMDB 검색 정확도 향상용)
+
+**3-1단계: 웹 검색어 생성 → search_queries (매우 중요!)**
+1-3단계에서 제목 확신이 낮은 경우, 웹 검색용 쿼리 생성:
+
+⚠️ **중요: 추론한 제목을 검색어에 넣지 마세요!** ⚠️
+- ❌ 잘못된 예: "The Final Hour movie" (추론 제목 사용)
+- ✅ 올바른 예: "Australia meteor apocalypse movie" (줄거리 키워드 사용)
+
+검색어 생성 규칙:
+1. **자막에서 언급된 실제 줄거리 키워드 사용**
+   - 국가/도시명: "Australia", "Paris", "Tokyo", "호주", "파리"
+   - 특수 상황: 운석 충돌, 좀비, 외계인, 종말, 지진 등
+   - 핵심 플롯: 주인공 직업, 주요 이벤트
+2. **연도 포함 전략**: 최소 1개 검색어에 연도 포함
+   - 유명하지 않은 영화 → 2024-2025 신작일 가능성 높음
+   - 오래된 듯한 영화 (흑백, 레트로 분위기) → 연도 생략
+3. **영어 + 한글 검색어 모두 생성**
+
+예시:
+- 호주 + 운석 + 종말 → ["Australia meteor apocalypse movie", "호주 종말 영화", "end of world Australia"]
+- 곰 + 레인저 + 복수 → ["bear attack ranger movie 2025", "곰 공격 영화 2025"]
+- 12시간 남은 종말 → ["12 hours left apocalypse movie", "종말까지 12시간 영화"]
+→ 3-4개의 다양한 검색어 생성 (줄거리 키워드 기반!)
 
 **4단계: 결말 포함 여부 판단**
 다음 키워드/패턴 확인:
@@ -161,6 +225,11 @@ ${hasCandidates ? `
 - "이 영화", "이 드라마" 같은 지시어를 제목으로 착각
 - 존재하지 않는 가상의 제목 생성
 - 한글+영어를 하나로 합치기: "기생충 (Parasite)" ❌ → "기생충", "Parasite" ✓
+- ⚠️ **일반 명사를 제목으로 착각**:
+  - "휴대폰", "핸드폰", "전화", "전화기" → 플롯 소품, 제목 아님
+  - "자동차", "집", "학교", "병원" → 배경/장소, 제목 아님
+  - 예: "휴대폰으로 과거와 연결" → "휴대폰"은 제목이 아니라 플롯 설명
+  - 일반 명사가 제목처럼 보이면 작중 대사에서 실제 제목 찾기
 
 === Confidence 점수 가이드라인 ===
 - 90-100: 제목 3회 이상 명시적 언급, TMDB 후보와 완벽 일치
@@ -176,6 +245,7 @@ ${hasCandidates ? `
   "english_titles": ["영어 원제들"],
   "inferred_year": 2025 또는 null,
   "inferred_genres": ["전쟁", "액션"] 또는 [],
+  "search_queries": ["웹 검색어들 - 제목 추론 실패 시 필수"],
   "includes_ending": true/false,
   "confidence": 0-100,
   "reasoning": "0단계→1단계→2단계→... 순서로 분석 과정 기술"${hasCandidates ? `,

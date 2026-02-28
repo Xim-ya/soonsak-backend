@@ -4,11 +4,13 @@ import { SELECTION_SCORE_WEIGHTS, TMDB_GENRE_MAP } from '@/shared/constants';
 import { compareTwoStrings } from '@/shared/utils/string.util';
 
 /**
- * AI 추론 정보 (장르/연도 가중치용)
+ * AI 추론 정보 (장르/연도/미디어타입 가중치용)
  */
 export interface AIInferenceInfo {
   inferredYear?: number | null;
   inferredGenres?: string[];
+  /** YouTube 제목에서 추출한 미디어 타입 힌트 ('tv' = 드라마, 'movie' = 영화) */
+  mediaTypeHint?: 'tv' | 'movie' | null;
 }
 
 /**
@@ -94,6 +96,7 @@ export class PrimaryVideoSelectionService {
     candidates: TMDBMatchResult[],
     titleCandidates: string[],
     description?: string,
+    aiInference?: AIInferenceInfo,
   ): Array<{ candidate: TMDBMatchResult; score: number }> {
     const yearHint = this.extractYearHint(description);
     const hasMovieEmoji = description?.includes('🎬') || false;
@@ -106,6 +109,7 @@ export class PrimaryVideoSelectionService {
         yearHint,
         hasMovieEmoji,
         index,
+        aiInference,
       ),
     }));
   }
@@ -158,6 +162,12 @@ export class PrimaryVideoSelectionService {
         score += SELECTION_SCORE_WEIGHTS.AI_YEAR_MATCH;
       } else if (yearDiff === 1) {
         score += SELECTION_SCORE_WEIGHTS.AI_YEAR_CLOSE;
+      } else if (yearDiff > 10) {
+        // 10년 초과 차이 → 대형 페널티 (잘못된 동명이인 콘텐츠 방지)
+        score += SELECTION_SCORE_WEIGHTS.AI_YEAR_MAJOR_MISMATCH_PENALTY;
+      } else if (yearDiff > 5) {
+        // 5년 초과 차이 → 페널티
+        score += SELECTION_SCORE_WEIGHTS.AI_YEAR_MISMATCH_PENALTY;
       }
     }
 
@@ -168,6 +178,18 @@ export class PrimaryVideoSelectionService {
         aiInference.inferredGenres,
       );
       score += genreMatchScore;
+    }
+
+    // 미디어 타입 일치/불일치 점수 (YouTube 제목이 "드라마"인데 영화로 매칭 등)
+    if (aiInference?.mediaTypeHint) {
+      const candidateType = candidate.type;
+      if (aiInference.mediaTypeHint === candidateType) {
+        // 미디어 타입 일치 보너스
+        score += SELECTION_SCORE_WEIGHTS.MEDIA_TYPE_MATCH_BONUS;
+      } else {
+        // 미디어 타입 불일치 페널티
+        score += SELECTION_SCORE_WEIGHTS.MEDIA_TYPE_MISMATCH_PENALTY;
+      }
     }
 
     // 첫 번째 후보 보너스

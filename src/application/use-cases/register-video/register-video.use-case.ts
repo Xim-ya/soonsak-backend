@@ -1,7 +1,7 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
-import { INJECTION_TOKENS, MESSAGES, TMDB_CONFIG } from '@/shared/constants';
+import { INJECTION_TOKENS, MESSAGES, TMDB_CONFIG, TMDB_GENRE_REVERSE_MAP } from '@/shared/constants';
 import { compareTwoStrings, comparePlotContent } from '@/shared/utils/string.util';
-import { Video, Content, Channel } from '@/domain/entities';
+import { Video, Content, Channel, VideoStatus } from '@/domain/entities';
 import { VideoId, TMDBId } from '@/domain/value-objects';
 import { IVideoRepository, IContentRepository, IChannelRepository } from '@/domain/repositories';
 import {
@@ -15,6 +15,7 @@ import {
   IYouTubeExtractorPort,
   IContentSearchPort,
   IAIAnalyzerPort,
+  IWebSearchPort,
 } from '@/application/ports';
 import { AIAnalysisError } from '@/domain/errors/domain.error';
 import { RegisterVideoInput, RegisterVideoResult } from './register-video.dto';
@@ -40,6 +41,8 @@ export class RegisterVideoUseCase {
     private readonly contentSearch: IContentSearchPort,
     @Inject(INJECTION_TOKENS.AI_ANALYZER)
     private readonly aiAnalyzer: IAIAnalyzerPort,
+    @Inject(INJECTION_TOKENS.WEB_SEARCH)
+    private readonly webSearch: IWebSearchPort,
     private readonly titleExtractionService: TitleExtractionService,
     private readonly endingDetectionService: EndingDetectionService,
     private readonly primaryVideoSelectionService: PrimaryVideoSelectionService,
@@ -91,88 +94,429 @@ export class RegisterVideoUseCase {
       let aiInferredTitles: string[] = [];
       let aiEnglishTitles: string[] = [];
       const allTmdbCandidates: TMDBMatchResult[] = [];
+      let matchConfidence = 0; // 매칭 신뢰도 (0-100)
+      let aiConfidence = 0; // AI 분석 신뢰도
 
-      // 1. AI 자막 분석 (항상 먼저 실행 — TMDB 후보 없이 순수 추출)
-      this.logger.log(`  [Step 1] AI transcript analysis...`);
+      // 미디어 타입 힌트 추출 (YouTube 제목에서 "드라마" vs "영화" 감지)
+      const mediaTypeHint = this.extractMediaTypeHint(videoInfo.title);
+
+      // === Phase 1: 직접 추출 (Simple Extraction) ===
+      // 명시적으로 언급된 제목만 추출, confidence >= 80이면 Phase 2 스킵
+      this.logger.log(`  [Phase 1] Direct extraction...`);
+
+      let phase1Success = false;
+      let phase1MediaTypeHint: 'movie' | 'tv' | null = null;
+
       try {
-        const aiAnalysis = await this.aiAnalyzer.analyzeVideoContent({
+        const directResult = await this.aiAnalyzer.extractDirectMention({
           videoId,
-          videoDuration: videoInfo.duration,
-          tmdbCandidates: [],
+          videoTitle: videoInfo.title,
+          videoDescription: videoInfo.description,
         });
 
-        includesEnding = aiAnalysis.includesEnding;
-        aiExtractedTitles = aiAnalysis.extractedTitles || [];
-        aiInferredTitles = aiAnalysis.inferredTitles || [];
-        aiEnglishTitles = aiAnalysis.englishTitles || [];
+        this.logger.log(`  [Phase 1] Result: title="${directResult.extractedTitle}", confidence=${directResult.confidence}, mediaType=${directResult.mediaTypeHint}`);
 
-        // AI 추론 정보 (장르/연도 가중치용)
+        if (directResult.extractedTitle && directResult.confidence >= 80) {
+          // Phase 1 성공: Phase 2 스킵
+          phase1Success = true;
+          aiExtractedTitles = [directResult.extractedTitle];
+          aiConfidence = directResult.confidence;
+          includesEnding = directResult.includesEnding;
+          // anime/documentary를 movie로 변환 (TMDB API 호환성)
+          phase1MediaTypeHint = this.convertMediaTypeHint(directResult.mediaTypeHint);
+
+          this.logger.log(`  [Phase 1] SUCCESS - Skipping Phase 2`);
+        } else if (directResult.extractedTitle && directResult.confidence >= 60) {
+          // 중간 신뢰도: Phase 2로 확인하되 Phase 1 결과 유지
+          aiExtractedTitles = [directResult.extractedTitle];
+          includesEnding = directResult.includesEnding || includesEnding;
+          // anime/documentary를 movie로 변환 (TMDB API 호환성)
+          phase1MediaTypeHint = this.convertMediaTypeHint(directResult.mediaTypeHint);
+
+          this.logger.log(`  [Phase 1] PARTIAL - Will verify with Phase 2`);
+        } else {
+          this.logger.log(`  [Phase 1] FAILED - Proceeding to Phase 2`);
+        }
+      } catch (phase1Error) {
+        this.logger.warn(`  [Phase 1] Error: ${(phase1Error as Error).message}`);
+      }
+
+      // === Phase 2: 추론 분석 (Inference) ===
+      // Phase 1 실패 시에만 실행
+      if (!phase1Success) {
+        this.logger.log(`  [Phase 2] Inference analysis...`);
+        try {
+          const aiAnalysis = await this.aiAnalyzer.analyzeVideoContent({
+            videoId,
+            videoDuration: videoInfo.duration,
+            tmdbCandidates: [],
+          });
+
+          // Phase 1에서 추출한 제목이 있으면 유지, 없으면 Phase 2 결과 사용
+          if (aiExtractedTitles.length === 0) {
+            aiExtractedTitles = aiAnalysis.extractedTitles || [];
+          }
+          aiInferredTitles = aiAnalysis.inferredTitles || [];
+          aiEnglishTitles = aiAnalysis.englishTitles || [];
+          includesEnding = aiAnalysis.includesEnding;
+          aiConfidence = aiAnalysis.confidence || 0;
+
+          this.logger.log(`  [Phase 2] Confidence: ${aiConfidence}`);
+
+          // AI 추론 정보 (장르/연도/미디어타입 가중치용)
+          const aiInference: AIInferenceInfo = {
+            inferredYear: aiAnalysis.inferredYear,
+            inferredGenres: aiAnalysis.inferredGenres,
+            mediaTypeHint: phase1MediaTypeHint || mediaTypeHint,
+          };
+
+          // 디버그: AI 추론 정보 로그
+          if (aiInference.inferredYear) {
+            this.logger.log(`  [Phase 2] Inferred year: ${aiInference.inferredYear}`);
+          }
+          if (aiInference.inferredGenres && aiInference.inferredGenres.length > 0) {
+            this.logger.log(`  [Phase 2] Inferred genres: ${aiInference.inferredGenres.join(', ')}`);
+          }
+
+          // Phase 2-1. 직접 언급 제목으로 매칭 시도
+          if (aiExtractedTitles.length > 0) {
+            this.logger.log(`  [Phase 2] Extracted titles: ${aiExtractedTitles.join(', ')}`);
+            selectedMatch = await this.matchFromTitles(aiExtractedTitles, allTmdbCandidates, videoInfo.description, 'ai', aiInference, videoId, videoInfo.title);
+            if (selectedMatch) {
+              matchConfidence = 90; // 직접 언급 제목 매칭 = 높은 신뢰도
+            }
+          } else {
+            this.logger.log(`  [Phase 2] No titles directly extracted`);
+          }
+
+          // Phase 2-2. 직접 언급 실패 → 줄거리 추론 제목으로 폴백
+          // 단, searchQueries가 있고 추론 제목과 의미적으로 불일치하면 스킵 (웹 검색으로 위임)
+          const hasSearchQueries = aiAnalysis.searchQueries && aiAnalysis.searchQueries.length > 0;
+          let skipInferredMatch = false;
+
+          if (!selectedMatch && aiInferredTitles.length > 0) {
+            this.logger.log(`  [Phase 2] Inferred titles (plot-based): ${aiInferredTitles.join(', ')}`);
+
+            // 추론 제목이 searchQueries와 의미적으로 맞는지 검증
+            // 검색 쿼리에 다수의 컨텍스트 키워드(장르, 국가, 플롯)가 있으면 제목 불확실 신호
+            if (hasSearchQueries) {
+              const queriesText = aiAnalysis.searchQueries!.join(' ').toLowerCase();
+
+              // 컨텍스트 키워드: 장르, 국가, 미디어 타입, 플롯 요소 등
+              const contextKeywords = [
+                // 미디어 타입/장르
+                'drama', 'movie', 'film', 'show', 'series', 'thriller', 'horror', 'romance',
+                'action', 'comedy', 'mystery', 'sci-fi', 'fantasy', 'crime', 'war',
+                // 국가/플랫폼
+                'korean', 'k-drama', 'kdrama', 'japan', 'japanese', 'china', 'chinese',
+                'netflix', 'disney', 'hbo', 'hollywood',
+                // 플롯 키워드
+                'time', 'travel', 'warp', 'past', 'future', 'connect', 'link',
+                'bear', 'wolf', 'lion', 'shark', 'animal', 'monster', 'alien',
+                'ranger', 'forest', 'mountain', 'survival', 'apocalypse', 'meteor', 'zombie',
+                'revenge', 'attack', 'escape', 'trapped', 'island',
+              ];
+
+              // 검색 쿼리에 포함된 컨텍스트 키워드 수 세기
+              const contextCount = contextKeywords.filter(kw => queriesText.includes(kw)).length;
+
+              // 2개 이상의 컨텍스트 키워드가 있고 추론 제목이 짧으면 (1-2 단어) → 제목 불확실
+              const inferredTitleWordCount = aiInferredTitles[0].split(/\s+/).length;
+              if (contextCount >= 2 && inferredTitleWordCount <= 2) {
+                this.logger.log(`  [Phase 2] Search queries have ${contextCount} context keywords, inferred title is short (${inferredTitleWordCount} words) - prefer web search`);
+                skipInferredMatch = true;
+              }
+            }
+
+            if (!skipInferredMatch) {
+              selectedMatch = await this.matchFromTitles(aiInferredTitles, allTmdbCandidates, videoInfo.description, 'ai-inferred', aiInference, videoId, videoInfo.title);
+
+              // 짧은 한글 제목(1-2자)이 TMDB에서 못 찾아진 경우, 로마자 변환 후 재검색
+              if (!selectedMatch) {
+                const shortKoreanTitles = aiInferredTitles.filter(t => /^[가-힣]{1,2}$/.test(t));
+                if (shortKoreanTitles.length > 0) {
+                  const romanizedTitles = shortKoreanTitles.map(t => this.romanizeKorean(t)).filter(Boolean) as string[];
+                  if (romanizedTitles.length > 0) {
+                    this.logger.log(`  [Phase 2] Romanized short titles: ${romanizedTitles.join(', ')}`);
+                    selectedMatch = await this.matchFromTitles(romanizedTitles, allTmdbCandidates, videoInfo.description, 'ai-romanized', aiInference, videoId, videoInfo.title);
+                  }
+                }
+              }
+              if (selectedMatch) {
+                matchConfidence = 70; // 추론 제목 매칭 = 중간 신뢰도
+              }
+            }
+          }
+
+          // Phase 2-3. 영어 원제로 폴백 (한글 제목 검색 실패 시)
+          // 단, 한글 제목이 추론되었으나 TMDB에서 못 찾은 경우, 영어 제목 매칭은 줄거리 검증 필요
+          // skipInferredMatch가 true면 영어 제목도 동일한 AI 환각일 가능성이 높으므로 스킵
+          let englishOnlyMatch = false; // 한글 제목 0건 + 영어 제목으로만 매칭된 경우
+
+          // 검색 쿼리에 컨텍스트 키워드(장르, 국가 등)가 있으면 추론 제목만으로는 불충분한 신호
+          // 예: "time travel drama cell phone" → "cell phone" 제목 + "time travel drama" 컨텍스트
+          // 이 경우 웹 검색이 더 정확할 수 있음
+          let skipEnglishDueToContextualQuery = false;
+          if (hasSearchQueries && aiEnglishTitles.length > 0) {
+            const queriesText = aiAnalysis.searchQueries!.join(' ').toLowerCase();
+            const contextKeywords = ['drama', 'movie', 'film', 'korean', 'k-drama', 'kdrama', 'japan', 'china',
+              'time travel', 'thriller', 'horror', 'romance', 'action', 'comedy', 'mystery',
+              'netflix', 'sci-fi', 'fantasy', 'crime', 'war'];
+            const hasContextInQuery = contextKeywords.some(kw => queriesText.includes(kw));
+
+            // 검색 쿼리에 컨텍스트가 있고, 추론 제목이 짧으면 (1-2 단어) 제목 추론이 불확실할 가능성
+            const englishTitleWordCount = aiEnglishTitles[0].split(/\s+/).length;
+            if (hasContextInQuery && englishTitleWordCount <= 2) {
+              this.logger.log(`  [Phase 2] Search queries have context keywords, English title is short (${englishTitleWordCount} words) - prefer web search`);
+              skipEnglishDueToContextualQuery = true;
+            }
+          }
+
+          if (!selectedMatch && aiEnglishTitles.length > 0 && !skipInferredMatch && !skipEnglishDueToContextualQuery) {
+            this.logger.log(`  [Phase 2] English titles fallback: ${aiEnglishTitles.join(', ')}`);
+            const englishMatch = await this.matchFromTitles(aiEnglishTitles, allTmdbCandidates, videoInfo.description, 'ai-english', aiInference, videoId, videoInfo.title);
+
+            // 한글 제목이 추론되었는데 영어 제목으로만 매칭된 경우, 줄거리 검증 수행
+            if (englishMatch && aiInferredTitles.length > 0) {
+              // 한글 추론 제목이 TMDB에서 0건인지 확인
+              const koreanTitleFoundInTmdb = allTmdbCandidates.some(c =>
+                c.searchTerm && aiInferredTitles.includes(c.searchTerm)
+              );
+
+              if (!koreanTitleFoundInTmdb) {
+                this.logger.log(`  [Verify] Korean inferred titles found 0 TMDB results - English match is uncertain`);
+                englishOnlyMatch = true; // 웹 검색 트리거용 플래그
+              }
+
+              this.logger.log(`  [Verify] English match found, validating with plot comparison...`);
+              const plotMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates, videoInfo.title, videoInfo.description);
+              if (plotMatch && plotMatch.data.id !== englishMatch.data.id) {
+                this.logger.log(`  [Verify] Plot comparison suggests different movie: ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
+                selectedMatch = plotMatch;
+                matchConfidence = 50; // 줄거리 비교 매칭 = 낮은 신뢰도
+              } else {
+                selectedMatch = englishMatch;
+                matchConfidence = englishOnlyMatch ? 55 : 65; // 한글 0건이면 신뢰도 낮춤
+              }
+            } else {
+              selectedMatch = englishMatch;
+              if (selectedMatch) {
+                matchConfidence = 65;
+              }
+            }
+          }
+
+          this.logger.log(`  [Phase 2] Ending: ${includesEnding ? '결말포함' : '결말없음'}`);
+          this.logger.log(`  [Phase 2] searchQueries: ${aiAnalysis.searchQueries?.join(', ') || '없음'}`);
+          this.logger.log(`  [Phase 2] selectedMatch: ${selectedMatch ? `${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id})` : '없음'}`);
+          if (skipInferredMatch) {
+            this.logger.log(`  [Phase 2] skipInferredMatch: true (추론 제목이 검색어와 불일치하여 웹 검색 시도)`);
+          }
+
+          // Phase 2-4. AI 제목 추출 실패 OR 추론 제목 불일치 OR AI 신뢰도 낮음 OR 영어 제목만으로 매칭 시 웹 검색
+          const needsWebSearch = !selectedMatch || skipInferredMatch || skipEnglishDueToContextualQuery || aiConfidence < 50 || englishOnlyMatch;
+          if (englishOnlyMatch && selectedMatch) {
+            this.logger.log(`  [Phase 2] English-only match detected - verifying with web search`);
+          }
+          if (needsWebSearch && aiAnalysis.searchQueries && aiAnalysis.searchQueries.length > 0) {
+            if (aiConfidence < 50 && selectedMatch) {
+              this.logger.log(`  [Phase 2] Low confidence (${aiConfidence}) - verifying with web search`);
+            }
+            this.logger.log(`  [Phase 2] Web search fallback with queries: ${aiAnalysis.searchQueries.join(', ')}`);
+
+            // 웹 검색으로 영화 제목 추출
+            const webExtractedTitles = await this.webSearch.searchAndExtractMovieTitles(aiAnalysis.searchQueries);
+
+            if (webExtractedTitles.length > 0) {
+              this.logger.log(`  [Web] Extracted titles: ${webExtractedTitles.map(t => `${t.title}(${t.year || '?'})`).join(', ')}`);
+
+              // 연도 정보가 있는 결과를 우선 처리 (동명 영화 구분에 중요)
+              const sortedWebTitles = [...webExtractedTitles].sort((a, b) => {
+                // 연도가 있는 것 우선
+                if (a.year && !b.year) return -1;
+                if (!a.year && b.year) return 1;
+                // 영어 제목이 있는 것 우선 (더 정확한 TMDB 검색 가능)
+                if (a.englishTitle && !b.englishTitle) return -1;
+                if (!a.englishTitle && b.englishTitle) return 1;
+                // 신뢰도 높은 것 우선
+                return (b.confidence || 0) - (a.confidence || 0);
+              });
+
+              // 웹 검색에서 추출한 제목으로 TMDB 검색 (모든 결과 수집 후 최종 선택)
+              let webHighConfidenceMatch: TMDBMatchResult | null = null;
+              let webScoringMatch: TMDBMatchResult | null = null;
+              let webMatchConfidence = 0;
+
+              for (const extracted of sortedWebTitles) {
+                // 미디어 타입 접미사 정제 (타임즈(드라마) → 타임즈)
+                const cleanedTitle = this.cleanMediaTypeSuffix(extracted.title);
+                const searchTitles = [cleanedTitle];
+                if (extracted.englishTitle && extracted.englishTitle !== cleanedTitle) {
+                  searchTitles.push(extracted.englishTitle);
+                }
+                // 정제 전후가 다르면 원본도 검색 쿼리에 포함
+                if (cleanedTitle !== extracted.title) {
+                  this.logger.log(`  [Web] Cleaned title: "${extracted.title}" → "${cleanedTitle}"`);
+                }
+
+                const yearStr = extracted.year?.toString();
+                const webTmdbCandidates = await this.searchTMDBCandidatesParallel(searchTitles, '', yearStr);
+
+                for (const c of webTmdbCandidates) {
+                  if (!allTmdbCandidates.find((e) => e.data.id === c.data.id)) {
+                    allTmdbCandidates.push(c);
+                  }
+                }
+
+                // 고신뢰도 매칭 확인 (첫 번째만 저장)
+                if (!webHighConfidenceMatch) {
+                  const webMatch = this.findHighConfidenceMatch(webTmdbCandidates, searchTitles);
+                  if (webMatch) {
+                    webHighConfidenceMatch = webMatch;
+                    webMatchConfidence = extracted.confidence || 80;
+                    this.logger.log(`  [Web] High-confidence candidate: ${webMatch.data.title || webMatch.data.name} (id=${webMatch.data.id})`);
+                  }
+                }
+
+                // 스코어링 매칭 (첫 번째만 저장)
+                if (!webScoringMatch && webTmdbCandidates.length > 0) {
+                  const scoringMatch = this.primaryVideoSelectionService.selectBestCandidate(
+                    webTmdbCandidates,
+                    searchTitles,
+                    videoInfo.description,
+                    aiInference,
+                  );
+                  if (scoringMatch) {
+                    webScoringMatch = scoringMatch;
+                    if (!webHighConfidenceMatch) {
+                      webMatchConfidence = Math.min(extracted.confidence || 70, 70);
+                    }
+                    this.logger.log(`  [Web] Scoring candidate: ${scoringMatch.data.title || scoringMatch.data.name} (id=${scoringMatch.data.id})`);
+                  }
+                }
+              }
+
+              // 모든 웹 후보 수집 완료 후 최종 선택 (줄거리 비교 사용)
+              if (allTmdbCandidates.length >= 2) {
+                this.logger.log(`  [Web] Collected ${allTmdbCandidates.length} candidates, running plot comparison`);
+                const plotMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates, videoInfo.title, videoInfo.description);
+                if (plotMatch) {
+                  selectedMatch = plotMatch;
+                  matchConfidence = 75;
+                  this.logger.log(`  [MATCH] Web search plot comparison -> ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id}, confidence=${matchConfidence})`);
+                }
+              }
+
+              // 줄거리 비교 실패 시 고신뢰도/스코어링 매칭 사용
+              if (!selectedMatch && webHighConfidenceMatch) {
+                selectedMatch = webHighConfidenceMatch;
+                matchConfidence = webMatchConfidence;
+                this.logger.log(`  [MATCH] Web search high-confidence -> ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, confidence=${matchConfidence})`);
+              } else if (!selectedMatch && webScoringMatch) {
+                selectedMatch = webScoringMatch;
+                matchConfidence = webMatchConfidence;
+                this.logger.log(`  [MATCH] Web search scoring -> ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, confidence=${matchConfidence})`);
+              }
+            }
+
+            // Discover API 폴백 (웹 검색도 실패한 경우, 장르+연도로 검색)
+            if (!selectedMatch && aiInference.inferredGenres && aiInference.inferredGenres.length > 0) {
+              const genreIds = aiInference.inferredGenres
+                .map(g => TMDB_GENRE_REVERSE_MAP[g])
+                .filter((id): id is number => id !== undefined);
+
+              if (genreIds.length > 0 && aiInference.inferredYear) {
+                this.logger.log(`  [Phase 2] Discover API fallback: genres=${aiInference.inferredGenres.join(',')}, year=${aiInference.inferredYear}`);
+
+                const discoverResults = await this.contentSearch.discoverMovies({
+                  genreIds,
+                  year: aiInference.inferredYear,
+                  sortBy: 'popularity.desc',
+                });
+
+                for (const c of discoverResults) {
+                  if (!allTmdbCandidates.find((e) => e.data.id === c.data.id)) {
+                    allTmdbCandidates.push(c);
+                  }
+                }
+
+                this.logger.log(`  [Discover] Found ${discoverResults.length} candidates`);
+              }
+            }
+          }
+        } catch (error) {
+          const errorMessage = error instanceof AIAnalysisError
+            ? error.message
+            : (error as Error).message;
+          this.logger.warn(`  [Phase 2] Inference analysis failed: ${errorMessage}`);
+        }
+      } // end of Phase 2 block
+
+      // Phase 1 성공 시 TMDB 매칭 시도 (Phase 2 스킵된 경우)
+      if (phase1Success && aiExtractedTitles.length > 0 && !selectedMatch) {
+        this.logger.log(`  [Phase 1] Attempting TMDB match with extracted title: ${aiExtractedTitles.join(', ')}`);
+
+        // Phase 1 미디어 타입 힌트 활용
         const aiInference: AIInferenceInfo = {
-          inferredYear: aiAnalysis.inferredYear,
-          inferredGenres: aiAnalysis.inferredGenres,
+          inferredYear: null,
+          inferredGenres: [],
+          mediaTypeHint: phase1MediaTypeHint || mediaTypeHint,
         };
 
-        // 디버그: AI 추론 정보 로그
-        if (aiInference.inferredYear) {
-          this.logger.log(`  [AI] Inferred year: ${aiInference.inferredYear}`);
-        }
-        if (aiInference.inferredGenres && aiInference.inferredGenres.length > 0) {
-          this.logger.log(`  [AI] Inferred genres: ${aiInference.inferredGenres.join(', ')}`);
+        selectedMatch = await this.matchFromTitles(aiExtractedTitles, allTmdbCandidates, videoInfo.description, 'phase1', aiInference, videoId, videoInfo.title);
+        if (selectedMatch) {
+          matchConfidence = 90; // Phase 1 직접 추출 제목 매칭 = 높은 신뢰도
+          this.logger.log(`  [MATCH] Phase 1 -> ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, confidence=${matchConfidence})`);
         }
 
-        // 1-1. 직접 언급 제목으로 매칭 시도
-        if (aiExtractedTitles.length > 0) {
-          this.logger.log(`  [AI] Extracted titles: ${aiExtractedTitles.join(', ')}`);
-          selectedMatch = await this.matchFromTitles(aiExtractedTitles, allTmdbCandidates, videoInfo.description, 'ai', aiInference);
-        } else {
-          this.logger.log(`  [AI] No titles directly extracted`);
-        }
+        // Phase 1 추출 성공했지만 TMDB에서 못 찾은 경우 웹 검색 폴백
+        // 유튜버가 제목을 잘못 발음하거나 AI가 오타를 낸 경우 대응
+        if (!selectedMatch && allTmdbCandidates.length === 0) {
+          this.logger.log(`  [Phase 1] TMDB returned 0 results, trying web search fallback`);
+          const searchQueries = aiExtractedTitles.map((t) => `${t} 영화`);
+          const webExtractedTitles = await this.webSearch.searchAndExtractMovieTitles(searchQueries);
 
-        // 1-2. 직접 언급 실패 → 줄거리 추론 제목으로 폴백
-        if (!selectedMatch && aiInferredTitles.length > 0) {
-          this.logger.log(`  [AI] Inferred titles (plot-based): ${aiInferredTitles.join(', ')}`);
-          selectedMatch = await this.matchFromTitles(aiInferredTitles, allTmdbCandidates, videoInfo.description, 'ai-inferred', aiInference);
+          if (webExtractedTitles.length > 0) {
+            this.logger.log(`  [Web] Found titles: ${webExtractedTitles.map((t) => t.title).join(', ')}`);
+            for (const extracted of webExtractedTitles) {
+              const cleanedTitle = this.cleanMediaTypeSuffix(extracted.title);
+              const searchTitles = [cleanedTitle];
+              if (extracted.englishTitle && extracted.englishTitle !== cleanedTitle) {
+                searchTitles.push(extracted.englishTitle);
+              }
 
-          // 짧은 한글 제목(1-2자)이 TMDB에서 못 찾아진 경우, 로마자 변환 후 재검색
-          if (!selectedMatch) {
-            const shortKoreanTitles = aiInferredTitles.filter(t => /^[가-힣]{1,2}$/.test(t));
-            if (shortKoreanTitles.length > 0) {
-              const romanizedTitles = shortKoreanTitles.map(t => this.romanizeKorean(t)).filter(Boolean) as string[];
-              if (romanizedTitles.length > 0) {
-                this.logger.log(`  [AI] Romanized short titles: ${romanizedTitles.join(', ')}`);
-                selectedMatch = await this.matchFromTitles(romanizedTitles, allTmdbCandidates, videoInfo.description, 'ai-romanized', aiInference);
+              const webTmdbCandidates = await this.searchTMDBCandidatesParallel(searchTitles, '', extracted.year?.toString());
+              for (const c of webTmdbCandidates) {
+                if (!allTmdbCandidates.find((e) => e.data.id === c.data.id)) {
+                  allTmdbCandidates.push(c);
+                }
+              }
+
+              const webMatch = this.findHighConfidenceMatch(webTmdbCandidates, searchTitles);
+              if (webMatch) {
+                selectedMatch = webMatch;
+                matchConfidence = 80;
+                this.logger.log(`  [MATCH] Phase 1 web fallback -> ${webMatch.data.title || webMatch.data.name} (id=${webMatch.data.id})`);
+                break;
+              }
+
+              if (webTmdbCandidates.length > 0) {
+                const scoringMatch = this.primaryVideoSelectionService.selectBestCandidate(
+                  webTmdbCandidates,
+                  searchTitles,
+                  videoInfo.description,
+                  aiInference,
+                );
+                if (scoringMatch) {
+                  selectedMatch = scoringMatch;
+                  matchConfidence = 70;
+                  this.logger.log(`  [MATCH] Phase 1 web scoring -> ${scoringMatch.data.title || scoringMatch.data.name} (id=${scoringMatch.data.id})`);
+                  break;
+                }
               }
             }
           }
         }
-
-        // 1-3. 영어 원제로 폴백 (한글 제목 검색 실패 시)
-        // 단, 한글 제목이 추론되었으나 TMDB에서 못 찾은 경우, 영어 제목 매칭은 줄거리 검증 필요
-        if (!selectedMatch && aiEnglishTitles.length > 0) {
-          this.logger.log(`  [AI] English titles fallback: ${aiEnglishTitles.join(', ')}`);
-          const englishMatch = await this.matchFromTitles(aiEnglishTitles, allTmdbCandidates, videoInfo.description, 'ai-english', aiInference);
-
-          // 한글 제목이 추론되었는데 영어 제목으로만 매칭된 경우, 줄거리 검증 수행
-          if (englishMatch && aiInferredTitles.length > 0) {
-            this.logger.log(`  [Verify] English match found, validating with plot comparison...`);
-            const plotMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates, videoInfo.title, videoInfo.description);
-            if (plotMatch && plotMatch.data.id !== englishMatch.data.id) {
-              this.logger.log(`  [Verify] Plot comparison suggests different movie: ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
-              selectedMatch = plotMatch;
-            } else {
-              selectedMatch = englishMatch;
-            }
-          } else {
-            selectedMatch = englishMatch;
-          }
-        }
-
-        this.logger.log(`  AI ending: ${includesEnding ? '결말포함' : '결말없음'}`);
-      } catch (error) {
-        const errorMessage = error instanceof AIAnalysisError
-          ? error.message
-          : (error as Error).message;
-        this.logger.warn(`  AI transcript analysis failed: ${errorMessage}`);
       }
 
       // 2. YouTube 제목 후보 폴백 (AI 매칭 실패 시)
@@ -193,6 +537,7 @@ export class RegisterVideoUseCase {
         // 고신뢰도 매칭
         selectedMatch = this.findHighConfidenceMatch(ytTmdbCandidates, titleCandidates);
         if (selectedMatch) {
+          matchConfidence = 60; // YouTube 제목 고신뢰도 매칭 = 중간 신뢰도
           this.logger.log(`  [MATCH] YT high confidence → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=yt-high-confidence)`);
         }
 
@@ -207,10 +552,18 @@ export class RegisterVideoUseCase {
             typeof t === 'string' && t.length > 0 && arr.indexOf(t) === i,
           );
 
+          // Phase 1 mediaType 힌트로 스코어링
+          const scoringInference: AIInferenceInfo = {
+            inferredYear: null,
+            inferredGenres: [],
+            mediaTypeHint: phase1MediaTypeHint || mediaTypeHint,
+          };
+
           const scores = this.primaryVideoSelectionService.getCandidateScores(
             allTmdbCandidates,
             combinedTitles,
             videoInfo.description,
+            scoringInference,
           );
           this.logger.log(`  [Step 3] Scoring fallback (${scores.length} candidates):`);
           scores
@@ -225,6 +578,7 @@ export class RegisterVideoUseCase {
             allTmdbCandidates,
             combinedTitles,
             videoInfo.description,
+            scoringInference,
           );
 
           // AI 제목이 TMDB에서 결과를 찾았는지 확인
@@ -242,18 +596,24 @@ export class RegisterVideoUseCase {
             if (plotMatch && plotMatch.data.id !== scoringMatch.data.id) {
               this.logger.log(`  [Verify] Plot suggests different movie: ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
               selectedMatch = plotMatch;
+              matchConfidence = 40; // 줄거리 비교로 다른 영화 선택 = 낮은 신뢰도
             } else if (plotMatch) {
               this.logger.log(`  [Verify] Plot confirms: ${scoringMatch.data.title || scoringMatch.data.name}`);
               selectedMatch = scoringMatch;
+              matchConfidence = 55; // 줄거리로 확인된 스코어링 = 중간 신뢰도
             } else {
               selectedMatch = scoringMatch;
+              matchConfidence = 50; // 스코어링만 = 낮은 신뢰도
             }
           } else {
             selectedMatch = scoringMatch;
+            if (selectedMatch) {
+              matchConfidence = 55; // 스코어링 폴백
+            }
           }
 
           if (selectedMatch) {
-            this.logger.log(`  [MATCH] Scoring → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=scoring-fallback)`);
+            this.logger.log(`  [MATCH] Scoring → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=scoring-fallback, confidence=${matchConfidence})`);
           }
         }
 
@@ -262,7 +622,8 @@ export class RegisterVideoUseCase {
           this.logger.log(`  [Step 4] Plot comparison fallback...`);
           selectedMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates, videoInfo.title, videoInfo.description);
           if (selectedMatch) {
-            this.logger.log(`  [MATCH] Plot comparison → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=plot-comparison)`);
+            matchConfidence = 40; // 줄거리 비교만 = 낮은 신뢰도
+            this.logger.log(`  [MATCH] Plot comparison → ${selectedMatch.data.title || selectedMatch.data.name} (id=${selectedMatch.data.id}, path=plot-comparison, confidence=${matchConfidence})`);
           }
         }
       }
@@ -284,7 +645,9 @@ export class RegisterVideoUseCase {
       const tmdbData = selectedMatch.data;
       const tmdbTitle = selectedMatch.type === 'movie' ? tmdbData.title : tmdbData.name;
 
-      this.logger.log(`  [RESULT] Selected: ${tmdbTitle} (${selectedMatch.type}, id=${tmdbData.id})`);
+      // 최종 신뢰도 및 상태 결정
+      const videoStatus: VideoStatus = matchConfidence >= 60 ? 'pending' : 'low_confidence';
+      this.logger.log(`  [RESULT] Selected: ${tmdbTitle} (${selectedMatch.type}, id=${tmdbData.id}, confidence=${matchConfidence}, status=${videoStatus})`);
 
       // 포스터 이미지 없으면 실패 처리
       if (!tmdbData.posterPath) {
@@ -365,6 +728,7 @@ export class RegisterVideoUseCase {
         updatedAt: new Date().toISOString(),
         youtubeViewCount: videoInfo.viewCount,
         youtubeLikeCount: videoInfo.likeCount,
+        status: videoStatus,
       });
 
       // 비디오 저장 (실패 시 새로 생성된 콘텐츠 롤백)
@@ -416,6 +780,8 @@ export class RegisterVideoUseCase {
     description: string,
     pathPrefix: string,
     aiInference?: AIInferenceInfo,
+    videoId?: string,
+    videoTitle?: string,
   ): Promise<TMDBMatchResult | null> {
     // 괄호 안 원제를 별도 제목으로 분리: "한국제목 (Original)" → ["한국제목", "Original"]
     const expandedTitles = this.expandParenthesizedTitles(titles);
@@ -433,13 +799,131 @@ export class RegisterVideoUseCase {
     // 고신뢰도 매칭
     let match = this.findHighConfidenceMatch(tmdbCandidates, titles);
     if (match) {
+      // 유사 제목 검증: 추출된 제목이 다른 후보의 부분 문자열인 경우 줄거리 비교
+      const verifiedMatch = await this.verifySimilarTitles(
+        match,
+        tmdbCandidates,
+        titles,
+        videoId,
+        description,
+      );
+      if (verifiedMatch && verifiedMatch.data.id !== match.data.id) {
+        this.logger.log(`  [VERIFY] Similar title check suggests: ${verifiedMatch.data.title || verifiedMatch.data.name} (id=${verifiedMatch.data.id})`);
+        return verifiedMatch;
+      }
       this.logger.log(`  [MATCH] ${pathPrefix} high confidence → ${match.data.title || match.data.name} (id=${match.data.id}, path=${pathPrefix}-high-confidence)`);
       return match;
+    }
+
+    // 동일/유사 제목 다수 후보 체크: 유사한 한글 제목이 여러 개면 줄거리 비교 필요
+    // "위대한 유산" 같은 동명의 다른 영화들 구분을 위함
+    const titleToMatch = titles[0]?.toLowerCase();
+    if (titleToMatch && videoId) {
+      const similarTitleCandidates = tmdbCandidates.filter((c) => {
+        const koreanTitle = (c.data.title || c.data.name || '').toLowerCase();
+        // 정확 일치 또는 높은 유사도(0.85 이상) 체크
+        if (koreanTitle === titleToMatch) return true;
+        if (koreanTitle.length >= 2 && titleToMatch.length >= 2) {
+          const similarity = compareTwoStrings(koreanTitle, titleToMatch);
+          return similarity >= 0.85;
+        }
+        return false;
+      });
+
+      this.logger.log(`  [DEBUG] Similar title candidates: ${similarTitleCandidates.length} for "${titleToMatch}"`);
+      similarTitleCandidates.forEach((c) => {
+        this.logger.log(`    - ${c.data.title || c.data.name} (id=${c.data.id})`);
+      });
+
+      if (similarTitleCandidates.length >= 2) {
+        this.logger.log(`  [VERIFY] Found ${similarTitleCandidates.length} candidates with similar title "${titleToMatch}", using disambiguation`);
+
+        // YouTube 영상 제목에서 따옴표 안 텍스트 추출 (핵심 키워드)
+        // 예: "징벌적 손해 배상" from '미쳐버린 짜릿함이 느껴지는 "징벌적 손해 배상"'
+        const titleForKeyword = videoTitle || '';
+        const quotedMatch = titleForKeyword.match(/['""'](.*?)['""']/);
+        const keywordHint = quotedMatch ? quotedMatch[1] : null;
+        this.logger.log(`  [VERIFY] Video title: "${titleForKeyword}", keyword hint: ${keywordHint || 'none'}`);
+
+        // 웹 검색으로 정확한 영화 찾기 (키워드 힌트 활용)
+        if (keywordHint && keywordHint.length >= 3) {
+          this.logger.log(`  [VERIFY] Using keyword hint "${keywordHint}" for web search disambiguation`);
+          const searchQueries = [`${keywordHint} 영화`, `${keywordHint} ${titleToMatch}`];
+          const webResults = await this.webSearch.searchAndExtractMovieTitles(searchQueries);
+
+          if (webResults.length > 0) {
+            this.logger.log(`  [VERIFY] Web search found: ${webResults.map(r => r.title).join(', ')}`);
+            // 웹 검색 결과의 영어 제목으로 후보 매칭
+            for (const webResult of webResults) {
+              if (webResult.englishTitle) {
+                const englishLower = webResult.englishTitle.toLowerCase();
+                for (const candidate of similarTitleCandidates) {
+                  const origTitle = (candidate.data.originalTitle || candidate.data.originalName || '').toLowerCase();
+                  if (origTitle && compareTwoStrings(origTitle, englishLower) >= 0.7) {
+                    this.logger.log(`  [MATCH] ${pathPrefix} web verified → ${candidate.data.title || candidate.data.name} (id=${candidate.data.id}, english=${origTitle})`);
+                    return candidate;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // 미디어 타입 힌트로 후보 필터링 (movie vs tv 구분)
+        if (aiInference?.mediaTypeHint) {
+          const mediaTypeMatches = similarTitleCandidates.filter((c) => c.type === aiInference.mediaTypeHint);
+          this.logger.log(`  [VERIFY] MediaType hint "${aiInference.mediaTypeHint}" matches: ${mediaTypeMatches.length} candidates`);
+
+          if (mediaTypeMatches.length === 1) {
+            // 미디어 타입이 일치하는 후보가 하나뿐이면 바로 선택
+            this.logger.log(`  [MATCH] ${pathPrefix} mediaType match → ${mediaTypeMatches[0].data.title || mediaTypeMatches[0].data.name} (id=${mediaTypeMatches[0].data.id})`);
+            return mediaTypeMatches[0];
+          }
+
+          if (mediaTypeMatches.length > 1) {
+            // 여러 개 일치하면 그 중에서 플롯 비교
+            this.logger.log(`  [VERIFY] Multiple mediaType matches, using plot comparison among them`);
+            const plotMatch = await this.findBestMatchByPlotComparison(videoId, mediaTypeMatches, undefined, description);
+            if (plotMatch) {
+              this.logger.log(`  [MATCH] ${pathPrefix} plot+mediaType → ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
+              return plotMatch;
+            }
+
+            // 플롯 비교 실패 시 최신 영화 선호 (동명이인 구분)
+            const sortedByDate = [...mediaTypeMatches].sort((a, b) => {
+              const dateA = a.data.releaseDate || a.data.firstAirDate || '';
+              const dateB = b.data.releaseDate || b.data.firstAirDate || '';
+              return dateB.localeCompare(dateA); // 최신순
+            });
+            this.logger.log(`  [MATCH] ${pathPrefix} mediaType newest → ${sortedByDate[0].data.title || sortedByDate[0].data.name} (id=${sortedByDate[0].data.id}, date=${sortedByDate[0].data.releaseDate || sortedByDate[0].data.firstAirDate})`);
+            return sortedByDate[0];
+          }
+        }
+
+        // 미디어 타입 힌트 없거나 불일치 시 플롯 비교 폴백
+        const plotMatch = await this.findBestMatchByPlotComparison(videoId, similarTitleCandidates, undefined, description);
+        if (plotMatch) {
+          this.logger.log(`  [MATCH] ${pathPrefix} plot comparison → ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
+          return plotMatch;
+        }
+      }
     }
 
     // 스코어링 매칭 (AI 추론 장르/연도 가중치 적용)
     match = this.primaryVideoSelectionService.selectBestCandidate(tmdbCandidates, titles, description, aiInference);
     if (match) {
+      // 유사 제목 검증: 스코어링 매칭도 유사 제목 체크 (트래픽 vs 트래픽트 케이스)
+      const verifiedMatch = await this.verifySimilarTitles(
+        match,
+        tmdbCandidates,
+        titles,
+        videoId,
+        description,
+      );
+      if (verifiedMatch && verifiedMatch.data.id !== match.data.id) {
+        this.logger.log(`  [VERIFY] Similar title check (scoring) suggests: ${verifiedMatch.data.title || verifiedMatch.data.name} (id=${verifiedMatch.data.id})`);
+        return verifiedMatch;
+      }
       this.logger.log(`  [MATCH] ${pathPrefix} scoring → ${match.data.title || match.data.name} (id=${match.data.id}, path=${pathPrefix}-extracted)`);
       return match;
     }
@@ -481,12 +965,97 @@ export class RegisterVideoUseCase {
   }
 
   /**
+   * 유사 제목 검증
+   * 추출된 제목이 다른 TMDB 후보의 부분 문자열인 경우 줄거리 비교로 검증
+   * 예: "트래픽"(추출) vs "트래픽트"(TMDB) - 줄거리 비교로 진짜 후보 선택
+   */
+  private async verifySimilarTitles(
+    currentMatch: TMDBMatchResult,
+    candidates: TMDBMatchResult[],
+    extractedTitles: string[],
+    videoId?: string,
+    description?: string,
+  ): Promise<TMDBMatchResult | null> {
+    if (candidates.length < 2 || !videoId) {
+      return null;
+    }
+
+    const currentTitle = (currentMatch.data.title || currentMatch.data.name || '').toLowerCase();
+
+    // 유사 제목 후보 찾기: 추출된 제목이 다른 후보 제목의 prefix/substring인 경우
+    const similarCandidates = candidates.filter((c) => {
+      if (c.data.id === currentMatch.data.id) return false;
+
+      const otherTitle = (c.data.title || c.data.name || '').toLowerCase();
+      const otherOriginal = (c.data.originalTitle || c.data.originalName || '').toLowerCase();
+
+      // 현재 매칭된 제목이 다른 제목의 prefix인지 확인
+      // 예: "트래픽" vs "트래픽트", "인셉션" vs "인셉션2"
+      const isPrefixMatch =
+        (otherTitle.startsWith(currentTitle) && otherTitle !== currentTitle) ||
+        (otherOriginal.startsWith(currentTitle) && otherOriginal !== currentTitle);
+
+      // 추출된 제목 중 하나가 다른 후보의 prefix인지 확인
+      const extractedIsPrefix = extractedTitles.some((ext) => {
+        const extLower = ext.toLowerCase();
+        return (otherTitle.startsWith(extLower) && otherTitle !== extLower) ||
+               (otherOriginal.startsWith(extLower) && otherOriginal !== extLower);
+      });
+
+      return isPrefixMatch || extractedIsPrefix;
+    });
+
+    if (similarCandidates.length === 0) {
+      return null;
+    }
+
+    this.logger.log(`  [VERIFY] Found ${similarCandidates.length} similar title candidates, running plot comparison`);
+
+    // 현재 매칭 + 유사 후보들로 줄거리 비교
+    const candidatesForComparison = [currentMatch, ...similarCandidates];
+
+    try {
+      const plotMatch = await this.findBestMatchByPlotComparison(
+        videoId,
+        candidatesForComparison,
+        undefined,
+        description,
+      );
+
+      // 줄거리 비교가 결과를 반환하면 사용
+      if (plotMatch) {
+        return plotMatch;
+      }
+
+      // 줄거리 비교 실패 시 (overview 없는 경우 등) TMDB 검색 순서 고려
+      // TMDB는 더 관련성 높은 결과를 먼저 반환하므로, 추출 제목이 prefix인 더 긴 제목이
+      // 먼저 반환되었다면 그것이 실제 의도한 콘텐츠일 가능성이 높음
+      for (const similar of similarCandidates) {
+        const similarIndex = candidates.indexOf(similar);
+        const currentIndex = candidates.indexOf(currentMatch);
+
+        // 유사 후보가 현재 매칭보다 TMDB 결과에서 앞에 있으면 선택
+        if (similarIndex !== -1 && currentIndex !== -1 && similarIndex < currentIndex) {
+          this.logger.log(`  [VERIFY] Preferring "${similar.data.title || similar.data.name}" (id=${similar.data.id}) - appears before "${currentTitle}" in TMDB results`);
+          return similar;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      this.logger.warn(`  [VERIFY] Plot comparison failed: ${(error as Error).message}`);
+      return null;
+    }
+  }
+
+  /**
    * TMDB 병렬 검색
    * 순차 호출 → Promise.all 병렬 호출로 변경
    */
   private async searchTMDBCandidatesParallel(
     titleCandidates: string[],
     description?: string,
+    explicitYear?: string,
   ): Promise<TMDBMatchResult[]> {
     const validCandidates = titleCandidates
       .slice(0, TMDB_CONFIG.MAX_CANDIDATES)
@@ -496,8 +1065,8 @@ export class RegisterVideoUseCase {
       return [];
     }
 
-    // 연도 힌트 추출 (제목 또는 설명에서)
-    const yearHint = this.extractYearHint(validCandidates, description);
+    // 연도 힌트 추출 (명시적 연도 > 제목/설명에서 추출)
+    const yearHint = explicitYear || this.extractYearHint(validCandidates, description);
 
     // 검색 쿼리 변형 생성 (한국어+숫자 공백 정규화)
     const searchQueries = this.expandSearchQueries(validCandidates);
@@ -627,15 +1196,25 @@ export class RegisterVideoUseCase {
   /**
    * 한국어+숫자 공백 정규화 등 검색 쿼리 변형 생성
    * "조폭 마누라2" → ["조폭 마누라2", "조폭 마누라 2"]
+   * "프렌즈 앤 네이버스" → ["프렌즈 앤 네이버스", "프렌즈 & 네이버스"]
    */
   private expandSearchQueries(candidates: string[]): string[] {
     const expanded: string[] = [];
     for (const candidate of candidates) {
       expanded.push(candidate);
+
       // 한글 뒤에 바로 숫자가 오는 경우 공백 삽입 변형 추가
       const spaced = candidate.replace(/([가-힣])(\d)/g, '$1 $2');
       if (spaced !== candidate && !expanded.includes(spaced)) {
         expanded.push(spaced);
+      }
+
+      // "앤" → "&" 변환 (프렌즈 앤 네이버스 → 프렌즈 & 네이버스)
+      if (candidate.includes('앤')) {
+        const withAmpersand = candidate.replace(/앤/g, '&');
+        if (!expanded.includes(withAmpersand)) {
+          expanded.push(withAmpersand);
+        }
       }
     }
     return expanded;
@@ -757,6 +1336,34 @@ export class RegisterVideoUseCase {
   }
 
   /**
+   * YouTube 제목에서 미디어 타입 힌트 추출
+   * "드라마" → 'tv', "영화" → 'movie'
+   */
+  private extractMediaTypeHint(youtubeTitle: string): 'tv' | 'movie' | null {
+    const titleLower = youtubeTitle.toLowerCase();
+
+    // TV 드라마 힌트
+    const tvIndicators = ['드라마', '시즌', '에피소드', '최종화', '시리즈', '웹드라마', 'drama', 'series', 'season'];
+    for (const indicator of tvIndicators) {
+      if (titleLower.includes(indicator)) {
+        this.logger.log(`  [MediaType] Detected TV hint: "${indicator}" in title`);
+        return 'tv';
+      }
+    }
+
+    // 영화 힌트
+    const movieIndicators = ['영화', '극장판', '무비', 'movie', 'film'];
+    for (const indicator of movieIndicators) {
+      if (titleLower.includes(indicator)) {
+        this.logger.log(`  [MediaType] Detected movie hint: "${indicator}" in title`);
+        return 'movie';
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * 짧은 한글 제목을 로마자로 변환 (기본적인 변환)
    * 예: "루" → "Lou", "셀" → "Cell"
    */
@@ -802,6 +1409,19 @@ export class RegisterVideoUseCase {
   }
 
   /**
+   * Phase 1 미디어 타입 힌트를 TMDB API 호환 타입으로 변환
+   * anime/documentary -> movie (TMDB는 movie/tv만 구분)
+   */
+  private convertMediaTypeHint(
+    hint: 'movie' | 'tv' | 'anime' | 'documentary' | null,
+  ): 'movie' | 'tv' | null {
+    if (!hint) return null;
+    if (hint === 'movie' || hint === 'tv') return hint;
+    // anime, documentary는 movie로 처리 (TMDB API 호환성)
+    return 'movie';
+  }
+
+  /**
    * 줄거리 비교를 통한 최적 TMDB 후보 선택
    * 자막 내용과 TMDB overview를 비교하여 가장 유사한 후보 반환
    */
@@ -831,13 +1451,25 @@ export class RegisterVideoUseCase {
         return null;
       }
 
-      // 각 후보의 overview와 비교
+      // 비디오 제목에서 키워드 추출 (따옴표 안 텍스트 우선)
+      const actualTitle = videoTitle || videoWithTranscript.title || '';
+      const quotedMatch = actualTitle.match(/['""'](.*?)['""']/);
+      const titleKeywords = quotedMatch ? quotedMatch[1] : actualTitle;
+
+      // 각 후보의 overview와 비교 (자막 + 제목 키워드 복합 점수)
       const MIN_PLOT_SIMILARITY = 0.10; // 임계값 낮춤 (0.15 → 0.10)
       const scored = candidates
         .filter((c) => c.data.overview && c.data.overview.length > 20)
         .map((candidate) => {
-          const similarity = comparePlotContent(transcript, candidate.data.overview);
-          return { candidate, similarity };
+          // 자막-줄거리 유사도
+          const transcriptSimilarity = comparePlotContent(transcript, candidate.data.overview);
+          // 제목 키워드-줄거리 유사도 (보조 지표)
+          const titleSimilarity = titleKeywords.length > 3
+            ? comparePlotContent(titleKeywords, candidate.data.overview)
+            : 0;
+          // 복합 점수: 자막 80% + 제목 20% 가중치
+          const similarity = transcriptSimilarity * 0.8 + titleSimilarity * 0.2;
+          return { candidate, similarity, transcriptSimilarity, titleSimilarity };
         });
 
       if (scored.length === 0) {
@@ -849,10 +1481,10 @@ export class RegisterVideoUseCase {
       scored.sort((a, b) => b.similarity - a.similarity);
 
       // 상위 3개 후보 로그
-      this.logger.log(`  [Plot] Similarity scores:`);
-      scored.slice(0, 3).forEach(({ candidate, similarity }) => {
+      this.logger.log(`  [Plot] Similarity scores (title keywords: "${titleKeywords}"):`);
+      scored.slice(0, 3).forEach(({ candidate, similarity, transcriptSimilarity, titleSimilarity }) => {
         const name = candidate.data.title || candidate.data.name;
-        this.logger.log(`    → ${name} (id=${candidate.data.id}, sim=${(similarity * 100).toFixed(1)}%)`);
+        this.logger.log(`    → ${name} (id=${candidate.data.id}, combined=${(similarity * 100).toFixed(1)}%, transcript=${(transcriptSimilarity * 100).toFixed(1)}%, title=${(titleSimilarity * 100).toFixed(1)}%)`);
       });
 
       const best = scored[0];
@@ -883,5 +1515,35 @@ export class RegisterVideoUseCase {
       this.logger.warn(`  [Plot] Comparison failed: ${(error as Error).message}`);
       return null;
     }
+  }
+
+  /**
+   * 제목에서 미디어 타입 접미사 제거
+   * "타임즈(드라마)" → "타임즈"
+   * "인셉션(영화)" → "인셉션"
+   */
+  private cleanMediaTypeSuffix(title: string): string {
+    // 괄호 안 미디어 타입 접미사 제거
+    const suffixes = [
+      /\(드라마\)$/i,
+      /\(영화\)$/i,
+      /\(애니메이션\)$/i,
+      /\(애니\)$/i,
+      /\(다큐멘터리\)$/i,
+      /\(다큐\)$/i,
+      /\(시리즈\)$/i,
+      /\(미니시리즈\)$/i,
+      /\(TV\)$/i,
+      /\(TV 드라마\)$/i,
+      /\(한국 드라마\)$/i,
+      /\(K-드라마\)$/i,
+    ];
+
+    let cleaned = title.trim();
+    for (const suffix of suffixes) {
+      cleaned = cleaned.replace(suffix, '').trim();
+    }
+
+    return cleaned;
   }
 }

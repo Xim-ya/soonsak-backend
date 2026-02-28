@@ -5,12 +5,14 @@ import {
   IAIAnalyzerPort,
   AIAnalyzeParams,
   AIAnalysisResult,
+  DirectExtractionParams,
+  DirectExtractionResult,
   IYouTubeExtractorPort,
 } from '@/application/ports';
 import { INJECTION_TOKENS, AI_CONFIG } from '@/shared/constants';
 import { AIAnalysisError } from '@/domain/errors/domain.error';
 import { retryWithBackoff } from '@/shared/utils/async.util';
-import { buildUnifiedAnalysisPrompt } from './prompts';
+import { buildUnifiedAnalysisPrompt, buildDirectExtractionPrompt } from './prompts';
 
 /**
  * OpenAI 어댑터
@@ -48,6 +50,133 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
     return this.openai;
   }
 
+  /**
+   * Phase 1: 직접 추출 (Simple Extraction)
+   * 자막에서 명시적으로 언급된 제목만 추출
+   * confidence >= 80이면 Phase 2 스킵 가능
+   */
+  async extractDirectMention(params: DirectExtractionParams): Promise<DirectExtractionResult> {
+    const { videoId, videoTitle, videoDescription } = params;
+
+    this.logger.log(`[Phase 1] Direct extraction for video: ${videoId}`);
+
+    try {
+      // 자막 가져오기 (캐시 활용, lastFullTranscript 업데이트됨)
+      await this.extractVideoContentCached(videoId);
+      const fullTranscript = this.lastFullTranscript;
+
+      // 자막 세그먼트 추출 (앞부분 800자, 중간 60~80% 1000자, 뒷부분 300자)
+      const len = fullTranscript.length;
+      const transcriptStart = fullTranscript.substring(0, 800);
+
+      // 중간 세그먼트: 60~80% 지점에서 1000자 (작중 대사에서 제목 힌트 추출용)
+      // 영화/드라마 리뷰 중반~후반에 제목이 재언급되는 경우가 많음
+      const middleStart = Math.floor(len * 0.6);
+      const middleLen = 1000;
+      const transcriptMiddle = len > 1500
+        ? fullTranscript.substring(middleStart, middleStart + middleLen)
+        : '';
+
+      const transcriptEnd = len > 1000
+        ? fullTranscript.substring(Math.max(0, len - 300))
+        : '';
+
+      this.logger.log(`[Phase 1] Transcript length: ${len}`);
+
+      // 사전 패턴 매칭: "저 XXX 기자예요" 패턴 스캔
+      const dialogueHint = this.extractDialoguePatternHint(fullTranscript);
+      if (dialogueHint) {
+        this.logger.log(`[Phase 1] Found dialogue pattern hint: "${dialogueHint}"`);
+      }
+
+      const prompt = buildDirectExtractionPrompt({
+        videoTitle,
+        videoDescription,
+        transcriptStart,
+        transcriptMiddle,
+        transcriptEnd,
+        dialogueHint: dialogueHint || undefined,
+      });
+
+      const response = await retryWithBackoff(
+        () => this.getOpenAI().chat.completions.create({
+          model: this.model,
+          messages: [
+            {
+              role: 'system',
+              content: '당신은 YouTube 영화/드라마 리뷰 영상에서 작품 제목을 정확하게 추출하는 전문가입니다. 명시적으로 언급된 제목만 추출하고, 일반 명사나 클릭베이트를 제목으로 착각하지 마세요. 반드시 JSON으로 응답하세요.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          temperature: 0.1,
+          max_tokens: 500,
+          response_format: { type: 'json_object' },
+        }),
+        { maxRetries: 2, baseDelay: 1000 },
+      );
+
+      const result = response.choices[0]?.message?.content || '';
+      this.logger.log(`[Phase 1] Raw response: ${result.substring(0, 300)}`);
+
+      return this.parseDirectExtractionResponse(result);
+    } catch (error) {
+      const errorMessage = (error as Error).message;
+      this.logger.warn(`[Phase 1] Direct extraction failed: ${errorMessage}`);
+
+      // Phase 1 실패 시 빈 결과 반환 (Phase 2로 진행)
+      return {
+        extractedTitle: null,
+        confidence: 0,
+        mediaTypeHint: null,
+        reasoning: `Phase 1 실패: ${errorMessage}`,
+        includesEnding: false,
+      };
+    }
+  }
+
+  /**
+   * Phase 1 응답 파싱
+   */
+  private parseDirectExtractionResponse(aiResponse: string): DirectExtractionResult {
+    try {
+      const parsed = JSON.parse(aiResponse.trim());
+
+      return {
+        extractedTitle: parsed.extracted_title || null,
+        confidence: parsed.confidence || 0,
+        mediaTypeHint: this.parseMediaTypeHint(parsed.media_type_hint),
+        reasoning: parsed.reasoning || '',
+        includesEnding: parsed.includes_ending || false,
+      };
+    } catch {
+      this.logger.warn('[Phase 1] Failed to parse JSON response');
+      return {
+        extractedTitle: null,
+        confidence: 0,
+        mediaTypeHint: null,
+        reasoning: 'JSON 파싱 실패',
+        includesEnding: false,
+      };
+    }
+  }
+
+  /**
+   * 미디어 타입 힌트 파싱
+   */
+  private parseMediaTypeHint(hint: string | null | undefined): 'movie' | 'tv' | 'anime' | 'documentary' | null {
+    if (!hint) return null;
+    const normalized = hint.toLowerCase();
+    if (normalized === 'movie') return 'movie';
+    if (normalized === 'tv') return 'tv';
+    if (normalized === 'anime') return 'anime';
+    if (normalized === 'documentary') return 'documentary';
+    return null;
+  }
+
+  /**
+   * Phase 2: 추론 분석 (Inference)
+   * 줄거리 기반 추론, 웹 검색어 생성 등 복잡한 분석
+   */
   async analyzeVideoContent(params: AIAnalyzeParams): Promise<AIAnalysisResult> {
     const { videoId, videoDuration, tmdbCandidates } = params;
 
@@ -230,6 +359,7 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
         englishTitles: parsed.english_titles || [],
         inferredYear: parsed.inferred_year || null,
         inferredGenres: parsed.inferred_genres || [],
+        searchQueries: parsed.search_queries || [],
       };
 
       if (parsed.selected_tmdb) {
@@ -284,6 +414,36 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
       extractedContent: content.substring(0, 500),
       extractedTitles: [],
     };
+  }
+
+  /**
+   * 자막에서 대사 패턴 힌트 추출
+   * "저 XXX 기자예요", "XXX 방송국", "XXX 신문사" 등의 패턴에서 기관명 추출
+   */
+  private extractDialoguePatternHint(transcript: string): string | null {
+    // 기자/방송국/신문사 패턴
+    const patterns = [
+      // "저 XXX 기자예요" / "저 XXX OOO 기자입니다"
+      /저\s+([가-힣]{2,10})\s+(?:[가-힣]{2,5}\s+)?기자(?:예요|입니다|에요)/,
+      // "XXX 방송국" / "XXX 신문사" / "XXX 뉴스"
+      /([가-힣]{2,10})\s+(?:방송국|신문사|뉴스|미디어|언론사)/,
+      // "XXX에서 일하는"
+      /([가-힣]{2,10})에서\s+일하는/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = transcript.match(pattern);
+      if (match && match[1]) {
+        const candidate = match[1].trim();
+        // 일반 명사 필터링
+        const commonNouns = ['저희', '우리', '내가', '제가', '거기', '여기', '그곳', '이곳'];
+        if (!commonNouns.includes(candidate)) {
+          return candidate;
+        }
+      }
+    }
+
+    return null;
   }
 
 }
