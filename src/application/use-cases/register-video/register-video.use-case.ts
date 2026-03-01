@@ -889,14 +889,30 @@ export class RegisterVideoUseCase {
               return plotMatch;
             }
 
-            // 플롯 비교 실패 시 최신 영화 선호 (동명이인 구분)
-            const sortedByDate = [...mediaTypeMatches].sort((a, b) => {
+            // 플롯 비교 실패 시 인기도 + 최신 콘텐츠 선호 (동명이인 구분)
+            const currentYear = new Date().getFullYear();
+            const sortedByScore = [...mediaTypeMatches].sort((a, b) => {
               const dateA = a.data.releaseDate || a.data.firstAirDate || '';
               const dateB = b.data.releaseDate || b.data.firstAirDate || '';
-              return dateB.localeCompare(dateA); // 최신순
+              const yearA = dateA ? parseInt(dateA.split('-')[0], 10) : 0;
+              const yearB = dateB ? parseInt(dateB.split('-')[0], 10) : 0;
+              const ageA = yearA ? currentYear - yearA : 100;
+              const ageB = yearB ? currentYear - yearB : 100;
+              const popA = a.data.popularity || 0;
+              const popB = b.data.popularity || 0;
+
+              // 오래된 콘텐츠(50년 이상) 페널티
+              const penaltyA = ageA >= 50 ? -100 : 0;
+              const penaltyB = ageB >= 50 ? -100 : 0;
+
+              // 인기도 + 최신 순 + 오래된 콘텐츠 페널티
+              const scoreA = popA + (100 - ageA) * 0.1 + penaltyA;
+              const scoreB = popB + (100 - ageB) * 0.1 + penaltyB;
+              return scoreB - scoreA;
             });
-            this.logger.log(`  [MATCH] ${pathPrefix} mediaType newest → ${sortedByDate[0].data.title || sortedByDate[0].data.name} (id=${sortedByDate[0].data.id}, date=${sortedByDate[0].data.releaseDate || sortedByDate[0].data.firstAirDate})`);
-            return sortedByDate[0];
+            const selected = sortedByScore[0];
+            this.logger.log(`  [MATCH] ${pathPrefix} mediaType+popularity → ${selected.data.title || selected.data.name} (id=${selected.data.id}, pop=${selected.data.popularity?.toFixed(1)})`);
+            return selected;
           }
         }
 
@@ -905,6 +921,33 @@ export class RegisterVideoUseCase {
         if (plotMatch) {
           this.logger.log(`  [MATCH] ${pathPrefix} plot comparison → ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id})`);
           return plotMatch;
+        }
+
+        // 플롯 비교 실패 시 인기도 + 최신 콘텐츠 기준 선택
+        if (similarTitleCandidates.length >= 2) {
+          const currentYear = new Date().getFullYear();
+          const sortedByScore = [...similarTitleCandidates].sort((a, b) => {
+            const dateA = a.data.releaseDate || a.data.firstAirDate || '';
+            const dateB = b.data.releaseDate || b.data.firstAirDate || '';
+            const yearA = dateA ? parseInt(dateA.split('-')[0], 10) : 0;
+            const yearB = dateB ? parseInt(dateB.split('-')[0], 10) : 0;
+            const ageA = yearA ? currentYear - yearA : 100;
+            const ageB = yearB ? currentYear - yearB : 100;
+            const popA = a.data.popularity || 0;
+            const popB = b.data.popularity || 0;
+
+            // 오래된 콘텐츠(50년 이상) 페널티
+            const penaltyA = ageA >= 50 ? -100 : 0;
+            const penaltyB = ageB >= 50 ? -100 : 0;
+
+            // 인기도 + 최신 순 + 오래된 콘텐츠 페널티
+            const scoreA = popA + (100 - ageA) * 0.1 + penaltyA;
+            const scoreB = popB + (100 - ageB) * 0.1 + penaltyB;
+            return scoreB - scoreA;
+          });
+          const selected = sortedByScore[0];
+          this.logger.log(`  [MATCH] ${pathPrefix} popularity fallback → ${selected.data.title || selected.data.name} (id=${selected.data.id}, pop=${selected.data.popularity?.toFixed(1)})`);
+          return selected;
         }
       }
     }
@@ -1500,12 +1543,38 @@ export class RegisterVideoUseCase {
         const secondBest = scored[1];
         const gap = best.similarity - secondBest.similarity;
 
-        // 차이가 작으면 장르/인기도로 구분 시도
-        if (gap < 0.03) {
-          this.logger.log(`  [Plot] Very close scores (gap=${(gap * 100).toFixed(1)}%), using popularity as tiebreaker`);
-          // 인기도가 더 높은 것 선택
-          if ((secondBest.candidate.data.popularity || 0) > (best.candidate.data.popularity || 0) * 1.5) {
+        // 차이가 작으면 인기도/연도로 구분 시도
+        if (gap < 0.05) {
+          const bestPop = best.candidate.data.popularity || 0;
+          const secondPop = secondBest.candidate.data.popularity || 0;
+          const currentYear = new Date().getFullYear();
+
+          // 연도 정보 추출
+          const bestYear = best.candidate.data.releaseDate || best.candidate.data.firstAirDate;
+          const secondYear = secondBest.candidate.data.releaseDate || secondBest.candidate.data.firstAirDate;
+          const bestAge = bestYear ? currentYear - parseInt(bestYear.split('-')[0], 10) : 0;
+          const secondAge = secondYear ? currentYear - parseInt(secondYear.split('-')[0], 10) : 0;
+
+          this.logger.log(`  [Plot] Close scores (gap=${(gap * 100).toFixed(1)}%), comparing: pop=${bestPop.toFixed(1)} vs ${secondPop.toFixed(1)}, age=${bestAge}y vs ${secondAge}y`);
+
+          // 인기도가 5배 이상 차이나면 인기도 높은 것 선택
+          if (secondPop > bestPop * 5) {
+            this.logger.log(`  [Plot] Selecting by popularity: ${secondBest.candidate.data.title || secondBest.candidate.data.name}`);
             return secondBest.candidate;
+          }
+          if (bestPop > secondPop * 5) {
+            this.logger.log(`  [Plot] Confirming by popularity: ${best.candidate.data.title || best.candidate.data.name}`);
+            return best.candidate;
+          }
+
+          // 오래된 콘텐츠(50년 이상) vs 최신 콘텐츠 비교
+          if (bestAge >= 50 && secondAge < 50) {
+            this.logger.log(`  [Plot] Selecting newer content: ${secondBest.candidate.data.title || secondBest.candidate.data.name}`);
+            return secondBest.candidate;
+          }
+          if (secondAge >= 50 && bestAge < 50) {
+            this.logger.log(`  [Plot] Confirming newer content: ${best.candidate.data.title || best.candidate.data.name}`);
+            return best.candidate;
           }
         }
       }

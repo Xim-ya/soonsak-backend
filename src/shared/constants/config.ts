@@ -65,6 +65,16 @@ export const SELECTION_SCORE_WEIGHTS = {
   FIRST_CANDIDATE_BONUS: 2,
   /** 매칭 수락을 위한 최소 점수 (이 점수 미만이면 매칭 실패 처리) */
   MIN_MATCH_SCORE: 4,
+  /** 인기도 높음 보너스 (popularity >= 10) */
+  HIGH_POPULARITY_BONUS: 8,
+  /** 인기도 중간 보너스 (popularity >= 1) */
+  MODERATE_POPULARITY_BONUS: 4,
+  /** 인기도 매우 낮음 페널티 (popularity < 0.5) */
+  LOW_POPULARITY_PENALTY: -10,
+  /** 오래된 콘텐츠 페널티 (50년 이상) */
+  OLD_CONTENT_PENALTY: -25,
+  /** 매우 오래된 콘텐츠 페널티 (80년 이상) */
+  VERY_OLD_CONTENT_PENALTY: -40,
 } as const;
 
 /**

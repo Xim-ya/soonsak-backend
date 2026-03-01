@@ -192,6 +192,27 @@ export class PrimaryVideoSelectionService {
       }
     }
 
+    // 인기도 기반 점수 (동일 제목 다수 후보 구분에 중요)
+    const popularity = candidate.data.popularity || 0;
+    if (popularity >= 10) {
+      score += SELECTION_SCORE_WEIGHTS.HIGH_POPULARITY_BONUS;
+    } else if (popularity >= 1) {
+      score += SELECTION_SCORE_WEIGHTS.MODERATE_POPULARITY_BONUS;
+    } else if (popularity < 0.5) {
+      score += SELECTION_SCORE_WEIGHTS.LOW_POPULARITY_PENALTY;
+    }
+
+    // 오래된 콘텐츠 페널티 (현대 유튜버가 리뷰할 확률 낮음)
+    if (releaseYear) {
+      const currentYear = new Date().getFullYear();
+      const age = currentYear - releaseYear;
+      if (age >= 80) {
+        score += SELECTION_SCORE_WEIGHTS.VERY_OLD_CONTENT_PENALTY;
+      } else if (age >= 50) {
+        score += SELECTION_SCORE_WEIGHTS.OLD_CONTENT_PENALTY;
+      }
+    }
+
     // 첫 번째 후보 보너스
     if (index === 0) {
       score += SELECTION_SCORE_WEIGHTS.FIRST_CANDIDATE_BONUS;
