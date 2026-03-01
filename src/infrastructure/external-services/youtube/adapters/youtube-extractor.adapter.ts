@@ -248,13 +248,16 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     return info;
   }
 
+  /** 쇼츠 판단 기준: 3분 (180초) 이하 */
+  private readonly SHORTS_DURATION_THRESHOLD = 180;
+
   /**
    * 쇼츠 여부를 빠르게 확인 (youtubei.js 사용, rate limit 영향 적음)
    * yt-dlp 호출 전에 사용하여 불필요한 API 호출 방지
    *
-   * 보수적 접근: duration만으로 판단하지 않음
-   * - is_short 플래그가 true면 쇼츠
-   * - 확실하지 않으면 쇼츠 아님으로 처리 (false negative 허용)
+   * 쇼츠 판단 기준:
+   * - is_short 플래그가 true이면 쇼츠
+   * - duration > 0 AND duration <= 180초이면 쇼츠 (3분 이하 영상은 콘텐츠 리뷰로 부적합)
    */
   async checkIfShorts(videoId: string): Promise<{ isShorts: boolean; duration: number }> {
     const normalizedId = extractVideoId(videoId);
@@ -281,11 +284,11 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
         }
       }
 
-      // is_short 플래그 확인 (youtubei.js에서 제공)
-      // duration만으로 판단하지 않음 (3분 이하 일반 영상 오탐 방지)
-      const isShorts = basicInfo.is_short === true;
+      // 쇼츠 판단: is_short 플래그 OR duration <= 180초
+      // 3분 이하 영상은 콘텐츠 리뷰 영상으로 부적합하므로 스킵
+      const isShorts = basicInfo.is_short === true || (duration > 0 && duration <= this.SHORTS_DURATION_THRESHOLD);
 
-      this.logger.debug(`Shorts check for ${videoId}: is_short=${basicInfo.is_short}, duration=${duration}s`);
+      this.logger.debug(`Shorts check for ${videoId}: is_short=${basicInfo.is_short}, duration=${duration}s, result=${isShorts}`);
       return { isShorts, duration };
     } catch (error) {
       this.logger.debug(`Shorts check failed for ${videoId}: ${(error as Error).message}`);
@@ -370,12 +373,14 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
       this.cleanupTempFiles(tmpDir, videoId);
 
-      // 쇼츠 감지: 세로 영상 (aspect_ratio < 1) AND 3분 이하
+      // 쇼츠 감지: 세로 영상 (aspect_ratio < 1) OR 3분 이하
       // aspect_ratio가 9:16이면 0.5625, 16:9면 1.78
+      // 3분 이하 영상은 콘텐츠 리뷰 영상으로 부적합하므로 스킵
       const aspectRatio = ytdlpData.aspect_ratio;
       const duration = ytdlpData.duration || 0;
       const isVertical = aspectRatio !== undefined && aspectRatio < 1;
-      const isShorts = isVertical && duration > 0 && duration <= 180;
+      const isShortDuration = duration > 0 && duration <= this.SHORTS_DURATION_THRESHOLD;
+      const isShorts = isVertical || isShortDuration;
 
       return {
         id: videoId,
@@ -495,8 +500,9 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
     }
 
-    // 쇼츠 감지: is_short 플래그 사용 (duration만으로 판단하지 않음)
-    const isShorts = basicInfo.is_short === true;
+    // 쇼츠 감지: is_short 플래그 OR duration <= 180초
+    // 3분 이하 영상은 콘텐츠 리뷰 영상으로 부적합하므로 스킵
+    const isShorts = basicInfo.is_short === true || (duration > 0 && duration <= this.SHORTS_DURATION_THRESHOLD);
 
     // 자막 추출 시도 (youtube-transcript 패키지 사용)
     let transcript: string | undefined;
