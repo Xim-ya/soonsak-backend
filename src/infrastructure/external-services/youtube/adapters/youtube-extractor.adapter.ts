@@ -45,6 +45,13 @@ const isCookieError = (error: Error): boolean =>
   error.message.includes('not a bot') ||
   error.message.includes('cookies');
 
+/** 회원전용 비디오 에러 여부 확인 */
+const isMembersOnlyError = (error: Error): boolean =>
+  error.message.includes('members') ||
+  error.message.includes('Join this channel') ||
+  error.message.includes('membership') ||
+  error.message.includes('available to this channel');
+
 interface YtDlpOutput {
   id: string;
   title: string;
@@ -402,6 +409,12 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       this.cleanupTempFiles(tmpDir, videoId);
       const errorMessage = (error as Error).message;
       this.logger.warn(`yt-dlp extraction failed for ${videoId}: ${errorMessage}`);
+
+      // 회원전용 비디오 감지 시 특별한 에러 throw (호출자에서 스킵 처리)
+      if (isMembersOnlyError(error as Error)) {
+        this.logger.warn(`[${videoId}] Members-only video detected, skipping`);
+        throw new Error(`[MEMBERS_ONLY] ${errorMessage}`);
+      }
 
       // 쿠키 오류 감지 시 Slack 알림
       if (isCookieError(error as Error)) {

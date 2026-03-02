@@ -118,8 +118,17 @@ export class RegisterChannelVideosUseCase {
             }
           }
         } catch (error) {
-          result.failedCount++;
-          result.errors.push(`${video.videoId}: ${(error as Error).message}`);
+          const errorMessage = (error as Error).message;
+
+          // 회원전용 비디오는 스킵 처리
+          if (errorMessage.includes('[MEMBERS_ONLY]')) {
+            this.logger.warn(`  [SKIP] Members-only video: ${video.videoId}`);
+            result.skippedCount++;
+            result.processedCount--;
+          } else {
+            result.failedCount++;
+            result.errors.push(`${video.videoId}: ${errorMessage}`);
+          }
         }
 
         // API 레이트 리미팅 방지를 위한 딜레이
