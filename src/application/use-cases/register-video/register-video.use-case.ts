@@ -113,6 +113,7 @@ export class RegisterVideoUseCase {
           videoId,
           videoTitle: videoInfo.title,
           videoDescription: videoInfo.description,
+          videoDuration: videoInfo.duration,
         });
 
         this.logger.log(`  [Phase 1] Result: title="${directResult.extractedTitle}", confidence=${directResult.confidence}, mediaType=${directResult.mediaTypeHint}`);

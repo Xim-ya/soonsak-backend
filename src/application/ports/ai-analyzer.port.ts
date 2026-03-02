@@ -17,6 +17,8 @@ export interface DirectExtractionParams {
   videoId: string;
   videoTitle: string;
   videoDescription: string;
+  /** 영상 런타임 (초) - 결말 판단용 */
+  videoDuration?: number;
 }
 
 /**

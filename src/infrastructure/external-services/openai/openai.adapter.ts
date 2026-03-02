@@ -56,7 +56,7 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
    * confidence >= 80이면 Phase 2 스킵 가능
    */
   async extractDirectMention(params: DirectExtractionParams): Promise<DirectExtractionResult> {
-    const { videoId, videoTitle, videoDescription } = params;
+    const { videoId, videoTitle, videoDescription, videoDuration } = params;
 
     this.logger.log(`[Phase 1] Direct extraction for video: ${videoId}`);
 
@@ -77,8 +77,9 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
         ? fullTranscript.substring(middleStart, middleStart + middleLen)
         : '';
 
+      // transcriptEnd: 800자로 증가 (결말 판단을 위해 충분한 내용 전달)
       const transcriptEnd = len > 1000
-        ? fullTranscript.substring(Math.max(0, len - 300))
+        ? fullTranscript.substring(Math.max(0, len - 800))
         : '';
 
       this.logger.log(`[Phase 1] Transcript length: ${len}`);
@@ -96,6 +97,7 @@ export class OpenAIAdapter implements IAIAnalyzerPort {
         transcriptMiddle,
         transcriptEnd,
         dialogueHint: dialogueHint || undefined,
+        runtimeSeconds: videoDuration,
       });
 
       const response = await retryWithBackoff(
