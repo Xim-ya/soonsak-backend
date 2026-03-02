@@ -419,6 +419,59 @@ export class RegisterVideoUseCase {
               }
             }
 
+            // 웹 검색에서 제목 추출 실패 시, 검색 쿼리의 고유명사로 TMDB 직접 검색
+            if (!selectedMatch && aiAnalysis.searchQueries) {
+              const allProperNouns: string[] = [];
+              for (const query of aiAnalysis.searchQueries) {
+                const properNouns = this.extractProperNouns(query);
+                for (const noun of properNouns) {
+                  if (!allProperNouns.includes(noun)) {
+                    allProperNouns.push(noun);
+                  }
+                }
+              }
+
+              if (allProperNouns.length > 0) {
+                this.logger.log(`  [Web] Searching TMDB with proper nouns from queries: ${allProperNouns.join(', ')}`);
+                const properNounCandidates = await this.searchTMDBCandidatesParallel(allProperNouns.slice(0, 3));
+
+                for (const c of properNounCandidates) {
+                  if (!allTmdbCandidates.find((e) => e.data.id === c.data.id)) {
+                    allTmdbCandidates.push(c);
+                  }
+                }
+
+                if (properNounCandidates.length > 0) {
+                  this.logger.log(`  [Web] Found ${properNounCandidates.length} candidates from proper noun search`);
+
+                  // 줄거리 비교로 최적 후보 선택
+                  if (allTmdbCandidates.length >= 2) {
+                    const plotMatch = await this.findBestMatchByPlotComparison(videoId, allTmdbCandidates, videoInfo.title, videoInfo.description);
+                    if (plotMatch) {
+                      selectedMatch = plotMatch;
+                      matchConfidence = 70;
+                      this.logger.log(`  [MATCH] Proper noun search plot comparison -> ${plotMatch.data.title || plotMatch.data.name} (id=${plotMatch.data.id}, confidence=${matchConfidence})`);
+                    }
+                  }
+
+                  // 줄거리 비교 실패 시 스코어링
+                  if (!selectedMatch) {
+                    const scoringMatch = this.primaryVideoSelectionService.selectBestCandidate(
+                      properNounCandidates,
+                      allProperNouns,
+                      videoInfo.description,
+                      aiInference,
+                    );
+                    if (scoringMatch) {
+                      selectedMatch = scoringMatch;
+                      matchConfidence = 60;
+                      this.logger.log(`  [MATCH] Proper noun search scoring -> ${scoringMatch.data.title || scoringMatch.data.name} (id=${scoringMatch.data.id}, confidence=${matchConfidence})`);
+                    }
+                  }
+                }
+              }
+            }
+
             // Discover API 폴백 (웹 검색도 실패한 경우, 장르+연도로 검색)
             if (!selectedMatch && aiInference.inferredGenres && aiInference.inferredGenres.length > 0) {
               const genreIds = aiInference.inferredGenres
@@ -785,7 +838,28 @@ export class RegisterVideoUseCase {
   ): Promise<TMDBMatchResult | null> {
     // 괄호 안 원제를 별도 제목으로 분리: "한국제목 (Original)" → ["한국제목", "Original"]
     const expandedTitles = this.expandParenthesizedTitles(titles);
-    const tmdbCandidates = await this.searchTMDBCandidatesParallel(expandedTitles.slice(0, 5));
+    let tmdbCandidates = await this.searchTMDBCandidatesParallel(expandedTitles.slice(0, 5));
+
+    // 검색 결과 0건이고 영어 제목인 경우, 고유명사 키워드로 재검색
+    if (tmdbCandidates.length === 0) {
+      const englishTitles = titles.filter((t) => /[A-Za-z]{3,}/.test(t));
+      if (englishTitles.length > 0) {
+        const allProperNouns: string[] = [];
+        for (const title of englishTitles) {
+          const properNouns = this.extractProperNouns(title);
+          for (const noun of properNouns) {
+            if (!allProperNouns.includes(noun)) {
+              allProperNouns.push(noun);
+            }
+          }
+        }
+
+        if (allProperNouns.length > 0) {
+          this.logger.log(`  [${pathPrefix}] No results, retrying with proper nouns: ${allProperNouns.join(', ')}`);
+          tmdbCandidates = await this.searchTMDBCandidatesParallel(allProperNouns.slice(0, 3));
+        }
+      }
+    }
 
     if (tmdbCandidates.length === 0) return null;
 
@@ -1614,5 +1688,53 @@ export class RegisterVideoUseCase {
     }
 
     return cleaned;
+  }
+
+  /**
+   * 영어 제목/검색쿼리에서 고유명사(인명, 지명 등) 추출
+   * 예: "The Murdaugh Murders: A Southern Scandal" → ["Murdaugh", "Southern"]
+   * 예: "Murdaugh family scandal documentary" → ["Murdaugh"]
+   */
+  private extractProperNouns(text: string): string[] {
+    // 일반적인 불용어 (관사, 전치사, 일반 명사 등)
+    const stopWords = new Set([
+      // 관사/전치사
+      'the', 'a', 'an', 'of', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'from', 'as',
+      // 일반 명사 (영화/드라마 관련)
+      'movie', 'film', 'drama', 'series', 'show', 'documentary', 'season', 'episode',
+      'story', 'tale', 'saga', 'chronicles', 'murders', 'murder', 'death', 'killer',
+      'family', 'scandal', 'mystery', 'crime', 'thriller', 'horror', 'action', 'romance',
+      'review', 'trailer', 'official', 'full', 'complete', 'ending', 'explained',
+      // 지역/국가 일반어
+      'korean', 'american', 'british', 'japanese', 'chinese', 'hollywood', 'netflix',
+      // 기타 일반어
+      'new', 'old', 'best', 'top', 'real', 'true', 'last', 'final', 'first', 'great',
+    ]);
+
+    // 단어 추출 (영어 단어만)
+    const words = text.match(/[A-Za-z]+/g) || [];
+
+    // 고유명사 추출: 대문자로 시작하고, 불용어가 아니며, 3자 이상
+    const properNouns = words
+      .filter((word) => {
+        const lower = word.toLowerCase();
+        // 불용어 제외
+        if (stopWords.has(lower)) return false;
+        // 3자 미만 제외
+        if (word.length < 3) return false;
+        // 대문자로 시작하거나, 전체 대문자이거나 (검색쿼리에서 고유명사일 가능성)
+        // 또는 일반 소문자지만 불용어가 아닌 경우도 포함 (검색쿼리 키워드)
+        return true;
+      })
+      .filter((word, index, arr) => arr.indexOf(word) === index); // 중복 제거
+
+    // 대문자로 시작하는 단어 우선 반환 (진짜 고유명사)
+    const capitalized = properNouns.filter((w) => /^[A-Z]/.test(w));
+    if (capitalized.length > 0) {
+      return capitalized.slice(0, 3); // 최대 3개
+    }
+
+    // 대문자 없으면 전체에서 상위 3개 (검색쿼리 키워드)
+    return properNouns.slice(0, 3);
   }
 }
