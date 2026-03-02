@@ -101,7 +101,7 @@ export interface IContentSearchPort {
   /**
    * TV만 검색
    */
-  searchTV(query: string): Promise<ContentSearchResult[]>;
+  searchTV(query: string, year?: string): Promise<ContentSearchResult[]>;
 
   /**
    * Discover API로 영화 검색 (장르 + 연도 기반)

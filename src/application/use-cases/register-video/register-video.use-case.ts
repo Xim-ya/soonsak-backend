@@ -16,6 +16,7 @@ import {
   IContentSearchPort,
   IAIAnalyzerPort,
   IWebSearchPort,
+  ContentMatchResult,
 } from '@/application/ports';
 import { AIAnalysisError } from '@/domain/errors/domain.error';
 import { RegisterVideoInput, RegisterVideoResult } from './register-video.dto';
@@ -169,6 +170,15 @@ export class RegisterVideoUseCase {
             inferredGenres: aiAnalysis.inferredGenres,
             mediaTypeHint: phase1MediaTypeHint || mediaTypeHint,
           };
+
+          // 장르에서 미디어 타입 힌트 파생 (명시적 힌트가 없는 경우)
+          // "드라마" 장르가 포함되면 TV 시리즈일 가능성 높음
+          if (!aiInference.mediaTypeHint && aiInference.inferredGenres && aiInference.inferredGenres.length > 0) {
+            if (aiInference.inferredGenres.includes('드라마')) {
+              aiInference.mediaTypeHint = 'tv';
+              this.logger.log(`  [Phase 2] Derived mediaTypeHint=tv from genre "드라마"`);
+            }
+          }
 
           // 디버그: AI 추론 정보 로그
           if (aiInference.inferredYear) {
@@ -360,7 +370,7 @@ export class RegisterVideoUseCase {
                 }
 
                 const yearStr = extracted.year?.toString();
-                const webTmdbCandidates = await this.searchTMDBCandidatesParallel(searchTitles, '', yearStr);
+                const webTmdbCandidates = await this.searchTMDBCandidatesParallel(searchTitles, '', yearStr, aiInference.mediaTypeHint ?? undefined);
 
                 for (const c of webTmdbCandidates) {
                   if (!allTmdbCandidates.find((e) => e.data.id === c.data.id)) {
@@ -369,8 +379,13 @@ export class RegisterVideoUseCase {
                 }
 
                 // 고신뢰도 매칭 확인 (첫 번째만 저장)
+                // 미디어 타입 힌트가 있으면 해당 타입만 필터링
                 if (!webHighConfidenceMatch) {
-                  const webMatch = this.findHighConfidenceMatch(webTmdbCandidates, searchTitles);
+                  let candidatesForHighConfidence = webTmdbCandidates;
+                  if (aiInference.mediaTypeHint) {
+                    candidatesForHighConfidence = webTmdbCandidates.filter((c) => c.type === aiInference.mediaTypeHint);
+                  }
+                  const webMatch = this.findHighConfidenceMatch(candidatesForHighConfidence, searchTitles);
                   if (webMatch) {
                     webHighConfidenceMatch = webMatch;
                     webMatchConfidence = extracted.confidence || 80;
@@ -1173,6 +1188,7 @@ export class RegisterVideoUseCase {
     titleCandidates: string[],
     description?: string,
     explicitYear?: string,
+    mediaTypeHint?: string,
   ): Promise<TMDBMatchResult[]> {
     const validCandidates = titleCandidates
       .slice(0, TMDB_CONFIG.MAX_CANDIDATES)
@@ -1188,8 +1204,15 @@ export class RegisterVideoUseCase {
     // 검색 쿼리 변형 생성 (한국어+숫자 공백 정규화)
     const searchQueries = this.expandSearchQueries(validCandidates);
 
+    // 검색 결과 타입
+    type SearchResult = {
+      candidate: string;
+      results: ContentMatchResult[];
+      error: unknown;
+    };
+
     // 병렬로 모든 검색 실행
-    const searchPromises = searchQueries.map(async (candidate) => {
+    const searchPromises: Promise<SearchResult>[] = searchQueries.map(async (candidate) => {
       try {
         const results = await this.contentSearch.searchMulti(candidate, yearHint || undefined);
         return { candidate, results, error: null };
@@ -1197,6 +1220,43 @@ export class RegisterVideoUseCase {
         return { candidate, results: [], error: err };
       }
     });
+
+    // mediaTypeHint가 'tv'일 때 TV 전용 검색도 병렬 실행
+    // (searchMulti는 영화를 우선 반환하므로 TV 드라마가 누락될 수 있음)
+    if (mediaTypeHint === 'tv') {
+      for (const candidate of searchQueries.slice(0, 3)) { // 상위 3개만
+        searchPromises.push(
+          (async (): Promise<SearchResult> => {
+            try {
+              const tvResults = await this.contentSearch.searchTV(candidate, yearHint || undefined);
+              const mapped: ContentMatchResult[] = tvResults.map((tv) => ({
+                type: 'tv' as const,
+                data: {
+                  id: tv.id,
+                  name: tv.name,
+                  originalName: tv.originalName,
+                  title: tv.name,
+                  originalTitle: tv.originalName,
+                  releaseDate: tv.firstAirDate,
+                  overview: tv.overview,
+                  posterPath: tv.posterPath,
+                  backdropPath: tv.backdropPath,
+                  popularity: tv.popularity,
+                  voteAverage: tv.voteAverage,
+                  voteCount: tv.voteCount,
+                  genreIds: tv.genreIds,
+                  originalLanguage: tv.originalLanguage,
+                  mediaType: 'tv' as const,
+                },
+              }));
+              return { candidate, results: mapped, error: null };
+            } catch (err) {
+              return { candidate, results: [], error: err };
+            }
+          })(),
+        );
+      }
+    }
 
     const searchResults = await Promise.all(searchPromises);
 
@@ -1631,12 +1691,13 @@ export class RegisterVideoUseCase {
 
           this.logger.log(`  [Plot] Close scores (gap=${(gap * 100).toFixed(1)}%), comparing: pop=${bestPop.toFixed(1)} vs ${secondPop.toFixed(1)}, age=${bestAge}y vs ${secondAge}y`);
 
-          // 인기도가 5배 이상 차이나면 인기도 높은 것 선택
-          if (secondPop > bestPop * 5) {
+          // 인기도가 1.8배 이상 차이나면 인기도 높은 것 선택
+          // (비슷한 점수일 때 인기도가 높은 콘텐츠가 더 정확할 가능성 높음)
+          if (secondPop > bestPop * 1.8) {
             this.logger.log(`  [Plot] Selecting by popularity: ${secondBest.candidate.data.title || secondBest.candidate.data.name}`);
             return secondBest.candidate;
           }
-          if (bestPop > secondPop * 5) {
+          if (bestPop > secondPop * 1.8) {
             this.logger.log(`  [Plot] Confirming by popularity: ${best.candidate.data.title || best.candidate.data.name}`);
             return best.candidate;
           }
