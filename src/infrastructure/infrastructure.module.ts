@@ -8,12 +8,14 @@ import {
   SupabaseChannelRepository,
   SupabaseHomeSectionRepository,
   SupabaseFailedVideoRepository,
+  SupabasePushRepository,
 } from './persistence/supabase/repositories';
 import { YouTubeExtractorAdapter, RSSFeedAdapter } from './external-services/youtube/adapters';
 import { TMDBAdapter } from './external-services/tmdb/tmdb.adapter';
 import { OpenAIAdapter, OpenAIHomeSectionAdapter } from './external-services/openai';
 import { SlackNotificationAdapter } from './external-services/slack';
 import { WebSearchAdapter } from './external-services/web-search';
+import { ExpoPushAdapter } from './external-services/expo-push';
 
 /**
  * 인프라스트럭처 모듈
@@ -74,6 +76,14 @@ import { WebSearchAdapter } from './external-services/web-search';
       provide: INJECTION_TOKENS.WEB_SEARCH,
       useClass: WebSearchAdapter,
     },
+    {
+      provide: INJECTION_TOKENS.EXPO_PUSH_SERVICE,
+      useClass: ExpoPushAdapter,
+    },
+    {
+      provide: INJECTION_TOKENS.PUSH_REPOSITORY,
+      useClass: SupabasePushRepository,
+    },
   ],
   exports: [
     SupabaseClientProvider,
@@ -89,6 +99,8 @@ import { WebSearchAdapter } from './external-services/web-search';
     INJECTION_TOKENS.SLACK_NOTIFIER,
     INJECTION_TOKENS.HOME_SECTION_GENERATOR,
     INJECTION_TOKENS.WEB_SEARCH,
+    INJECTION_TOKENS.EXPO_PUSH_SERVICE,
+    INJECTION_TOKENS.PUSH_REPOSITORY,
   ],
 })
 export class InfrastructureModule {}

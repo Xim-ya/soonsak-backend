@@ -6,6 +6,7 @@ import {
   RegisterChannelUseCase,
   RegisterChannelVideosUseCase,
   GenerateHomeSectionsUseCase,
+  SendPersonalizedPushUseCase,
 } from './use-cases';
 import { BatchProcessingService } from './services';
 
@@ -20,6 +21,7 @@ import { BatchProcessingService } from './services';
     RegisterChannelUseCase,
     RegisterChannelVideosUseCase,
     GenerateHomeSectionsUseCase,
+    SendPersonalizedPushUseCase,
     BatchProcessingService,
   ],
   exports: [
@@ -28,6 +30,7 @@ import { BatchProcessingService } from './services';
     RegisterChannelUseCase,
     RegisterChannelVideosUseCase,
     GenerateHomeSectionsUseCase,
+    SendPersonalizedPushUseCase,
     BatchProcessingService,
   ],
 })

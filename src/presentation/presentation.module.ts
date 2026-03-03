@@ -1,8 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ApplicationModule } from '@/application/application.module';
-import { VideosController, ChannelsController, BatchController, HomeController } from './http/controllers';
-import { SchedulerCron, HomeSectionCron } from './cron';
+import {
+  VideosController,
+  ChannelsController,
+  BatchController,
+  HomeController,
+  PushController,
+} from './http/controllers';
+import { SchedulerCron, HomeSectionCron, PushCron } from './cron';
 
 /**
  * 프레젠테이션 모듈
@@ -10,8 +16,8 @@ import { SchedulerCron, HomeSectionCron } from './cron';
  */
 @Module({
   imports: [ConfigModule, ApplicationModule],
-  controllers: [VideosController, ChannelsController, BatchController, HomeController],
-  providers: [SchedulerCron, HomeSectionCron],
-  exports: [HomeSectionCron],
+  controllers: [VideosController, ChannelsController, BatchController, HomeController, PushController],
+  providers: [SchedulerCron, HomeSectionCron, PushCron],
+  exports: [HomeSectionCron, PushCron],
 })
 export class PresentationModule {}

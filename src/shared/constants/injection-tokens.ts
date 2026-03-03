@@ -18,6 +18,8 @@ export const INJECTION_TOKENS = {
   SLACK_NOTIFIER: Symbol('SlackNotifier'),
   HOME_SECTION_GENERATOR: Symbol('HomeSectionGenerator'),
   WEB_SEARCH: Symbol('WebSearch'),
+  EXPO_PUSH_SERVICE: Symbol('ExpoPushService'),
+  PUSH_REPOSITORY: Symbol('PushRepository'),
 } as const;
 
 export type InjectionTokens = typeof INJECTION_TOKENS;
