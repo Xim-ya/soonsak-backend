@@ -224,6 +224,12 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
     }
 
+    // 최종 publishedAt 검증: 모든 시도 후에도 없으면 현재 시간으로 폴백
+    if (!result.publishedAt) {
+      this.logger.warn(`[${normalizedId}] publishedAt not found, using current time as fallback`);
+      result.publishedAt = new Date().toISOString();
+    }
+
     return result;
   }
 
@@ -370,7 +376,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
         }
       }
 
-      let publishedAt = new Date().toISOString();
+      // upload_date가 없거나 유효하지 않으면 빈 문자열 반환 (youtubei.js 폴백 트리거)
+      let publishedAt = '';
       if (ytdlpData.upload_date && ytdlpData.upload_date.length === 8) {
         const year = ytdlpData.upload_date.substring(0, 4);
         const month = ytdlpData.upload_date.substring(4, 6);
@@ -481,6 +488,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     if (!info.channelId) missing.push('channelId');
     if (!info.channelTitle) missing.push('channelTitle');
     if (!info.thumbnail) missing.push('thumbnail');
+    if (!info.publishedAt) missing.push('publishedAt');
     return missing;
   }
 
