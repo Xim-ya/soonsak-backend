@@ -197,22 +197,33 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
     let result: YouTubeVideoInfo;
 
-    const ytdlpResult = await this.extractWithYtDlp(normalizedId);
-    if (ytdlpResult) {
-      const missingFields = this.getMissingFields(ytdlpResult);
+    // 1차: youtubei.js 시도 (쿠키 불필요)
+    try {
+      const youtubeiResult = await this.extractWithYoutubeiJs(normalizedId);
+      const missingFields = this.getMissingFields(youtubeiResult);
+
       if (missingFields.length === 0) {
-        result = ytdlpResult;
+        result = youtubeiResult;
+        this.logger.debug(`[${normalizedId}] Video info extracted via youtubei.js`);
       } else {
-        try {
-          const fallbackData = await this.extractWithYoutubeiJs(normalizedId);
-          result = this.mergeVideoInfo(ytdlpResult, fallbackData, missingFields);
-        } catch (error) {
-          this.logger.debug(`youtubei.js fallback failed for ${normalizedId}: ${(error as Error).message}`);
-          result = ytdlpResult;
+        // 2차: yt-dlp로 누락 필드 보완 시도 (쿠키 필요할 수 있음)
+        this.logger.debug(`[${normalizedId}] youtubei.js missing fields: ${missingFields.join(', ')}, trying yt-dlp`);
+        const ytdlpResult = await this.extractWithYtDlp(normalizedId);
+        if (ytdlpResult) {
+          result = this.mergeVideoInfo(youtubeiResult, ytdlpResult, missingFields);
+        } else {
+          result = youtubeiResult;
         }
       }
-    } else {
-      result = await this.extractWithYoutubeiJs(normalizedId);
+    } catch (error) {
+      // youtubei.js 완전 실패 시 yt-dlp로 폴백
+      this.logger.warn(`[${normalizedId}] youtubei.js failed, trying yt-dlp: ${(error as Error).message}`);
+      const ytdlpResult = await this.extractWithYtDlp(normalizedId);
+      if (ytdlpResult) {
+        result = ytdlpResult;
+      } else {
+        throw new Error(`All extraction methods failed for ${normalizedId}`);
+      }
     }
 
     // 최종 제목 검증: 제목이 없거나 너무 짧으면 oEmbed로 재시도
@@ -234,17 +245,18 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   }
 
   async getTranscript(videoId: string): Promise<TranscriptResult | null> {
-    // 1차: yt-dlp로 자막 추출 시도
+    // 1차: youtube-transcript 패키지로 자막 추출 시도 (쿠키 불필요)
+    const youtubeiTranscript = await this.extractTranscriptWithYoutubeiJs(videoId);
+    if (youtubeiTranscript) {
+      this.logger.debug(`[${videoId}] Transcript extracted via youtube-transcript`);
+      return { text: youtubeiTranscript };
+    }
+
+    // 2차: yt-dlp로 자막 추출 폴백 (쿠키 필요할 수 있음)
+    this.logger.debug(`[${videoId}] youtube-transcript failed, trying yt-dlp`);
     const transcript = await this.extractTranscriptWithYtDlp(videoId);
     if (transcript) {
       return { text: transcript };
-    }
-
-    // 2차: youtubei.js로 자막 추출 폴백 (쿠키 불필요)
-    this.logger.log(`[${videoId}] yt-dlp failed, trying youtubei.js for transcript`);
-    const youtubeiTranscript = await this.extractTranscriptWithYoutubeiJs(videoId);
-    if (youtubeiTranscript) {
-      return { text: youtubeiTranscript };
     }
 
     return null;
