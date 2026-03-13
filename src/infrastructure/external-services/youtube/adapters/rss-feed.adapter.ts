@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { XMLParser } from 'fast-xml-parser';
 import { IRSSFeedPort, RSSFeedEntry } from '@/application/ports';
 import { buildRSSUrl } from '@/shared/utils';
@@ -39,36 +40,71 @@ const USER_AGENT =
 
 /**
  * RSS 피드 어댑터
- * YouTube RSS 피드 파싱 처리
+ * YouTube RSS 피드 파싱 처리 (Cloudflare 프록시 사용)
  */
 @Injectable()
 export class RSSFeedAdapter implements IRSSFeedPort {
   private readonly logger = new Logger(RSSFeedAdapter.name);
   private readonly parser: XMLParser;
+  private readonly proxyUrl: string | undefined;
+  private readonly proxyApiKey: string | undefined;
 
-  constructor() {
+  constructor(private readonly configService: ConfigService) {
     this.parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: '@_',
     });
+    this.proxyUrl = this.configService.get<string>('CLOUDFLARE_PROXY_URL');
+    this.proxyApiKey = this.configService.get<string>('CLOUDFLARE_PROXY_API_KEY');
+
+    if (this.proxyUrl) {
+      this.logger.log(`RSS proxy enabled: ${this.proxyUrl}`);
+    }
   }
 
   async parseChannelFeed(channelId: string): Promise<RSSFeedEntry[]> {
-    const rssUrl = channelId.startsWith('http') ? channelId : buildRSSUrl(channelId);
+    // channelId 추출 (URL인 경우)
+    let extractedChannelId = channelId;
+    if (channelId.startsWith('http')) {
+      const match = channelId.match(/channel_id=([^&]+)/);
+      extractedChannelId = match ? match[1] : channelId;
+    }
 
     try {
-      const response = await fetch(rssUrl, {
-        headers: {
-          'User-Agent': USER_AGENT,
-          Accept: 'application/rss+xml, application/xml, text/xml, */*',
-          'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        },
-      });
-      if (!response.ok) {
-        throw new Error(`RSS fetch failed with status ${response.status}`);
+      let xmlText: string;
+
+      // Cloudflare 프록시 사용 (설정된 경우)
+      if (this.proxyUrl && this.proxyApiKey) {
+        const proxyRssUrl = `${this.proxyUrl}/rss/${extractedChannelId}`;
+        const response = await fetch(proxyRssUrl, {
+          headers: {
+            'X-API-Key': this.proxyApiKey,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`RSS fetch failed with status ${response.status}`);
+        }
+
+        xmlText = await response.text();
+      } else {
+        // 직접 요청 (폴백)
+        const rssUrl = buildRSSUrl(extractedChannelId);
+        const response = await fetch(rssUrl, {
+          headers: {
+            'User-Agent': USER_AGENT,
+            Accept: 'application/rss+xml, application/xml, text/xml, */*',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`RSS fetch failed with status ${response.status}`);
+        }
+
+        xmlText = await response.text();
       }
 
-      const xmlText = await response.text();
       const feed: RSSFeed = this.parser.parse(xmlText);
 
       if (!feed.feed?.entry) {
@@ -78,11 +114,10 @@ export class RSSFeedAdapter implements IRSSFeedPort {
       const entries = Array.isArray(feed.feed.entry)
         ? feed.feed.entry
         : [feed.feed.entry];
-      const extractedChannelId = this.extractChannelIdFromRSS(rssUrl);
 
       return entries.map((entry) => this.mapRSSEntry(entry, extractedChannelId));
     } catch (error) {
-      this.logger.error(`RSS parsing failed: ${(error as Error).message}`);
+      this.logger.error(`RSS parsing failed for ${extractedChannelId}: ${(error as Error).message}`);
       throw error;
     }
   }

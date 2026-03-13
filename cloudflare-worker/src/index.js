@@ -99,6 +99,42 @@ export default {
       }
     }
 
+    // RSS Proxy endpoint: /rss/:channelId
+    const rssMatch = url.pathname.match(/^\/rss\/([a-zA-Z0-9_-]+)$/);
+    if (rssMatch) {
+      const channelId = rssMatch[1];
+      try {
+        const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+        const rssResponse = await fetch(rssUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+          },
+        });
+
+        if (!rssResponse.ok) {
+          return new Response(JSON.stringify({ error: `RSS fetch failed: ${rssResponse.status}` }), {
+            status: rssResponse.status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const rssXml = await rssResponse.text();
+        return new Response(rssXml, {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/xml; charset=utf-8',
+          },
+        });
+      } catch (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
