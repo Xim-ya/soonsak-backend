@@ -123,7 +123,8 @@ export class RegisterVideoUseCase {
           phase1Success = true;
           aiExtractedTitles = [directResult.extractedTitle];
           aiConfidence = directResult.confidence;
-          includesEnding = directResult.includesEnding;
+          // 키워드 기반 결말 판단이 true면 유지, 아니면 AI 결과 사용
+          includesEnding = includesEnding || directResult.includesEnding;
           // anime/documentary를 movie로 변환 (TMDB API 호환성)
           phase1MediaTypeHint = this.convertMediaTypeHint(directResult.mediaTypeHint);
 
@@ -160,7 +161,8 @@ export class RegisterVideoUseCase {
           }
           aiInferredTitles = aiAnalysis.inferredTitles || [];
           aiEnglishTitles = aiAnalysis.englishTitles || [];
-          includesEnding = aiAnalysis.includesEnding;
+          // 키워드 기반 결말 판단이 true면 유지, 아니면 AI 결과 사용
+          includesEnding = includesEnding || aiAnalysis.includesEnding;
           aiConfidence = aiAnalysis.confidence || 0;
 
           this.logger.log(`  [Phase 2] Confidence: ${aiConfidence}`);

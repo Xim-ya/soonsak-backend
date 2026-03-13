@@ -3,6 +3,38 @@
  */
 
 /**
+ * 한국어 발음 변형 정규화
+ * 외래어 표기 차이를 통일 (예: 레퀴엠 ↔ 레키엠, 패러다이스 ↔ 파라다이스)
+ */
+export function normalizeKoreanPhonetics(text: string): string {
+  return text
+    // 자음 변형
+    .replace(/퀴/g, '키')   // 레퀴엠 → 레키엠
+    .replace(/뀌/g, '끼')
+    .replace(/쉬/g, '시')   // 쉐 → 셰
+    .replace(/쉐/g, '셰')
+    .replace(/뷔/g, '비')   // 뷔페 → 비페
+    // 모음 변형
+    .replace(/애/g, '에')   // 매트릭스 → 메트릭스
+    .replace(/얘/g, '예')
+    .replace(/웨/g, '워')   // 웨스트 → 워스트
+    .replace(/외/g, '워')
+    // 복합 변형 (외래어 표기)
+    .replace(/크로/g, '클로')   // 크로니클 → 클로니클
+    .replace(/메트/g, '맷')     // 메트릭스 → 맷릭스
+    .replace(/패러/g, '파라')   // 패러다이스 → 파라다이스
+    .replace(/페러/g, '파라')
+    .replace(/데이/g, '다이')   // 데이트 → 다이트
+    // 받침 변형
+    .replace(/릭스/g, '릭')     // 매트릭스 → 매트릭
+    .replace(/스$/g, '')        // 끝 '스' 제거 (선택적)
+    // 흔한 외래어 변형
+    .replace(/아웃/g, '아웃')
+    .replace(/인/g, '인')
+    .trim();
+}
+
+/**
  * 두 문자열 간의 유사도 계산 (0-1)
  */
 export function compareTwoStrings(first: string, second: string): number {
@@ -10,6 +42,11 @@ export function compareTwoStrings(first: string, second: string): number {
   second = second.replace(/\s+/g, '').toLowerCase();
 
   if (first === second) return 1;
+
+  // 한국어 발음 정규화 후 비교
+  const normalizedFirst = normalizeKoreanPhonetics(first);
+  const normalizedSecond = normalizeKoreanPhonetics(second);
+  if (normalizedFirst === normalizedSecond) return 1;
   if (first.length < 2 || second.length < 2) return 0;
 
   const firstBigrams = new Map<string, number>();
