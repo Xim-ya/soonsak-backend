@@ -33,6 +33,10 @@ interface RSSFeed {
   };
 }
 
+/** 브라우저처럼 보이기 위한 User-Agent */
+const USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+
 /**
  * RSS 피드 어댑터
  * YouTube RSS 피드 파싱 처리
@@ -53,7 +57,13 @@ export class RSSFeedAdapter implements IRSSFeedPort {
     const rssUrl = channelId.startsWith('http') ? channelId : buildRSSUrl(channelId);
 
     try {
-      const response = await fetch(rssUrl);
+      const response = await fetch(rssUrl, {
+        headers: {
+          'User-Agent': USER_AGENT,
+          Accept: 'application/rss+xml, application/xml, text/xml, */*',
+          'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        },
+      });
       if (!response.ok) {
         throw new Error(`RSS fetch failed with status ${response.status}`);
       }
