@@ -736,6 +736,15 @@ export class RegisterVideoUseCase {
       ]);
 
       // 6. 채널 정보 저장 (새 채널이면 메타데이터 가져오기)
+      // channelId가 비어있으면 저장하지 않음 (rate limiting 등으로 메타데이터 누락된 경우)
+      if (!videoInfo.channelId || videoInfo.channelId.trim() === '') {
+        this.logger.warn(`  [SKIP] Missing channelId for video: ${videoId}`);
+        return {
+          success: false,
+          message: '채널 정보를 가져올 수 없습니다 (rate limiting 가능성)',
+        };
+      }
+
       const channelId = await this.getOrCreateChannelWithMetadata(
         videoInfo.channelId,
         videoInfo.channelTitle,
