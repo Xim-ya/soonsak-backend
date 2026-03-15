@@ -62,6 +62,15 @@ export class RegisterVideoUseCase {
         };
       }
 
+      // 제목에서 쇼츠 해시태그 감지 (rate limiting과 무관하게 작동)
+      if (this.detectShortsFromTitle(title)) {
+        this.logger.log(`  Skipping Shorts (title hashtag): ${title}`);
+        return {
+          success: false,
+          message: '쇼츠 영상은 등록 대상이 아닙니다',
+        };
+      }
+
       // 쇼츠 조기 감지 (youtubei.js 사용, rate limit 영향 적음)
       // yt-dlp 호출 전에 체크하여 API 호출 최소화
       const shortsCheck = await this.youtubeExtractor.checkIfShorts(videoId);
@@ -81,6 +90,15 @@ export class RegisterVideoUseCase {
         return {
           success: false,
           message: '쇼츠 영상은 등록 대상이 아닙니다',
+        };
+      }
+
+      // duration이 0이면 rate limiting으로 메타데이터를 못 가져온 것 - 스킵
+      if (videoInfo.duration === 0) {
+        this.logger.warn(`  [SKIP] Duration is 0 (rate limited): ${videoId}`);
+        return {
+          success: false,
+          message: '비디오 정보를 가져올 수 없습니다 (rate limiting)',
         };
       }
 
@@ -1522,6 +1540,26 @@ export class RegisterVideoUseCase {
       // 폴백: 기본 정보로 저장
       return this.channelRepository.getOrCreate(channelId, channelName);
     }
+  }
+
+  /**
+   * 제목에서 쇼츠 해시태그 감지
+   * #shorts, #Shorts, #short, #쇼츠 등
+   */
+  private detectShortsFromTitle(title: string): boolean {
+    const shortsPatterns = [
+      /#shorts/i,
+      /#short\b/i,
+      /#쇼츠/,
+      /\bshorts\b/i,  // 단독 "shorts" 단어
+    ];
+
+    for (const pattern of shortsPatterns) {
+      if (pattern.test(title)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**

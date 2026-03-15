@@ -1,389 +1,6062 @@
 {
-  "analysis_metadata": {
-    "total_videos": 60,
-    "analysis_date": "2026-03-10",
-    "current_prompt_version": "Phase 1 Direct Extraction + Phase 2 Unified Analysis"
+  "timestamp": "2026-03-13T08:14:22.003Z",
+  "sample_size": 300,
+  "mapping": {
+    "accuracy": 54,
+    "match": 162,
+    "mismatch": 43,
+    "no_extraction": 95,
+    "error": 0
   },
-
-  "classification_summary": {
-    "A_direct_mention": {
-      "count": 18,
-      "description": "제목이 영상 제목/자막에 명시적으로 언급됨",
-      "videos": [
-        {"video_id": "bDSPVjeXAyw", "video_title": "《옐로우스톤》 결말까지 몰아보기", "content_title": "옐로우스톤", "risk": "low"},
-        {"video_id": "Xh0Ri4hLcMs", "video_title": "(영화/드라마리뷰/결말포함)(공포영화) 홀랜드 관련", "content_title": "홀랜드", "risk": "low"},
-        {"video_id": "tK-8xhnRf0w", "video_title": "[화제작] 반전의 반전... 홀랜드", "content_title": "홀랜드", "risk": "low"},
-        {"video_id": "ojGTaGSfRoc", "video_title": "[클로니클] 왕따가 염동력이...", "content_title": "크로니클", "risk": "medium", "note": "클로니클 vs 크로니클 표기 차이"},
-        {"video_id": "yW4Mp13acMo", "video_title": "《익스팬스》시즌 1-6 결말까지", "content_title": "익스팬스", "risk": "low"},
-        {"video_id": "dMvKlmIw_9g", "video_title": "넷플릭스 밤샘시리즈... 라이프", "content_title": "라이프", "risk": "high", "note": "라이프는 매우 흔한 제목, 동명이인 다수"},
-        {"video_id": "yBtvkL6arxk", "video_title": "《라자루스 프로젝트》", "content_title": "라자루스 프로젝트", "risk": "low"},
-        {"video_id": "DAQvMaFkMY0", "video_title": "마블 TVA... 로키 관련", "content_title": "로키", "risk": "medium", "note": "TVA 설명이지 로키 직접 리뷰 아닐 수 있음"},
-        {"video_id": "wMO5b8liEic", "video_title": "《낮과 밤》 결말까지 몰아보기", "content_title": "낮과 밤", "risk": "low"},
-        {"video_id": "wtY7BtB4yX0", "video_title": "[공작도시] 몰아보기", "content_title": "공작도시", "risk": "low"},
-        {"video_id": "G1I6sjEbM_o", "video_title": "재벌집 며느리... 공작도시 관련", "content_title": "공작도시", "risk": "low"},
-        {"video_id": "JRwpAo_B7LY", "video_title": "『파묘』 결말 해석", "content_title": "파묘", "risk": "low"},
-        {"video_id": "jUFQRJP6fiA", "video_title": "《발레리나》드디어 떴다!!", "content_title": "발레리나", "risk": "low"},
-        {"video_id": "Ix6Mhk1XRWY", "video_title": "명작 애니메이션... 코렐라인", "content_title": "코렐라인: 비밀의 문", "risk": "medium", "note": "부제 '비밀의 문' 매칭 필요"},
-        {"video_id": "mHjoAiHLXiE", "video_title": "시청률 찍었던... SKY 캐슬", "content_title": "SKY 캐슬", "risk": "low"},
-        {"video_id": "EDBMslbKGaA", "video_title": "[쿵푸팬더] 4편... 1,2,3편 복습", "content_title": "쿵푸팬더", "risk": "low"},
-        {"video_id": "I2N8NCT4838", "video_title": "레전드 드라마... 셜록", "content_title": "셜록", "risk": "low"},
-        {"video_id": "lqxO8AvxAyk", "video_title": "《온 콜》... 끝까지 몰아보기", "content_title": "온 콜", "risk": "low"}
-      ]
-    },
-
-    "B_partial_mention": {
-      "count": 8,
-      "description": "제목 일부만 언급되거나 부제/시리즈명 생략",
-      "videos": [
-        {"video_id": "mN6o9rAfYlc", "video_title": "스타워즈 극장판 11편", "content_title": "스타워즈 에피소드 1: 보이지 않는 위험", "risk": "high", "note": "어떤 에피소드인지 특정 어려움"},
-        {"video_id": "PMIEwbbdedE", "video_title": "애니메이션, 소울(soul) 리뷰", "content_title": "소울", "risk": "low"},
-        {"video_id": "Lamh51aY5pg", "video_title": "파묘 무당조차... 감자연구소", "content_title": "감자연구소", "risk": "high", "note": "파묘를 언급하지만 실제는 다른 작품"},
-        {"video_id": "KzPyzUgUF24", "video_title": "≪신의악단≫", "content_title": "신의악단", "risk": "low"},
-        {"video_id": "2631Hqm47jo", "video_title": "개꿀잼 범죄 드라마... 스카이 로호", "content_title": "스카이 로호", "risk": "low"},
-        {"video_id": "I4UlbxXGvWQ", "video_title": "무법지대... [트라이건]", "content_title": "트라이건 스탬피드", "risk": "medium", "note": "트라이건 vs 트라이건 스탬피드 구분 필요"},
-        {"video_id": "cIyQ-L-bYJQ", "video_title": "《힘을 숨긴 할아버지들》", "content_title": "배드 애스 2: 배드 애시즈", "risk": "high", "note": "제목 전혀 다름, 시리즈 2편"},
-        {"video_id": "5sMkOFbV7u8", "video_title": "전직 최강 특수부대원... 코드 오브 아너", "content_title": "코드 오브 아너", "risk": "low"}
-      ]
-    },
-
-    "C_actor_director_only": {
-      "count": 12,
-      "description": "배우/감독 이름만 언급, 제목 직접 언급 없음",
-      "videos": [
-        {"video_id": "Z4BCErkUzTM", "video_title": "마동석이 깜빵에 있는데...", "content_title": "나쁜 녀석들: 더 무비", "risk": "high", "note": "마동석 출연작 다수, 특정 어려움"},
-        {"video_id": "lKt647SU28E", "video_title": "한지민, 정우성으로 종편 1위...", "content_title": "빠담빠담... 그와 그녀의 심장박동소리", "risk": "high", "note": "두 배우 공동 출연작 특정 필요"},
-        {"video_id": "LhGaAl09CCw", "video_title": "배우 하정우 미친 연기... 용서받지 못한자", "content_title": "용서받지 못한 자", "risk": "low", "note": "제목 언급됨"},
-        {"video_id": "wMO5b8liEic", "video_title": "남궁민이 떴다... 낮과 밤", "content_title": "낮과 밤", "risk": "low", "note": "제목도 언급됨"},
-        {"video_id": "pjH68AdgvUw", "video_title": "강하늘 주연! 소녀괴담", "content_title": "소녀괴담", "risk": "low", "note": "제목 언급됨"},
-        {"video_id": "L9KkY1j6wFU", "video_title": "미국판 우영우?... 굿 닥터", "content_title": "굿 닥터", "risk": "medium", "note": "우영우 아닌 굿 닥터임을 구분 필요"},
-        {"video_id": "CzI-dYEkw4Y", "video_title": "세계가 사랑하게 될 배우의...", "content_title": "매니 앤 로", "risk": "very_high", "note": "배우 이름도 없음, 제목도 없음"},
-        {"video_id": "kjNqZKgKXYs", "video_title": "서부영화가 이런거였구나", "content_title": "매그니피센트 7", "risk": "very_high", "note": "힌트 거의 없음"},
-        {"video_id": "9HiPtoLJ5y0", "video_title": "아련한 첫사랑... 어웨이 프롬 허", "content_title": "어웨이 프롬 허", "risk": "low", "note": "제목 언급됨"},
-        {"video_id": "f-XNe3n6GMY", "video_title": "실화... 힐링 영화... 아서", "content_title": "아서", "risk": "high", "note": "아서는 매우 흔한 이름/제목"},
-        {"video_id": "8vg-RMRBpeU", "video_title": "넷플릭스조차 거부했던 영화... 더 머쉰", "content_title": "더 머쉰", "risk": "medium", "note": "제목 직접 언급 가능성"},
-        {"video_id": "nOiARI4WrrI", "video_title": "실화라서 더 무서웠던... 더 레이지", "content_title": "더 레이지", "risk": "medium", "note": "제목 언급 가능성"}
-      ]
-    },
-
-    "D_plot_only_clickbait": {
-      "count": 16,
-      "description": "줄거리만 언급하는 클릭베이트, 제목/배우 없음",
-      "videos": [
-        {"video_id": "9_vzwwnJlKM", "video_title": "평점9.5점, 연기9.9점... 클릭하면 순삭", "content_title": "나이트 크롤러", "risk": "very_high", "note": "완전 클릭베이트"},
-        {"video_id": "QDTX5U05VKQ", "video_title": "제작비 1,000억... 아마존 프라임 Top.1", "content_title": "더 레킹 크루", "risk": "high", "note": "플랫폼만 언급"},
-        {"video_id": "LivGhgZ2Sm8", "video_title": "누군가 아버지를 죽였다", "content_title": "더 레킹 크루", "risk": "very_high", "note": "줄거리만 암시"},
-        {"video_id": "x4mUZQwSrT4", "video_title": "미국에서 실제로 있었던 일... 미친 실화", "content_title": "몰리스 게임", "risk": "very_high", "note": "힌트 없음"},
-        {"video_id": "3lP1wXNSsu4", "video_title": "바다속 심해 100피트에서 고립된 여성", "content_title": "다이브: 100 피트 추락", "risk": "high", "note": "100피트 키워드만 있음"},
-        {"video_id": "LyWEuA2X3V4", "video_title": "타인의 수명을 돈으로 사고 파는 시대", "content_title": "패러다이스", "risk": "very_high", "note": "SF 설정만 있음"},
-        {"video_id": "NcGxfM08FCI", "video_title": "≪히든아이≫ 65화 몰아보기", "content_title": "히든아이", "risk": "medium", "note": "프로그램명 언급됨"},
-        {"video_id": "6O6UkZ8GNBk", "video_title": "재벌가의 잔혹한 세계... 런 온", "content_title": "런 온", "risk": "medium", "note": "제목 일부 언급"},
-        {"video_id": "YqaCpfT9poo", "video_title": "첫사랑... 평점 9.9점 드라마", "content_title": "사랑하는 은동아", "risk": "very_high", "note": "제목 힌트 없음"},
-        {"video_id": "PXlsVmsvjz0", "video_title": "우주선을 타고 공룡시대에 떨어지면", "content_title": "65", "risk": "high", "note": "플롯만 있음, 숫자 제목 특정 어려움"},
-        {"video_id": "KxYTLIYzuso", "video_title": "중졸 청소부가 대기업 최고 경영자가 된다", "content_title": "플레이밍 핫", "risk": "very_high", "note": "실화 줄거리만"},
-        {"video_id": "mwODH-cmuxQ", "video_title": "흑인 노예가 천재적인 총잡이라면", "content_title": "장고: 분노의 추적자", "risk": "high", "note": "장고 추론 가능하지만 불확실"},
-        {"video_id": "JidNuY2nLss", "video_title": "시각장애인인 척 사는 남자 앞에서...", "content_title": "블라인드 멜로디", "risk": "very_high", "note": "완전 클릭베이트"},
-        {"video_id": "rGmb1gyKt1g", "video_title": "도로 공사하다가 흡혈귀를 파버린...", "content_title": "보이즈 프롬 카운티 헬", "risk": "very_high", "note": "제목 힌트 전혀 없음"},
-        {"video_id": "ttdOB7OPDvM", "video_title": "과거의 공룡과 미래의 괴물이 동시에", "content_title": "The Fore-Men", "risk": "very_high", "note": "영문 제목, 힌트 없음"},
-        {"video_id": "c7mvhocwehw", "video_title": "2024년 최고의 숨겨진 넷플릭스 SF수작", "content_title": "다크 클라우드", "risk": "very_high", "note": "제목 힌트 없음"},
-        {"video_id": "4xPfQ5seg2Q", "video_title": "러시아 여저격수... 독일군들의 최후", "content_title": "바르샤바 1944", "risk": "very_high", "note": "전쟁 배경만, 제목 힌트 없음"},
-        {"video_id": "HbWaaEH2lDw", "video_title": "37살 고등학교 교사가 157km를 던진 뒤", "content_title": "루키", "risk": "high", "note": "야구 실화, 루키 추론 가능"},
-        {"video_id": "vbGod2oTCHY", "video_title": "하인과 무인도에 갇혀... 귀부인", "content_title": "스웹트 어웨이", "risk": "very_high", "note": "완전 클릭베이트"},
-        {"video_id": "MNm_4yUt9s4", "video_title": "부모의 인생을 아들이 영화로 만든...", "content_title": "달링", "risk": "very_high", "note": "제목 힌트 없음"},
-        {"video_id": "i5gS146AbNI", "video_title": "인신매매 덫에 걸린 시골 청년들", "content_title": "7명의 포로", "risk": "very_high", "note": "제목 힌트 없음"},
-        {"video_id": "UrKQLY28iXM", "video_title": "개가 됐던 환자에게... 숙취 전문 클리닉", "content_title": "Hur det kanns att vara bakis", "risk": "very_high", "note": "스웨덴어 제목, 힌트 없음"},
-        {"video_id": "cz-bZW3zg5A", "video_title": "전직 특수요원 출신 아빠... 스카이스크래퍼", "content_title": "스카이스크래퍼", "risk": "low", "note": "제목 언급됨"}
-      ]
-    },
-
-    "E_complete_clickbait": {
-      "count": 6,
-      "description": "힌트가 거의 없는 완전 클릭베이트",
-      "videos": [
-        {"video_id": "CzI-dYEkw4Y", "video_title": "세계가 사랑하게 될 배우의... 떡잎부터 달랐던 작품", "content_title": "매니 앤 로", "risk": "very_high"},
-        {"video_id": "kjNqZKgKXYs", "video_title": "서부영화가 이런거였구나 싶은 영화", "content_title": "매그니피센트 7", "risk": "very_high"},
-        {"video_id": "ttdOB7OPDvM", "video_title": "과거의 공룡과 미래의 괴물이 동시에 나타나", "content_title": "The Fore-Men", "risk": "very_high"},
-        {"video_id": "UrKQLY28iXM", "video_title": "술에 취해 개가 됐던 환자... 숙취 전문 클리닉", "content_title": "Hur det kanns att vara bakis", "risk": "very_high"},
-        {"video_id": "YqaCpfT9poo", "video_title": "첫사랑... 네티즌 평점 9.9점 역대 1위", "content_title": "사랑하는 은동아", "risk": "very_high"},
-        {"video_id": "LyWEuA2X3V4", "video_title": "가까운 미래 타인의 수명을 돈으로 사고 파는", "content_title": "패러다이스", "risk": "very_high"}
-      ]
-    }
+  "ending": {
+    "accuracy": 69.7,
+    "correct": 209,
+    "false_positive": 61,
+    "false_negative": 30,
+    "error": 0,
+    "precision": 75.4,
+    "recall": 86.2,
+    "f1_score": 80.4
   },
-
-  "high_risk_mismatch_cases": [
+  "results": [
     {
-      "rank": 1,
-      "video_id": "cIyQ-L-bYJQ",
-      "video_title": "와... 미쳐버린 몰입감으로 14분을 순삭시키는 《힘을 숨긴 할아버지들...》의 미개봉 범죄 액션",
-      "content_title": "배드 애스 2: 배드 애시즈",
-      "mismatch_reason": "영상 제목의 《힘을 숨긴 할아버지들》은 콘텐츠 설명이지 실제 영화 제목이 아님. 실제 제목 '배드 애스 2'는 전혀 다름.",
-      "prompt_failure_point": "Phase 1에서 《》로 감싸진 텍스트를 제목으로 추출할 가능성 높음. 이것이 콘텐츠 설명인지 실제 제목인지 구분 불가.",
-      "improvement_suggestion": "《》 안의 내용이 한글 설명형인지 vs 실제 제목인지 구분하는 로직 필요. '힘을 숨긴', '~들의' 같은 설명형 패턴 감지"
+      "video_id": "8KEz10bXoZE",
+      "video_title": "지금 가장 주목받는 감독의.. 특별했던 장편 데뷔작 (결말포함)",
+      "original": {
+        "content_id": 59482,
+        "content_type": "movie",
+        "content_title": "지구에서의 8월 32일",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "지구에서는 8월 32일"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
     },
     {
-      "rank": 2,
-      "video_id": "Z4BCErkUzTM",
-      "video_title": "마동석이 깜빵에 있는데 폭동이 일어나면 벌어지는 일",
-      "content_title": "나쁜 녀석들: 더 무비",
-      "mismatch_reason": "마동석의 교도소/범죄 관련 영화가 다수 존재 (범죄도시 시리즈, 나쁜 녀석들 시리즈 등). '깜빵+폭동' 설정만으로 특정 불가.",
-      "prompt_failure_point": "배우명 + 줄거리 키워드로 검색해도 여러 후보가 나올 수 있음. '더 무비'라는 부제 정보 없음.",
-      "improvement_suggestion": "마동석 필모그래피 DB 구축 또는 '폭동', '교도소' 키워드와 함께 연도 추론 강화 필요"
+      "video_id": "-o8dfqM_Vhw",
+      "video_title": "총 제작비 150억...?!! 미쳐버린 몰입감으로 33분을 순삭시키는 《유럽 랭킹 1위 특수 요원..》 레전드 미개봉 첩보 액션 Top.2 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 655302,
+        "content_type": "movie",
+        "content_title": "오메르타",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
     },
     {
-      "rank": 3,
-      "video_id": "lKt647SU28E",
-      "video_title": "\"한지민\", \"정우성\"으로 종편 1위 시청률 찍고 시청자들에게 극찬받은 드라마",
-      "content_title": "빠담빠담... 그와 그녀의 심장박동소리",
-      "mismatch_reason": "한지민+정우성 공동 출연작이 여러 개 있을 수 있음. 제목이 특이한 형태('빠담빠담...')라 줄거리 추론도 어려움.",
-      "prompt_failure_point": "배우 두 명의 조합으로 검색해도 여러 결과 가능. 제목의 '빠담빠담'이 자막에 언급되지 않으면 매칭 불가.",
-      "improvement_suggestion": "두 배우 공동 출연작 필터링 + '종편 1위' 연도 정보 활용한 검색 쿼리 생성"
+      "video_id": "8wsN-bs2bf0",
+      "video_title": "지구의 거대한 균열이 생기고 ' 악마 ' 가 사람들을 먹어 치우면 생기는 일...[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 1196067,
+        "content_type": "movie",
+        "content_title": "월드브레이커",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
     },
     {
-      "rank": 4,
-      "video_id": "mN6o9rAfYlc",
-      "video_title": "37분만에 스타워즈 극장판 11편 풀스토리 한번에 보기",
-      "content_title": "스타워즈 에피소드 1: 보이지 않는 위험",
-      "mismatch_reason": "스타워즈 전체 시리즈 11편 요약인데, content_title이 '에피소드 1'만 지정됨. 11편 중 어떤 것이 주요 콘텐츠인지 불분명.",
-      "prompt_failure_point": "시리즈 전체 요약 콘텐츠에서 특정 에피소드 하나만 추출하면 mismatch. '몰아보기' 패턴 인식 필요.",
-      "improvement_suggestion": "시리즈 전체 요약 콘텐츠 감지 로직 추가. 첫 번째 에피소드가 아닌 시리즈 자체를 매칭하거나 복수 매칭 지원"
+      "video_id": "5JY76ovTVIw",
+      "video_title": "이 영화를 공짜로 본다고?!... 짤리기 전에 빨리 보세요. [결말포함]",
+      "original": {
+        "content_id": 164457,
+        "content_type": "movie",
+        "content_title": "아웃 오브 더 퍼니스",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
     },
     {
-      "rank": 5,
-      "video_id": "Lamh51aY5pg",
-      "video_title": "어느 마을에서 일어난 기이한 일 ㅜ... 파묘 무당조차 감당할 수 없는 거대한 괴수의 정체",
-      "content_title": "감자연구소",
-      "mismatch_reason": "영상 제목에 '파묘'가 언급되어 있어 파묘로 잘못 매칭될 가능성 높음. 실제 콘텐츠는 '감자연구소'.",
-      "prompt_failure_point": "Phase 1에서 '파묘'를 제목으로 추출할 위험. '파묘 무당'은 비유적 표현이지 실제 파묘 리뷰가 아님.",
-      "improvement_suggestion": "'파묘 무당', '파묘급' 같은 비유적 표현 vs 실제 제목 언급 구분 로직 필요"
+      "video_id": "24mRxx48J2g",
+      "video_title": "와....하필이면 \"현직 최강 특수요원\"을 건드려버린 범죄조직의 최후..ㄷㄷ [영화리뷰/결말포함]《24년 11월 최신영화》시간순삭 꿀잼 액션영화 한방에 몰아보기!!",
+      "original": {
+        "content_id": 939335,
+        "content_type": "movie",
+        "content_title": "머즐",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
     },
     {
-      "rank": 6,
-      "video_id": "dMvKlmIw_9g",
-      "video_title": "맛보기로 1분 봤다가... 넷플릭스 밤샘시리즈 ZIP... 라이프",
-      "content_title": "라이프",
-      "mismatch_reason": "'라이프'는 매우 흔한 제목. 2017년 SF영화 Life, 한국 드라마 라이프, 다큐멘터리 등 동명 작품 다수.",
-      "prompt_failure_point": "제목 추출은 성공하더라도 TMDB에서 동명이인 다수 존재. 어떤 라이프인지 특정 불가.",
-      "improvement_suggestion": "흔한 제목 목록(라이프, 홈, 마더 등) 관리. 추가 컨텍스트(연도, 장르, 플랫폼) 기반 disambiguation 강화"
+      "video_id": "4A_mJeU0cYY",
+      "video_title": "영화가 끝난 뒤.. 한동안 먹먹해지는 작품 (결말포함)",
+      "original": {
+        "content_id": 81517,
+        "content_type": "movie",
+        "content_title": "솔로몬",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
     },
     {
-      "rank": 7,
-      "video_id": "ojGTaGSfRoc",
-      "video_title": "[클로니클] 왕따가 염동력이 생겼다!",
-      "content_title": "크로니클",
-      "mismatch_reason": "영상 제목은 '클로니클'이지만 공식 한글 제목은 '크로니클'. 음차 표기 차이로 TMDB 매칭 실패 가능.",
-      "prompt_failure_point": "Phase 1에서 '클로니클' 추출 후 TMDB 검색 시 '크로니클'과 매칭 실패할 수 있음.",
-      "improvement_suggestion": "음차 변형 사전 구축. Chronicle -> 클로니클/크로니클 모두 검색"
+      "video_id": "Wf2ng3Pzwzs",
+      "video_title": "개봉당시 모든 관객들이 팝콘통에 소변을 지렸다는... 레전드급 영화... 보시면 압니다 ㄷㄷㄷ... [결말포함]",
+      "original": {
+        "content_id": 853588,
+        "content_type": "movie",
+        "content_title": "사냥감",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
     },
     {
-      "rank": 8,
+      "video_id": "ulUiTUXXhgg",
+      "video_title": "“미국 최고의 추리 소설”을 원작으로 한 충격 반전 복수 스릴러",
+      "original": {
+        "content_id": 452714,
+        "content_type": "movie",
+        "content_title": "석조저택 살인사건",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "석조자택 살인사건"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "4HLqDhUVGxk",
+      "video_title": "하반신이 마비된 소녀가 겪는 끔찍한 일들.. (ENG CC)",
+      "original": {
+        "content_id": 566936,
+        "content_type": "movie",
+        "content_title": "삼촌",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "삼촌"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "4Pu0Y5_6G3w",
+      "video_title": "영화로 전달할 수 있는.. 최고 수준의 감동을 주는 걸작 (결말포함)",
+      "original": {
+        "content_id": 11832,
+        "content_type": "movie",
+        "content_title": "바베트의 만찬",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "바베트의 만찬"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "lbcURR0HlTE",
+      "video_title": "영혼이 정화될 것만 같은.. 특별한 감동을 선사해 주는 이야기 (영화리뷰/결말포함)",
+      "original": {
+        "content_id": 73532,
+        "content_type": "movie",
+        "content_title": "르 아브르",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "르 아브르"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "MNm_4yUt9s4",
+      "video_title": "부모의 인생을 아들이 영화로 만든, 눈물 없이 볼 수 없는 감동적인 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 407445,
+        "content_type": "movie",
+        "content_title": "달링",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "y1zoJPpkfQc",
+      "video_title": "🔥평점 9.25.. 깊은 울림을 줬던 바로 그 영화 (결말포함)",
+      "original": {
+        "content_id": 13823,
+        "content_type": "movie",
+        "content_title": "파워 오브 원",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "파워 오브 원"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "fJt87xySSZw",
+      "video_title": "독일에서 벌어졌던.. 실제 사건 이야기 (결말포함)",
+      "original": {
+        "content_id": 523,
+        "content_type": "movie",
+        "content_title": "레퀴엠",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "레키엠"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"레키엠\" != \"레퀴엠\" (no_match(67%))"
+    },
+    {
+      "video_id": "QbqFKWVHr-g",
+      "video_title": "살기 위해 인X을 먹어야만 했던 그들...≪넷플릭스≫공개 당시 단번에 전세계 시청률 1위 찍어버린 '생존' 영화【영화리뷰/영화추천】",
+      "original": {
+        "content_id": 906126,
+        "content_type": "movie",
+        "content_title": "안데스 설원의 생존자들",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "iF_HIbw1zDc",
+      "video_title": "로튼 토마토 지수 98%에 육박하는.. 핀란드 전설의 명작 (결말포함)",
+      "original": {
+        "content_id": 7294,
+        "content_type": "movie",
+        "content_title": "과거가 없는 남자",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "yW4Mp13acMo",
+      "video_title": "총 제작비 6000억, 우주판 반지의 제왕이라 불리는 하드SF 드라마《익스팬스》시즌 1-6 결말까지 몰아보기",
+      "original": {
+        "content_id": 63639,
+        "content_type": "tv",
+        "content_title": "익스팬스",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "익스팬스"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "JKjm24Z7dHk",
+      "video_title": "고객의 삶을 훔칠 수 있게 된 찐따 신발수리공의 이중생활 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 238215,
+        "content_type": "movie",
+        "content_title": "코블러",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "tTKy3XncTO8",
+      "video_title": "스타워즈의 역대급 시리즈, ≪안도르≫ 1~5화 줄거리 총정리!",
+      "original": {
+        "content_id": 83867,
+        "content_type": "tv",
+        "content_title": "스타워즈: 안도르",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "안도르"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "Mfoqc-cosuE",
+      "video_title": "【가진게 돈 뿐인 슈퍼리치 아프리카 왕자님이 짝퉁 맥도널드에 알바로 취직한 이유는】 북미 3주 연속 1위 기록한 전설적인 코미디",
+      "original": {
+        "content_id": 9602,
+        "content_type": "movie",
+        "content_title": "구혼 작전",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "s29h9pY9BEc",
+      "video_title": "266년 후 아토믹펑크 디스토피아 세계",
+      "original": {
+        "content_id": 106379,
+        "content_type": "tv",
+        "content_title": "폴아웃",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "7XNVoN3lgIY",
+      "video_title": "3차 세계 대전이 벌어진 200년 후 !!《놀란 감독》이 만든 미친 디스토피아 SF 시리즈!! 【영화추천/영화리뷰】",
+      "original": {
+        "content_id": 106379,
+        "content_type": "tv",
+        "content_title": "폴아웃",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "폴라오"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"폴라오\" != \"폴아웃\" (no_match(33%))"
+    },
+    {
+      "video_id": "s7reQhUS1sU",
+      "video_title": "기교 없이 직진하는.. 우리네 인생 같은 감동 실화 (결말포함)",
+      "original": {
+        "content_id": 404,
+        "content_type": "movie",
+        "content_title": "스트레이트 스토리",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "스트레이트 스토리"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "yja8Uc5hibc",
+      "video_title": "공포영화로 알고 계셨다면, 큰 착각입니다. *결말포함",
+      "original": {
+        "content_id": 3933,
+        "content_type": "movie",
+        "content_title": "유령 신부",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "유령 승부"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "p-hNSjSgFgA",
+      "video_title": "2019년 공개 당시 관람객 평점 9.89 받으며 상이란 상은 다 쓸어갔던 역대급 실화 띵작 드라마",
+      "original": {
+        "content_id": 81355,
+        "content_type": "tv",
+        "content_title": "그들이 우리를 바라볼 때",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "어바웃 타임"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"어바웃 타임\" != \"그들이 우리를 바라볼 때\" (no_match(10%))"
+    },
+    {
+      "video_id": "MFs3UnP_Ttw",
+      "video_title": "[결말포함]아침에 눈을뜨면 남자가 꼬이는, 상위0.1% 외모로 인생을 사는 여자",
+      "original": {
+        "content_id": 164,
+        "content_type": "movie",
+        "content_title": "티파니에서 아침을",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "Ix6Mhk1XRWY",
+      "video_title": "(이게 전체관람가?) 기괴하고 소름끼치는 명작 애니메이션!  *결말포함",
+      "original": {
+        "content_id": 14836,
+        "content_type": "movie",
+        "content_title": "코렐라인: 비밀의 문",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "코렐라인"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "FJ_blJkrWnw",
+      "video_title": "죽이고 싶은 \"갑질 직장 상사\"와 무인도에 갇힌, 정글 생존 레벨 999 여직원이 벌인 짓ㅋ 역대급 소재와 별점 9점 주고픈 스릴러로 무장한 2026년 추천작 ≪직장상사 길들이기≫",
+      "original": {
+        "content_id": 1198994,
+        "content_type": "movie",
+        "content_title": "직장상사 길들이기",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "직장상사 길들이기"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "SobDsB_BWIU",
+      "video_title": "영화를 뛰어넘은 SF 전쟁씬",
+      "original": {
+        "content_id": 93740,
+        "content_type": "tv",
+        "content_title": "'파운데이션' - Foundation",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "파운데이션"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "LyWEuA2X3V4",
+      "video_title": "가까운 미래 타인의 수명을 돈으로 사고 파는 시대가 온다면...??≪넷플릭스≫ 최신 기대작!!!【영화리뷰/영화추천】",
+      "original": {
+        "content_id": 1140066,
+        "content_type": "movie",
+        "content_title": "패러다이스",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "파라다이스"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "mapping_reason": "Phase1: \"파라다이스\" != \"패러다이스\" (no_match(60%))",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "3lP1wXNSsu4",
+      "video_title": "극한생존💥바다속 심해 100피트에서 고립된 여성...",
+      "original": {
+        "content_id": 1109534,
+        "content_type": "movie",
+        "content_title": "다이브: 100 피트 추락",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "다이브 피트의 추락"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
       "video_id": "x4mUZQwSrT4",
       "video_title": "이게.. 미국에서 실제로 있었던 일이랍니다.. 레알로 (미친 실화)",
-      "content_title": "몰리스 게임",
-      "mismatch_reason": "완전 클릭베이트. 제목, 배우, 구체적 힌트 전혀 없음. '미국 실화'만으로 특정 불가능.",
-      "prompt_failure_point": "Phase 1 실패, Phase 2에서도 '미국 실화' 키워드로 검색하면 수백 개 결과. 자막에서 포커 관련 내용 나오면 추론 가능.",
-      "improvement_suggestion": "자막 분석 시 '포커', '불법 도박', '제시카 차스테인' 등 핵심 키워드 추출 강화"
+      "original": {
+        "content_id": 396371,
+        "content_type": "movie",
+        "content_title": "몰리스 게임",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "몰리의 게임"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
     },
     {
-      "rank": 9,
+      "video_id": "mN6o9rAfYlc",
+      "video_title": "37분만에 스타워즈 극장판 11편 풀스토리 한번에 보기 [결말포함/통합본]",
+      "original": {
+        "content_id": 1893,
+        "content_type": "movie",
+        "content_title": "스타워즈 에피소드 1: 보이지 않는 위험",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "스타워즈"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "bDSPVjeXAyw",
+      "video_title": "농담이 아니라 왕겜 이후 최고의 장면 시리즈 l 《옐로우스톤》 결말까지 몰아보기",
+      "original": {
+        "content_id": 73586,
+        "content_type": "tv",
+        "content_title": "옐로우스톤",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "옐로우스톤"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "9_vzwwnJlKM",
+      "video_title": "미쳤다... 평점9.5점, 연기9.9점. 클릭하면 20분 순삭. 무조건 보세요 [결말포함]",
+      "original": {
+        "content_id": 242582,
+        "content_type": "movie",
+        "content_title": "나이트 크롤러",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "나이트 크롤러"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "Z4BCErkUzTM",
+      "video_title": "마동석이 깜빵에 있는데 폭동이 일어나면 벌어지는 일",
+      "original": {
+        "content_id": 585831,
+        "content_type": "movie",
+        "content_title": "나쁜 녀석들: 더 무비",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "나쁜녀석들 더 무비"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "Xh0Ri4hLcMs",
+      "video_title": "🔥🤫🔥남편이 만든 집 속엔, 내가 아닌 다른 여자가 있었다🔥🤫🔥(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 257094,
+        "content_type": "movie",
+        "content_title": "홀랜드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "tK-8xhnRf0w",
+      "video_title": "[🔥화제작🔥] 반전의 반전의 반전😱(영화리뷰.결말포함)",
+      "original": {
+        "content_id": 257094,
+        "content_type": "movie",
+        "content_title": "홀랜드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "QDTX5U05VKQ",
+      "video_title": "총 제작비 1,000억...《아마존 프라임》에 공개하자 마자 랭킹 Top.1 찍어버린 미개봉 액션 최신작 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 1168190,
+        "content_type": "movie",
+        "content_title": "더 레킹 크루",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 래킹 프로"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "ojGTaGSfRoc",
+      "video_title": "[🔥클로니클🔥] 왕따가 염동력이 생겼다!😱(영화리뷰.결말포함)",
+      "original": {
+        "content_id": 76726,
+        "content_type": "movie",
+        "content_title": "크로니클",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "클로니클"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "lKt647SU28E",
+      "video_title": "\"한지민\", \"정우성\"으로 종편 1위 시청률 찍고 시청자들에게 극찬받은 드라마",
+      "original": {
+        "content_id": 42290,
+        "content_type": "tv",
+        "content_title": "빠담빠담... 그와 그녀의 심장박동소리",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "빠담빠담 그와 그녀의 심장박동"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "CzI-dYEkw4Y",
+      "video_title": "세계가 사랑하게 될 배우의.. 떡잎부터 달랐던 작품 (결말포함)",
+      "original": {
+        "content_id": 88224,
+        "content_type": "movie",
+        "content_title": "매니 앤 로",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "LivGhgZ2Sm8",
+      "video_title": "🎬누군가 아버지를 죽였다🔥(결말포함)",
+      "original": {
+        "content_id": 1168190,
+        "content_type": "movie",
+        "content_title": "더 레킹 크루",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "NcGxfM08FCI",
+      "video_title": "🔥단 돈 30만원 때문에 한 사람과 가정을 파탄내고 18년 동안 잡히지 않은 충격적인 진범의 정체, 수배 전단지 제일 첫번째 올라온 그는 누구인가 ≪히든아이≫ 65화 몰아보기 ㄷㄷ",
+      "original": {
+        "content_id": 260862,
+        "content_type": "tv",
+        "content_title": "히든아이",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "히든아이"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "6O6UkZ8GNBk",
+      "video_title": "정글 같은 재벌가의 잔혹한 세계를 적나라하게 보여주는 한국이 낳은 보석 같은 드라마..",
+      "original": {
+        "content_id": 113240,
+        "content_type": "tv",
+        "content_title": "런 온",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "띵잘"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "mapping_reason": "Phase1: \"띵잘\" != \"런 온\" (no_match(0%))",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
       "video_id": "YqaCpfT9poo",
-      "video_title": "아련한 첫사랑을 소재로 네티즌 평점 9.9점 역대 1위 찍은 웰메이드 드라마",
-      "content_title": "사랑하는 은동아",
-      "mismatch_reason": "완전 클릭베이트. '첫사랑 드라마'는 무수히 많음. 평점 9.9점 정보는 검증 불가.",
-      "prompt_failure_point": "제목, 배우, 연도 힌트 없음. 자막에서 '은동'이라는 이름이 나오면 추론 가능하나 불확실.",
-      "improvement_suggestion": "자막에서 캐릭터 이름 + 첫사랑 플롯 조합으로 검색 쿼리 생성. 한국 로맨스 드라마 특화 검색"
+      "video_title": "아련한 첫사랑을 소재로 네티즌 평점 \"9.9점\" 역대 1위 찍은 웰메이드 드라마",
+      "original": {
+        "content_id": 62838,
+        "content_type": "tv",
+        "content_title": "사랑하는 은동아",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "사랑하는 운동화"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
     },
     {
-      "rank": 10,
-      "video_id": "LyWEuA2X3V4",
-      "video_title": "가까운 미래 타인의 수명을 돈으로 사고 파는 시대가 온다면...??≪넷플릭스≫",
-      "content_title": "패러다이스",
-      "mismatch_reason": "'수명 거래' SF 설정의 영화/드라마 다수 (인 타임, 패러다이스 등). 넷플릭스 최신작이라는 힌트만 있음.",
-      "prompt_failure_point": "줄거리 키워드로 검색 시 '인 타임(2011)'이 먼저 나올 가능성. 연도 정보 없으면 잘못된 작품 선택.",
-      "improvement_suggestion": "'넷플릭스 최신작' 감지 시 2024-2025년 필터 적용. SF 설정 + 연도 조합 검색"
+      "video_id": "cIyQ-L-bYJQ",
+      "video_title": "와... 미쳐버린 몰입감으로 14분을 순삭시키는 《힘을 숨긴 할아버지들...》의 미개봉 범죄 액션 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 255268,
+        "content_type": "movie",
+        "content_title": "배드 애스 2: 배드 애시즈",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
     },
     {
-      "rank": 11,
+      "video_id": "5sMkOFbV7u8",
+      "video_title": "와......하필이면 은퇴 후 조용히 살던\"전직 최강 특수부대원\"을 건드려버린 범죄조직의 역대급 최후..ㄷㄷ 미쳐버린 액션신에 시간순삭 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 389425,
+        "content_type": "movie",
+        "content_title": "코드 오브 아너",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "코드 오브 아어"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "LhGaAl09CCw",
+      "video_title": "말년 병장을 200% 재현한 ‘배우 하정우’ 미친 연기를 선보인 전설의 한국 영화 [용서받지 못한자 요약 및 분석]",
+      "original": {
+        "content_id": 182633,
+        "content_type": "movie",
+        "content_title": "용서받지 못한 자",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "용서받지 못한 자"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "dMvKlmIw_9g",
+      "video_title": "맛보기로 1분 봤다가............ 1시간 30분이 통으로 삭제 당해버리는... \"넷플릭스 밤샘시리즈 ZIP\"... [결말포함]",
+      "original": {
+        "content_id": 395992,
+        "content_type": "movie",
+        "content_title": "라이프",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "라이프"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "yBtvkL6arxk",
+      "video_title": "《매트릭스》《미션임파서블》 제작진이 만든 시간과 종말을 조종하는 인간들의 이야기❗좋다..❗",
+      "original": {
+        "content_id": 194567,
+        "content_type": "tv",
+        "content_title": "라자루스 프로젝트",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "라자루스 프로젝트"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "DAQvMaFkMY0",
+      "video_title": "데드풀과 울버린을 만나게 해준 마블 TVA 14분만에 알아보기",
+      "original": {
+        "content_id": 84958,
+        "content_type": "tv",
+        "content_title": "로키",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "로키"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "PXlsVmsvjz0",
+      "video_title": "우주선을 타고 공룡시대에 떨어지면 벌어지는 일 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 700391,
+        "content_type": "movie",
+        "content_title": "65",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "65"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "wMO5b8liEic",
+      "video_title": "🔥남궁민이 떴다!!🔥\"28년 전 비극\"으로 인해 괴물이 된 남궁민의 역대급 미스터리 추리극!! 결말까지 몰아보기",
+      "original": {
+        "content_id": 113113,
+        "content_type": "tv",
+        "content_title": "낮과 밤",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "KxYTLIYzuso",
+      "video_title": "가난하다고 무시받던 중졸 청소부가 대기업 최고 경영자가 된다고!? 전 세계를 놀라게 한 미쳐버린 실화 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 626332,
+        "content_type": "movie",
+        "content_title": "플레이밍 핫",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "mwODH-cmuxQ",
+      "video_title": "아내를 빼앗긴 흑인 노예가 천재적인 총잡이라면 벌어지는 일 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 68718,
+        "content_type": "movie",
+        "content_title": "장고: 분노의 추적자",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "장고"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "wtY7BtB4yX0",
+      "video_title": "상위 1% 재벌집 며느리가 마음 먹고 모든 걸 가지려고 할 때 벌어지는 일...?! [공작도시] 몰아보기!",
+      "original": {
+        "content_id": 138947,
+        "content_type": "tv",
+        "content_title": "공작도시",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "공작도시"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "G1I6sjEbM_o",
+      "video_title": "상위 1% 재벌집에서 매일 갑.질당하던 며느리가 복수를 결심하면 벌어지는 일...",
+      "original": {
+        "content_id": 138947,
+        "content_type": "tv",
+        "content_title": "공작도시",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "JRwpAo_B7LY",
+      "video_title": "당신이 몰랐던 『파묘』, 결말 해석 포함 스토리 총정리(스포주의)",
+      "original": {
+        "content_id": 838209,
+        "content_type": "movie",
+        "content_title": "파묘",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "파묘"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "JidNuY2nLss",
+      "video_title": "시각장애인인 척 사는 남자 앞에서 일어난 충격적인 일 (영화리뷰 / 결말포함)",
+      "original": {
+        "content_id": 534780,
+        "content_type": "movie",
+        "content_title": "블라인드 멜로디",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "블라인드 멜로디"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "L9KkY1j6wFU",
+      "video_title": "미국판 우영우? 미국에서 한드를 리메이크하고 대박난 드라마!!!",
+      "original": {
+        "content_id": 71712,
+        "content_type": "tv",
+        "content_title": "굿 닥터",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "굿닥터"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
       "video_id": "rGmb1gyKt1g",
-      "video_title": "도로 공사하다가 절대 깨워서는 안 될 고대 흡혈귀를 파버린 시골 사람들",
-      "content_title": "보이즈 프롬 카운티 헬",
-      "mismatch_reason": "완전 클릭베이트. '흡혈귀 발굴' 공포 설정만 있음. 영어 제목과 한글 번역 간극.",
-      "prompt_failure_point": "제목이 영어라 한글 검색 어려움. 줄거리 키워드(흡혈귀, 시골, 발굴)로 여러 후보 나올 수 있음.",
-      "improvement_suggestion": "공포 장르 + 아일랜드 배경 + 2023-2024 신작 조합 검색. 영어 제목 그대로 검색 시도"
+      "video_title": "🩸🛠️도로 공사하다가 절대 깨워서는 안 될 고대 흡혈귀를 파버린 시골 사람들 근황🩸🛠️(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 680631,
+        "content_type": "movie",
+        "content_title": "보이즈 프롬 카운티 헬",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "보이즈 프롬 카운티 해"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
     },
     {
-      "rank": 12,
+      "video_id": "pjH68AdgvUw",
+      "video_title": "와 미친... 한국에 이런 영화가 있었다고? 강하늘 주연! 일진들의 악랄한 학폭을 고스란히 담아낸 병맛 한국 공포영화!",
+      "original": {
+        "content_id": 284063,
+        "content_type": "movie",
+        "content_title": "소녀괴담",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "소녀담"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "PMIEwbbdedE",
+      "video_title": "🤕일상에 지친 당신에게 지금 필요한 애니메이션, 소울(soul) 리뷰 및 해석 *결말포함",
+      "original": {
+        "content_id": 508442,
+        "content_type": "movie",
+        "content_title": "소울",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "소울"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "jUFQRJP6fiA",
+      "video_title": "액션 미쳤습니다...아버지의 복수를 위해 킬러가 된 여자가 암살자 3000명이 거주하는 마을에 쳐들어가면 벌어지는 일ㅎㄷㄷ《발레리나》드디어 떴다!!",
+      "original": {
+        "content_id": 541671,
+        "content_type": "movie",
+        "content_title": "발레리나",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "발레리나"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "Lamh51aY5pg",
+      "video_title": "어느 마을에서 일어난 기이한 일 ㅜ... 파묘 무당조차 감당할 수 없는 거대한 괴수의 정체 ㄷㄷ",
+      "original": {
+        "content_id": 254391,
+        "content_type": "tv",
+        "content_title": "감자연구소",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "감자 연구소"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "KzPyzUgUF24",
+      "video_title": "북한 최초 보위부 찬양팀을 만들라는 🔥 가열차고 혁명적인 최고존엄의 명령ㅋ… 게다가 임영웅의 노래까지 ..🔥2025년 최고로 충격적인 설정의 신작 영화  ≪신의악단≫",
+      "original": {
+        "content_id": 1244806,
+        "content_type": "movie",
+        "content_title": "신의악단",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "신의악단"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "2631Hqm47jo",
+      "video_title": "눈 못 뜨게 야하고 심각하게 폭력적인데 한 번 보는 순간 멈출 수 없는 개꿀잼 범죄 드라마 결말까지 몰아보기!!",
+      "original": {
+        "content_id": 117023,
+        "content_type": "tv",
+        "content_title": "스카이 로호",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "mHjoAiHLXiE",
+      "video_title": "시청률 23.8%... 비지상파 사상 ''역대 최고 시청률'' 찍었던 전설적인 한국 드라마 1위 ㅎㄷㄷ",
+      "original": {
+        "content_id": 84327,
+        "content_type": "tv",
+        "content_title": "SKY 캐슬",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "스카이 캐슬"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "mapping_reason": "Phase1: \"스카이 캐슬\" != \"SKY 캐슬\" (no_match(40%))",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "ttdOB7OPDvM",
+      "video_title": "미친... 과거의 공룡과 미래의 괴물이 동시에 나타나 멸망해버린 인류",
+      "original": {
+        "content_id": 1038871,
+        "content_type": "movie",
+        "content_title": "The Fore-Men",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 포어맨"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"더 포어맨\" != \"The Fore-Men\" (no_match(0%))"
+    },
+    {
+      "video_id": "c7mvhocwehw",
+      "video_title": "2024년..... 올해 최고의 숨겨진 넷플릭스 SF수작…… 안 봤으면 반드시! 보세요…",
+      "original": {
+        "content_id": 897424,
+        "content_type": "movie",
+        "content_title": "다크 클라우드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "다크 클라우드"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "I4UlbxXGvWQ",
+      "video_title": "무법지대에서 혼자 불살에 미친 전설의 건맨 [트라이건]",
+      "original": {
+        "content_id": 204266,
+        "content_type": "tv",
+        "content_title": "트라이건 스탬피드",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "트라이건"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "lqxO8AvxAyk",
+      "video_title": "겁도 없이 미국 경찰을《살해》하면 벌어지는 일! 현실감 미쳐버린《프라임 비디오》시리즈! 끝까지 몰아보기!【영화추천/영화리뷰】",
+      "original": {
+        "content_id": 236429,
+        "content_type": "tv",
+        "content_title": "온 콜",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "4xPfQ5seg2Q",
+      "video_title": "2차 세계대전 당시 러시아 여저격수 잘못 건드렸다가... 아주 개박살난 독일군들의 최후 ㄷㄷㄷㄷ....",
+      "original": {
+        "content_id": 293982,
+        "content_type": "movie",
+        "content_title": "바르샤바 1944",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "바르바샤 1944"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "HbWaaEH2lDw",
+      "video_title": "37살 고등학교 교사가 157km를 던진 뒤 벌어진 엄청난 감동 실화 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 14635,
+        "content_type": "movie",
+        "content_title": "루키",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "루키"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "EDBMslbKGaA",
+      "video_title": "“개봉신작” [쿵푸팬더]4편! 보러가기 전에 1,2,3편 초스피드로 복습하즈아~!",
+      "original": {
+        "content_id": 9502,
+        "content_type": "movie",
+        "content_title": "쿵푸팬더",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "쿵푸팬더 4편"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "vbGod2oTCHY",
+      "video_title": "하필 자신이 멸시하던 하인과 무인도에 갇혀 하녀가 돼버린 귀부인의 극한직업2 결말포함",
+      "original": {
+        "content_id": 12779,
+        "content_type": "movie",
+        "content_title": "스웹트 어웨이",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "극한직업2"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"극한직업2\" != \"스웹트 어웨이\" (no_match(0%))"
+    },
+    {
+      "video_id": "9HiPtoLJ5y0",
+      "video_title": "사랑은 곧 함께한 추억임을 보여주는 가슴 먹먹한 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 1919,
+        "content_type": "movie",
+        "content_title": "어웨이 프롬 허",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "f-XNe3n6GMY",
+      "video_title": "실화를 바탕으로 만든 기분 좋아지는 힐링 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 618588,
+        "content_type": "movie",
+        "content_title": "아서",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "브루드 레일"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"브루드 레일\" != \"아서\" (no_match(0%))"
+    },
+    {
+      "video_id": "kjNqZKgKXYs",
+      "video_title": "서부영화가 이런거였구나 싶은 영화",
+      "original": {
+        "content_id": 333484,
+        "content_type": "movie",
+        "content_title": "매그니피센트 7",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "매그니피센트 7"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "8vg-RMRBpeU",
+      "video_title": "정말로... 이게 영화로 나올 줄은 상상도 못했습니다... \"파격적인 수위로\" 넷플릭스조차 공개를 거부했던 바로 이 영화..... [결말포함]",
+      "original": {
+        "content_id": 174675,
+        "content_type": "movie",
+        "content_title": "더 머쉰",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 머신"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"더 머신\" != \"더 머쉰\" (no_match(67%))"
+    },
+    {
+      "video_id": "i5gS146AbNI",
+      "video_title": "[영화리뷰/결말포함] 인신매매 덫에 걸린 시골 청년들의 최후",
+      "original": {
+        "content_id": 785538,
+        "content_type": "movie",
+        "content_title": "7명의 포로",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "7명의 포로"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "I2N8NCT4838",
+      "video_title": "와...🔥전 세계 200개국에 수출된🔥압도적 인기를 기록한 레전드 드라마입니다.. 진짜 재밌습니다! 한 번 보면 왜 명작인지 바로 알게 됩니다 [결말포함]",
+      "original": {
+        "content_id": 19885,
+        "content_type": "tv",
+        "content_title": "셜록",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "셜록"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
       "video_id": "UrKQLY28iXM",
-      "video_title": "술에 취해 개가 됐던 환자에게 어젯밤 무슨 짓을 했는지 조사해서 알려주는 숙취 전문 클리닉",
-      "content_title": "Hur det kanns att vara bakis",
-      "mismatch_reason": "스웨덴어 제목의 외국 콘텐츠. 한국어 힌트로 이 제목을 찾기 거의 불가능.",
-      "prompt_failure_point": "한글 검색 쿼리로 스웨덴 콘텐츠 매칭 불가. 영어 번역 제목도 없음.",
-      "improvement_suggestion": "비영어권 콘텐츠 특화 검색. 코미디 + 숙취 + 스웨덴 조합으로 영어 검색 시도"
+      "video_title": "술에 취해 개가 됐던 환자에게 어젯밤 무슨 짓을 했는지 조사해서 알려주는 숙취 전문 클리닉 ㅋㅋㅋㅋㅋ",
+      "original": {
+        "content_id": 557813,
+        "content_type": "movie",
+        "content_title": "Hur det känns att vara bakis",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "숙취해수 클리닉"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"숙취해수 클리닉\" != \"Hur det känns att vara bakis\" (no_match(0%))"
+    },
+    {
+      "video_id": "cz-bZW3zg5A",
+      "video_title": "💥하필이면 전직 특수요원 출신 아빠의 가족을 건드리면 생기는 일...💥그만 좀 건드려ㅋㅋㅋ [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 447200,
+        "content_type": "movie",
+        "content_title": "스카이스크래퍼",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "nOiARI4WrrI",
+      "video_title": "“실화라서 더 무서웠던 최신작 영화” [결말포함]",
+      "original": {
+        "content_id": 650036,
+        "content_type": "movie",
+        "content_title": "더 레이지",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 레이지"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "eHrUYEHgw1k",
+      "video_title": "전미 박스오피스 3주 연속 1위 명품 스릴러 영화 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 37233,
+        "content_type": "movie",
+        "content_title": "야망의 함정",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "야망의 함정"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "M_orAJNtvZk",
+      "video_title": "1899년 유럽에 슈퍼히어로들이 나타난다면??",
+      "original": {
+        "content_id": 8698,
+        "content_type": "movie",
+        "content_title": "젠틀맨 리그",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "젠틀맨 리그"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "GS7eDRMU8so",
+      "video_title": "한국형 범죄 스릴러 누구도 예상못한 충격반전! 클릭하는순간 26분 시간 순삭! [영화리뷰,결말포함]",
+      "original": {
+        "content_id": 848198,
+        "content_type": "movie",
+        "content_title": "젠틀맨",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "yYyUN8QpNKU",
+      "video_title": "무려 36년 만에 컴백ㄷㄷ ≪비틀쥬스 비틀쥬스≫ 공식 예고편 리뷰",
+      "original": {
+        "content_id": 917496,
+        "content_type": "movie",
+        "content_title": "비틀쥬스 비틀쥬스",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "비틀 주스 비틀 주스"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "lc7Uf5eixEc",
+      "video_title": "20년만에 만난 레전드 vs 레전드, 영화 천문 가이드리뷰",
+      "original": {
+        "content_id": 569267,
+        "content_type": "movie",
+        "content_title": "천문: 하늘에 묻는다",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "천문 하늘의 문"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"천문 하늘의 문\" != \"천문: 하늘에 묻는다\" (no_match(50%))"
+    },
+    {
+      "video_id": "1j8ye_jno38",
+      "video_title": "정체불명의 기업에서 만든 세계 최고의 AI가 내뱉은 충격적인 발언 (해석 미쳤음)",
+      "original": {
+        "content_id": 757446,
+        "content_type": "movie",
+        "content_title": "Intelligentia",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "인텔리젠티야"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "mapping_reason": "Phase1: \"인텔리젠티야\" != \"Intelligentia\" (no_match(0%))",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "V9klwpDGxNE",
+      "video_title": "제작비 2600억, 가상 세계의 최강 AI병기가 현실로 소환되면 생기는 일!! [영화리뷰/결말포함][SF액션/테크노스릴러]",
+      "original": {
+        "content_id": 533533,
+        "content_type": "movie",
+        "content_title": "트론: 아레스",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "haHP1-y6CO8",
+      "video_title": "💥국내개봉 미정!!💥지구상에 존재하지 않는 광석을 만지면 생긱는 일....시간순삭입니다... [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 1280444,
+        "content_type": "movie",
+        "content_title": "미씽 시그널",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "UvEED0lnCDE",
+      "video_title": "💥자기전 시청금지💥 저는 이 영화 결말 보고 일주일 후유증을 겪었습니다.. [결말포함]",
+      "original": {
+        "content_id": 26466,
+        "content_type": "movie",
+        "content_title": "트라이앵글",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "fqthy_VjrUU",
+      "video_title": "심사위원 \"만장일치\"로 칸+오스카 싹쓸이하고 그 까다롭다는 이동진마저 별점 \"4.5점\" 때려버린 미친 스릴러 ㄷㄷ;;",
+      "original": {
+        "content_id": 915935,
+        "content_type": "movie",
+        "content_title": "추락의 해부",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "추락의 해부"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "4dTDvm4LYRM",
+      "video_title": "범죄도시 1~4편 전편 결말까지 몰아보기",
+      "original": {
+        "content_id": 619803,
+        "content_type": "movie",
+        "content_title": "범죄도시 2",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "범죄도시"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "NPP83qmJ-TU",
+      "video_title": "2026년 새로운 2차 세계대전 탱크 영화",
+      "original": {
+        "content_id": 1252037,
+        "content_type": "movie",
+        "content_title": "전차 티거",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "sPg4cuwDQx8",
+      "video_title": "홍콩을 디스토피아로 그려 중국 정부의 검열 때문에 개봉하지 못한 금단의 느와르 영화, 금성무 X 양가휘 X 고천락 주연",
+      "original": {
+        "content_id": 478798,
+        "content_type": "movie",
+        "content_title": "풍림화산",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "CbfMiGacXkU",
+      "video_title": "전기세 낼 돈도 없던 한 남자가 땡빚을 내 대기업 상대로 소송을 벌이면 벌어지는 일 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 763165,
+        "content_type": "movie",
+        "content_title": "위대한 유산",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "위대한 유산"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "8Lm2iJPV48c",
+      "video_title": "핵 잠수함 뽕이 거~~하게 느껴지는 미국 영화",
+      "original": {
+        "content_id": 399402,
+        "content_type": "movie",
+        "content_title": "헌터 킬러",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "QQ8voDt7qBY",
+      "video_title": "미국 정부가 주최하는 ‘데스 게임’",
+      "original": {
+        "content_id": 604079,
+        "content_type": "movie",
+        "content_title": "롱 워크",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "데스 게임"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "Phase1: \"데스 게임\" != \"롱 워크\" (no_match(0%))",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "g2ZmrkooUKc",
+      "video_title": "진짜 숨도 못쉬고 1시간 순삭합니다",
+      "original": {
+        "content_id": 61859,
+        "content_type": "tv",
+        "content_title": "나이트 매니저",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "qie1h-nsR2g",
+      "video_title": "한국에선 꿈도 못꾸는 미쿡 드라마 스케일",
+      "original": {
+        "content_id": 87917,
+        "content_type": "tv",
+        "content_title": "'포 올 맨카인드' - For All Mankind",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "wPtLnuUHeNU",
+      "video_title": "지구 부시는 스케일이 진짜 미쳤습니다....역대급 재난이네요...다시봐도 재밌는 작품 추천드립니다..[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 14161,
+        "content_type": "movie",
+        "content_title": "2012",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "Rm2H-dd_njI",
+      "video_title": "\"랑종\"과 비슷하지만 더 재밌다는 대만 오컬트 공포 영화",
+      "original": {
+        "content_id": 745881,
+        "content_type": "movie",
+        "content_title": "랑종",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "H05p25MPPlM",
+      "video_title": "🕷️토비 맥과이어부터 톰 홀랜드까지🕷️ 한 번에 몰아보기",
+      "original": {
+        "content_id": 557,
+        "content_type": "movie",
+        "content_title": "스파이더맨",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "스파이더맨"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "1cT77nFzaqw",
+      "video_title": "현피는 기본ㄷㄷ 29금 소재만 골라 도파민 하나로 시청률 1위 달성했던 미국 역사상 가장 문제적인 광기의 토크쇼",
+      "original": {
+        "content_id": 276292,
+        "content_type": "tv",
+        "content_title": "제리 스프링거 쇼: 파이트, 카메라, 액션",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "제리 스프링거쇼 파이트 카메라 액션"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "Z1pMQlON7Jg",
+      "video_title": "눈이 가장 예쁜 배우를 시각장애인으로 캐스팅한 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 13162,
+        "content_type": "movie",
+        "content_title": "블라인드 가이",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "UvLditMlggk",
+      "video_title": "피는 역시 물보다 진함을 보여주는 몰입감 좋은 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 2001,
+        "content_type": "movie",
+        "content_title": "위 오운 더 나잇",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "qKMCTgMCgC0",
+      "video_title": "때로는 진짜 가짜가 중요하지 않은 순간도 있음을 보여주는 잔잔한 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 48303,
+        "content_type": "movie",
+        "content_title": "사랑을 카피하다",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "수보다"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"수보다\" != \"사랑을 카피하다\" (no_match(14%))"
+    },
+    {
+      "video_id": "En8jfw_CFBI",
+      "video_title": "누가 누가 더 미쳤는지 대결하는 몰입도 좋은 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 207933,
+        "content_type": "movie",
+        "content_title": "히든 아이덴티티",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "5GPHsGKX1N0",
+      "video_title": "평소에 하고 싶었던 일들을 더는 미루지 않게끔 만드는, 잔잔하고 담백한 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 18635,
+        "content_type": "movie",
+        "content_title": "원 위크",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "nB4VFHw_MQo",
+      "video_title": "사랑이 꼭 완벽하지만은 않음을 보여주는 순수한 느낌의 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 103731,
+        "content_type": "movie",
+        "content_title": "머드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "LXAROICLeMA",
+      "video_title": "만만치 않은 현실의 벽을 담담하게 그려낸 가슴 먹먹한 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 8942,
+        "content_type": "movie",
+        "content_title": "웬디와 루시",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "g9ENOauOWnA",
+      "video_title": "가장 소중한 것은 멀리 있지 않음을 보여주는 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 26820,
+        "content_type": "movie",
+        "content_title": "마이 원 앤 온리",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "가장 소중한 것"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"가장 소중한 것\" != \"마이 원 앤 온리\" (no_match(0%))"
+    },
+    {
+      "video_id": "NgGzxl9O234",
+      "video_title": "쉴 새 없이 조잘대고 까불거리는 맛에 보는 유쾌한 구강액션 영화[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 323675,
+        "content_type": "movie",
+        "content_title": "라이드 어롱 2",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "0_6Mm-cvG7E",
+      "video_title": "분수대 안에 있는 동전을 함부로 주우면 안 되는 이유[영화리뷰/결말포함]",
+      "original": {
+        "content_id": 13477,
+        "content_type": "movie",
+        "content_title": "로마에서 생긴 일",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "sn8IkBK1fXQ",
+      "video_title": "러시아 국방부가 외계인을 포착하면 벌어지는 일 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 401513,
+        "content_type": "movie",
+        "content_title": "어트랙션",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "jCwj7Ma6uv0",
+      "video_title": "3분 요약 / 바퀴벌레로부터 은하계를 지켜라 - 맨인블랙 (1997)",
+      "original": {
+        "content_id": 41154,
+        "content_type": "movie",
+        "content_title": "맨 인 블랙 3",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "맨인블랙"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "Rvp5S8w-pGE",
+      "video_title": "그냥 다 썰어버리는 공포 영화 !!《넷플릭스》의 압도적 슬래셔 무비!! 【결말포함/영화리뷰】 #덕봉이",
+      "original": {
+        "content_id": 30497,
+        "content_type": "movie",
+        "content_title": "텍사스 전기톱 학살",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "텍사스 전기토스터 학살"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"텍사스 전기토스터 학살\" != \"텍사스 전기톱 학살\" (no_match(70%))"
+    },
+    {
+      "video_id": "miXrhNk_hxg",
+      "video_title": "🔥 첫 화부터 몰입감 미쳤다 ㄷㄷ 진존잼! 시청률 터진 레전드 원작 드라마 한국판 리메이크로 돌아왔다! 《컨피던스맨 KR》 1-2화 몰아보기",
+      "original": {
+        "content_id": 259710,
+        "content_type": "tv",
+        "content_title": "컨피던스 맨 KR",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "컨피던스맨 KR"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "m9Zhe1g_GVA",
+      "video_title": "어떻게 사람 이름이 아앙..?≪아바타: 아앙의 전설≫ 공식 예고편 리뷰",
+      "original": {
+        "content_id": 82452,
+        "content_type": "tv",
+        "content_title": "아바타: 아앙의 전설",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "아바타: 아앙의 전설"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "VKr8eVc8OLo",
+      "video_title": "넷플릭스에서 시청가능한 명작 타임워프 드라마",
+      "original": {
+        "content_id": 56570,
+        "content_type": "tv",
+        "content_title": "아웃랜더",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "Gk_oiqfFfgc",
+      "video_title": "와..대박!!이렇게 핵꿀잼인 신작 드라마가 떴다고??? 미친 몰입감을 보여주는 웨이브에서 작정하고 만든 꿀잼 드라마 몰아보기",
+      "original": {
+        "content_id": 227689,
+        "content_type": "tv",
+        "content_title": "헬골란트 513",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "헬골란트 513"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "ktPyO4xZW4g",
+      "video_title": "신혼 첫날밤 섬뜩한 숨바꼭질에 참여하게 된 신부 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 567609,
+        "content_type": "movie",
+        "content_title": "레디 오어 낫",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "숨바꼭질"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"숨바꼭질\" != \"레디 오어 낫\" (no_match(0%))"
+    },
+    {
+      "video_id": "Z71sTljshh0",
+      "video_title": "외모지상주의 대한민국에서 150kg 여자가 전신성형으로 \"카리나\"급 존예가 되면 벌어지는 일",
+      "original": {
+        "content_id": 18377,
+        "content_type": "movie",
+        "content_title": "미녀는 괴로워",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "미녀는 괴로워"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "PvmLtVYgRRc",
+      "video_title": "천재 의사 두명이 완전 눈 돌아서 삐뚤어지면 생기는 일 [하이퍼나이프] 3-4화",
+      "original": {
+        "content_id": 245079,
+        "content_type": "tv",
+        "content_title": "하이퍼나이프",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "하이퍼나이프"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "89PQkVKb6lU",
+      "video_title": "(결말포함) 빅데이터 알고리즘이 신이 된 미래의 대한민국",
+      "original": {
+        "content_id": 99607,
+        "content_type": "tv",
+        "content_title": "에스에프에잇-SF8",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "Xspx6LW8Pso",
+      "video_title": "추리 소설 한 편을 통째로 읽는 듯한.. 전설적인 느와르 작품 (결말포함)",
+      "original": {
+        "content_id": 829,
+        "content_type": "movie",
+        "content_title": "차이나타운",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "차이나타운"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "iKsqs36NJPk",
+      "video_title": "술 한잔 생각나게 하는.. 이유 없이 좋은 영화 (결말포함)",
+      "original": {
+        "content_id": 655,
+        "content_type": "movie",
+        "content_title": "파리, 텍사스",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "파리, 텍사스"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "a8T5WZGYXhg",
+      "video_title": "보고 나면 따뜻한 위로가 되는.. 특별한 영화 (결말포함)",
+      "original": {
+        "content_id": 8214,
+        "content_type": "movie",
+        "content_title": "어둠은 걷히고",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "19HCgW4qAxA",
+      "video_title": "로맨스와 스릴러를 넘나드는.. 높은 몰입도의 작품 (결말포함)",
+      "original": {
+        "content_id": 6173,
+        "content_type": "movie",
+        "content_title": "내 마음을 읽어 봐",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "내 마음을 읽어"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "fB9uuTeic6o",
+      "video_title": "아카데미 작품상을 받은.. 시리고 아픈 영화 (결말포함)",
+      "original": {
+        "content_id": 3116,
+        "content_type": "movie",
+        "content_title": "미드나잇 카우보이",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "미드나이 카우보이"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "2RXTr42l-Hc",
+      "video_title": "너무나 안타까운 배우의.. 가장 아름다웠던 영화 (결말포함)",
+      "original": {
+        "content_id": 18197,
+        "content_type": "movie",
+        "content_title": "허공에의 질주",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "허공의 질주"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "5omUwYmcU1U",
+      "video_title": "뉴욕의 소매치기가.. 대형 사고를 치고 말았다‼️ (결말포함)",
+      "original": {
+        "content_id": 79465,
+        "content_type": "movie",
+        "content_title": "픽포켓",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "픽포켓"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "DhmSnLE_rug",
+      "video_title": "아름다운 영상미와.. 독특한 연출의 특별한 영화 (결말포함)",
+      "original": {
+        "content_id": 38545,
+        "content_type": "movie",
+        "content_title": "믿을 수 없는 진실",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "믿을 수 없는 진실"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "yTlVucS-gyo",
+      "video_title": "LA 한 카지노에서 시작된 거짓말 하나",
+      "original": {
+        "content_id": 120998,
+        "content_type": "tv",
+        "content_title": "포커 페이스",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "diQcAwS9TQo",
+      "video_title": "세계적인 여배우가 사랑 할 수 밖에 없는 이 남자(결말포함)[로맨틱코미디]",
+      "original": {
+        "content_id": 509,
+        "content_type": "movie",
+        "content_title": "노팅 힐",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "노팅힐"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "EFkz_n7ygCM",
+      "video_title": "연말을 따뜻하게 감싸줄.. 명작 소설 기반의 아름다운 영화 (결말포함)",
+      "original": {
+        "content_id": 47880,
+        "content_type": "movie",
+        "content_title": "Mrs Palfrey at The Claremont",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "Uw64mYaR2t4",
+      "video_title": "와 미친... 이게 진짜 한국에서 일어난 일이라고? \"나는 신이다\"만큼 충격적인 100% 실화 사건 그알 PD가 만든 《국가수사본부》 드라마 몰아보기",
+      "original": {
+        "content_id": 221407,
+        "content_type": "tv",
+        "content_title": "국가수사본부",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "국가수사본부"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "BtmUHn-KT2U",
+      "video_title": "이게 한국 교회에서 일어난 일이라고...? 미성년자를 성추행하고 아이들의 몸에 자기 얼굴 문신까지 새긴 악마 목사 《악인취재기》",
+      "original": {
+        "content_id": 236047,
+        "content_type": "tv",
+        "content_title": "악인취재기",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "악인취재기"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "zbXZ4IQbv50",
+      "video_title": "역대급 스토리 유출ㄷㄷ ≪데드풀3≫ 전체 스토리 루머 총정리",
+      "original": {
+        "content_id": 533535,
+        "content_type": "movie",
+        "content_title": "데드풀과 울버린",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "데드풀3"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "PADpOhoB4XE",
+      "video_title": "와....... 감독이 ㄹㅇ 미쳤나?!!! 진심 상상도 못할 소재들로 만들어진 개존잼명작... [결말포함]",
+      "original": {
+        "content_id": 505914,
+        "content_type": "movie",
+        "content_title": "A.I. 라이징",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "AI 라이징"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "HEiSAfytZd8",
+      "video_title": "나치에 가려져 있던 2차대전 중 벌어진 끔찍한 대학살(영화리뷰 결말포함)",
+      "original": {
+        "content_id": 402450,
+        "content_type": "movie",
+        "content_title": "Hatred",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "PzDkx7JhoXE",
+      "video_title": "와.....하필이면《세계 최강 스나이퍼》를 건드려버린 범죄조직의 역대급 최후..ㄷㄷ [영화리뷰/결말포함]【25년 1월 최신 액션영화】시간순삭 역대급 꿀잼 액션영화 몰아보기!!!",
+      "original": {
+        "content_id": 1410082,
+        "content_type": "movie",
+        "content_title": "스나이퍼: 최후의 전쟁",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "세계 최강 스나이퍼"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "4eh5cOQO0A4",
+      "video_title": "평범한 남자가 거대 마약 조직 보스의 조카와 사랑에 빠지면 일어나는 일",
+      "original": {
+        "content_id": 255343,
+        "content_type": "movie",
+        "content_title": "파라다이스 로스트: 마약 카르텔의 왕",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "파라다이스 로스트"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "wUEmzkFBPYk",
+      "video_title": "야한 삼류 로맨스코미디 영화인줄 알았는데 개띵작이었다.. (결말포함)",
+      "original": {
+        "content_id": 43347,
+        "content_type": "movie",
+        "content_title": "러브 & 드럭스",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "VB4tUx11lzg",
+      "video_title": "인간을 파멸로 이끄는 싸이코패스 앞에서 돈 자랑을 하던 다이아수저의 최후 - 그녀의 이름은 난노 시즌1 4화 디노(결말포함)",
+      "original": {
+        "content_id": 83639,
+        "content_type": "tv",
+        "content_title": "그녀의 이름은 난노",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "그녀의 이름은 난노"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "ffBYjLmk2ew",
+      "video_title": "전 세계 상위 0.01% 금수저들이 지구밖에 지상낙원을 건설하고 흙수저들을 개무시하면 벌어지는 일 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 68724,
+        "content_type": "movie",
+        "content_title": "엘리시움",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "wVhIpcp4vhs",
+      "video_title": "세상에 존재하는 모든 액체를 뽑아낼 수 있는 자판기 [단편영화]",
+      "original": {
+        "content_id": 1144740,
+        "content_type": "movie",
+        "content_title": "SCP: Overlord",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "세상에 존재하는 모든 액체를 뽑아낼 수 있는 자판기"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": false
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"세상에 존재하는 모든 액체를 뽑아낼 수 있는 자판기\" != \"SCP: Overlord\" (no_match(0%))"
+    },
+    {
+      "video_id": "f0pPSFqJwKY",
+      "video_title": "인간의 외로움을 있는 그대로 보여주는 묵직한 영화.. (결말포함)",
+      "original": {
+        "content_id": 413452,
+        "content_type": "movie",
+        "content_title": "카드보드 복서",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "sW5uOMiMyps",
+      "video_title": "3분 요약 / 촉수괴물로부터 친구를 지켜라 - 맨인블랙2 (2002)",
+      "original": {
+        "content_id": 41154,
+        "content_type": "movie",
+        "content_title": "맨 인 블랙 3",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "맨인블랙2"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "DBiUFp8PhVs",
+      "video_title": "원나잇 했는데 임신.. 알고 보니 아기 아빠가 대한민국 상위 1% 재벌 존잘남?  \"조회수 1656만 뷰\" 기록한 레전드 웹툰이 드라마로 나왔다!《아기가 생겼어요》3-4화 몰아보기",
+      "original": {
+        "content_id": 296009,
+        "content_type": "tv",
+        "content_title": "아기가 생겼어요",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "아기가 생겼어요"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "Jytzr5D95us",
+      "video_title": "시한부 선고를 받은 아내의 외도 사실을 알게 되었다..",
+      "original": {
+        "content_id": 65057,
+        "content_type": "movie",
+        "content_title": "디센던트",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "F2x6rlW3OYg",
+      "video_title": "드디어 나왔습니다!! 🔥프레데터 죽음의땅🔥[결말포함]",
+      "original": {
+        "content_id": 1242898,
+        "content_type": "movie",
+        "content_title": "프레데터: 죽음의 땅",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "프레데터 죽음의땅"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "QX0NaQbmjhY",
+      "video_title": "신선도지수 99% ㄷㄷㄷ... 넷플릭스에서 안 보면 나만 손해인 영화.",
+      "original": {
+        "content_id": 661231,
+        "content_type": "movie",
+        "content_title": "민스미트 작전",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "DUpq9rLcPOQ",
+      "video_title": "이 영화는 무조건 먹어봐야 그 진가를 알 수 있습니다.",
+      "original": {
+        "content_id": 617653,
+        "content_type": "movie",
+        "content_title": "라스트 듀얼: 최후의 결투",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "j4tCNX55vyM",
+      "video_title": "와..... 이번주에 본 영화 중 “큰 충격. 진짜 긴장하며 몰입했던 영화”",
+      "original": {
+        "content_id": 561362,
+        "content_type": "movie",
+        "content_title": "생존: 러스트 크릭",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "NQv1oNrQObw",
+      "video_title": "한국사람들은 잘 모르는....... 오직 해외 넷플릭스에서만 시청 가능한 띵작! [결말포함]",
+      "original": {
+        "content_id": 376134,
+        "content_type": "movie",
+        "content_title": "디스커버리",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "dulX1pTYYiY",
+      "video_title": "충격. “이 영화가 실화였다는 사실에 멈출 수가 없었습니다”",
+      "original": {
+        "content_id": 1170111,
+        "content_type": "movie",
+        "content_title": "Vanished in Yosemite",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "sa4g4xnMlZY",
+      "video_title": "해병대 군견병이 미친 케미의 군견을 만났다!! 반려동물을 키운다면 꼭 봐야할 개감동 실화 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 424488,
+        "content_type": "movie",
+        "content_title": "메건 리비",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "렉스"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"렉스\" != \"메건 리비\" (no_match(0%))"
+    },
+    {
+      "video_id": "Ei8phJVV3M0",
+      "video_title": "와... 미쳤습니다.. 미국을 충격에 빠트렸던 두번 다신 일어나선 안될 사건 [충격실화/결말포함]",
+      "original": {
+        "content_id": 292011,
+        "content_type": "movie",
+        "content_title": "리차드 쥬얼",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "센테니얼 파크 폭탄 테러 사건"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"센테니얼 파크 폭탄 테러 사건\" != \"리차드 쥬얼\" (no_match(0%))"
+    },
+    {
+      "video_id": "pkrzv2EH_9k",
+      "video_title": "이게 실화라고!? 극강의 인간 병기 아프리카 여전사들을 잘못 건드린 노예 무역상들의 최후 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 724495,
+        "content_type": "movie",
+        "content_title": "더 우먼 킹",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "5n2UeZ7A0wA",
+      "video_title": "심심풀이 살인이 일상이었던 실제 역사",
+      "original": {
+        "content_id": 423,
+        "content_type": "movie",
+        "content_title": "피아니스트",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "피아니스트"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "KfRqSl2uP5o",
+      "video_title": "인생이 외롭고 무의미할 때 봐야 하는 영화",
+      "original": {
+        "content_id": 216156,
+        "content_type": "movie",
+        "content_title": "스틸 라이프",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "스틸 라이프"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "EWJVjdlBEko",
+      "video_title": "좀비야.. 너 진짜 터져볼래? ≪황야≫ 공식 예고편 리뷰",
+      "original": {
+        "content_id": 933131,
+        "content_type": "movie",
+        "content_title": "황야",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "황야"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "145nkIfqP-w",
+      "video_title": "0.01% 상류층 여대생들이 가난한 여교수를 무시하면 벌어지는 일 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 11820,
+        "content_type": "movie",
+        "content_title": "모나리자 스마일",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "uOaZq-AgTdY",
+      "video_title": "🤬☠️🔥금기를 넘은 여동생의 남편🔥☠️💣(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 728874,
+        "content_type": "movie",
+        "content_title": "죄의 근원",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "죄 근원은 끝이 납니다"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"죄 근원은 끝이 납니다\" != \"죄의 근원\" (no_match(22%))"
+    },
+    {
+      "video_id": "hS6dsXnTD2A",
+      "video_title": "🩸🩸잔인함과 긴장감이 난무한 슬래셔 영화 ㄷㄷㄷㄷ🩸🩸(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 996727,
+        "content_type": "movie",
+        "content_title": "더 프라이스 위 페이",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 프라이스 위"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "0CzDdcgze2U",
+      "video_title": "와... 치명적인(?) 함정이 기다리고 있는 종이 미로 속 종이 괴수?!!  [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 433941,
+        "content_type": "movie",
+        "content_title": "데이브 미로 만들다: 판타스틱 미로 대탈출",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "판타스틱 미로 대탈출"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "dEjyhTt5X9E",
+      "video_title": "🩸변사체로 발견된 여성들의 사라진 입술👄 사건의 진범을 찾기 위한 수사가 시작된다👣(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 1115395,
+        "content_type": "movie",
+        "content_title": "악의 색깔: 레드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "악의 색깔"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "q1r4219xiVA",
+      "video_title": "힘을 숨겨온 존예 전학생이 복수를 위해 일진들 참교육으로 싹 다 쓸어버리는 핵사이다 신작 드라마.. 《3인칭 복수》 1-2화",
+      "original": {
+        "content_id": 208336,
+        "content_type": "tv",
+        "content_title": "3인칭 복수",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "3인칭 복수"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "dSLX2Grb3TE",
+      "video_title": "지옥 같은 외계 행성에 홀려남겨진.. 10대 소녀?! [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 506072,
+        "content_type": "movie",
+        "content_title": "프로스펙트",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "프로스펙트"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "xLZSW4mGJ9c",
+      "video_title": "날 무시하고 갑질을 일삼던 직장 상사를 내 아바타로 만든 비결 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 384677,
+        "content_type": "movie",
+        "content_title": "상사에 대처하는 로맨틱한 자세",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "H4rKRTiT7q0",
+      "video_title": "가진 게 돈밖에 없는 남자가 상위 0.1% 초미녀 술집 마담에게 푹 빠지면 생기는 일",
+      "original": {
+        "content_id": 74829,
+        "content_type": "tv",
+        "content_title": "그냥 사랑하는 사이",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "그냥 사랑하는 사이"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "wk2Oulj1Tug",
+      "video_title": "조연이지만 볼때마다 기분 좋다",
+      "original": {
+        "content_id": 231749,
+        "content_type": "tv",
+        "content_title": "낮과 밤이 다른 그녀",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "낙과 밤이 다른 그녀"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "gkU9SjDToRI",
+      "video_title": "와...미친...이게 가능해? 실화라서 더 충격적인 영화 [결말포함]",
+      "original": {
+        "content_id": 515741,
+        "content_type": "movie",
+        "content_title": "엔젤 오브 마인",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "UGxyoiepMGQ",
+      "video_title": "개봉 당일 독립영화 실시간 예매율 1위를 기록하고 있는 잘생긴 애 옆에 잘생긴 애 나와서 몰입감 개쩌는 신작 복수영화",
+      "original": {
+        "content_id": 1046809,
+        "content_type": "movie",
+        "content_title": "만분의 일초",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "만분의 1초"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "lRfQNdg9ohM",
+      "video_title": "인간의 수명을 사고 팔수있게 되면 벌어지는 일 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 49530,
+        "content_type": "movie",
+        "content_title": "인 타임",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "_MLhtkfDd-A",
+      "video_title": "프로복싱 vs MMA vs 아마복싱, 과연 최고의 주먹은?",
+      "original": {
+        "content_id": 306252,
+        "content_type": "tv",
+        "content_title": "아이 엠 복서",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "XVmIqYUJzLc",
+      "video_title": "족구하는 소리 하고있네 ( 족구왕 ) 스토리+해석편",
+      "original": {
+        "content_id": 286702,
+        "content_type": "movie",
+        "content_title": "족구왕",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "족구왕"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "y87LDFoz_nw",
+      "video_title": "모사드가 보유했던 20세기 최고의 스파이..  《넷플릭스》에서 꼭 봐야하는 미친듯한 몰입감의 레전드 첩보 스릴러 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 468362,
+        "content_type": "movie",
+        "content_title": "코드명 엔젤",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "aEPALJWxmog",
+      "video_title": "뉴욕 한복판에 떨어진 초거대 괴물 1부",
+      "original": {
+        "content_id": 7191,
+        "content_type": "movie",
+        "content_title": "클로버필드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "클로버필드"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "XZ6NUR-ByaQ",
+      "video_title": "뉴욕 한복판에 떨어진 초거대 괴물 2부",
+      "original": {
+        "content_id": 7191,
+        "content_type": "movie",
+        "content_title": "클로버필드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "클로버 필드"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "eEf2njlkjK4",
+      "video_title": "실제 사건을 바탕으로 한 충격적인 실화 영화 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 339395,
+        "content_type": "movie",
+        "content_title": "조지타운",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "조지타운"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "v7XJy9UnxCw",
+      "video_title": "짝퉁 티팔이로 애들 삥뜯던 일진이 모범생과 친구가 되면 벌어지는 일",
+      "original": {
+        "content_id": 742741,
+        "content_type": "movie",
+        "content_title": "라임크라임",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "라임 크라임"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "cFfRBmI1Oyo",
+      "video_title": "😱🩸당신은 똑같은 삶을 반복하더라도… 이번엔 다른 선택을 할 수 있습니까?😱🩸넷플릭스 역대급 공포(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 376134,
+        "content_type": "movie",
+        "content_title": "디스커버리",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "디스커버리"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "5ULdDyDYw3k",
+      "video_title": "명작은 \"결말\"을 알고 봐도 명작이다... 너무 잔인해서 한국에서 2번이나 상영 금지됐던 최고의 복수 영화",
+      "original": {
+        "content_id": 49797,
+        "content_type": "movie",
+        "content_title": "악마를 보았다",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "악마를 보았다"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "rfEvGg5Za4I",
+      "video_title": "대체 존 G가 누구냐고! (메멘토) 완벽해석",
+      "original": {
+        "content_id": 77,
+        "content_type": "movie",
+        "content_title": "메멘토",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "메멘토"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "V1dFN0EExFk",
+      "video_title": "죽음 앞에 선 자의 마음을 간접 체험할 수 있는 13분 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 467956,
+        "content_type": "movie",
+        "content_title": "수상한 교수",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "UfK04pp_zkk",
+      "video_title": "신하균 미소 한번으로 1화만에 대박을 예감한 스릴러",
+      "original": {
+        "content_id": 116612,
+        "content_type": "tv",
+        "content_title": "괴물",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "괴물"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "ziiXupe9p_w",
+      "video_title": "지금 나오면 시청률 30% 찍을 존잼 드라마! 대한민국 좋소기업의 현실과 직장 갑질의 현실을 적나라하게 보여주는 드라마 몰아보기",
+      "original": {
+        "content_id": 65831,
+        "content_type": "tv",
+        "content_title": "욱씨남정기",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "옥시 남정기"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "mapping_reason": "Phase1: \"옥시 남정기\" != \"욱씨남정기\" (no_match(60%))",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "unyFNMdQEa4",
+      "video_title": "한소희 전종서 찐친들이 함께 출연한 2026 최신 영화",
+      "original": {
+        "content_id": 1401542,
+        "content_type": "movie",
+        "content_title": "프로젝트 Y",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "프로젝트 Y"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "g1PHh6hkH3k",
+      "video_title": "지금 넷프릭스 한국 영화 순위 1위 찍은!! 가난한 흙수저 찐따가 밑바닥에서 0.1% 상류층까지 단번에 올라간 방법?! 역대급 통쾌한 참교육 영화 《사채소년》",
+      "original": {
+        "content_id": 1071662,
+        "content_type": "movie",
+        "content_title": "사채소년",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "사채소년"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "UgG1-vX95Uc",
+      "video_title": "돈 안 받은 진짜 리뷰 《흑백요리사》",
+      "original": {
+        "content_id": 245684,
+        "content_type": "tv",
+        "content_title": "흑백요리사: 요리 계급 전쟁",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "흑백요리사"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "yIOnzvdhfgw",
+      "video_title": "(충격실화) 상위 1% 인생에서 단 하루 만에 곤두박질친 남자 , 아무튼 아담",
+      "original": {
+        "content_id": 706260,
+        "content_type": "movie",
+        "content_title": "아무튼, 아담",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "아무튼 아담"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "dQ6AW0zL3Jw",
+      "video_title": "핵인싸 고등학생들이 지하벙커에서 최후를 맞이하게 된 이유 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 467,
+        "content_type": "movie",
+        "content_title": "더 홀",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 홀"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "-D_QbDNkltg",
+      "video_title": "위험도가 높을수록 보상이 늘어나는 죽음의 레이스 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 535561,
+        "content_type": "movie",
+        "content_title": "라이드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "mMIzR4aiUic",
+      "video_title": "《넷플릭스》에서 꼭 봐야하는 미친듯한 몰입감의 레전드 1위 범죄 스릴러 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 530382,
+        "content_type": "movie",
+        "content_title": "문 섀도우",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "문 섀도우"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "v8_ASCUr61A",
+      "video_title": "감독님이 미쳤어요 ㅋㅋ!! 좀비 영화를 '진짜 좀비'로 찍어버린 병맛 감독의 최후!! [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 664168,
+        "content_type": "movie",
+        "content_title": "좀비랜드 파이널",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "좀비랜드"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "9ynvoFZ2XCk",
+      "video_title": "이게 실화라고? 전 세계 사람들을 울렸던 한 고등학교 배구부 소녀들의 미쳐버린 감동실화  [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 425373,
+        "content_type": "movie",
+        "content_title": "미라클 시즌",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "9CqNi38CrPc",
+      "video_title": "죽지 않는 몸을 가진 한 남자를 잘못 건드리면 벌어지는 일",
+      "original": {
+        "content_id": 137043,
+        "content_type": "tv",
+        "content_title": "커넥트",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "커넥트"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "BOFrMh-s6D4",
+      "video_title": "🔥어벤저스 제작진이 만든 진짜 역대급 공포 시리즈 ㄷㄷ🔥 오두막집 지하실에 갇혀있는 👿괴물들과 지하시설의 연구원들🧪 (영화리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 22970,
+        "content_type": "movie",
+        "content_title": "캐빈 인 더 우즈",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "케빈 인 더 우즈"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "Xl8oiesYbmw",
+      "video_title": "싸이코패스 살인마가  스턴트우먼을 만나면 벌어지는 일",
+      "original": {
+        "content_id": 1991,
+        "content_type": "movie",
+        "content_title": "데쓰 프루프",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "vFCqVUlbdd0",
+      "video_title": "세상에서 가장 유쾌한 좀비 영화! 개쩌는 병맛으로 당신을 정신없이 웃겨드립니다 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 338967,
+        "content_type": "movie",
+        "content_title": "좀비랜드: 더블 탭",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "좀비랜드"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "JSI_vYj47YU",
+      "video_title": "와..이렇게 핵꿀잼인 신작 영화가 떴다고??? 처음부터 끝까지 배우들의 실감나는 연기에 1000% 몰입해서 본 핵꿀잼 신작 영화",
+      "original": {
+        "content_id": 843394,
+        "content_type": "movie",
+        "content_title": "캣퍼슨",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "퍼스"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "mapping_reason": "Phase1: \"퍼스\" != \"캣퍼슨\" (no_match(33%))",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "Gm41KixL7Ps",
+      "video_title": "《더 보이즈》 + 《젠:V》 모든 시즌 한 번에 몰아보기",
+      "original": {
+        "content_id": 76479,
+        "content_type": "tv",
+        "content_title": "더 보이즈",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 보이즈"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "yn-ZP8LCHfE",
+      "video_title": "아프리카 전쟁난민의 좌충우돌 미국 적응기! 세상을 놀라게 한 따뜻한 감동실화[영화리뷰/ 결말포함]",
+      "original": {
+        "content_id": 250538,
+        "content_type": "movie",
+        "content_title": "뷰티풀 라이",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "잃어버린 아이들"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"잃어버린 아이들\" != \"뷰티풀 라이\" (no_match(14%))"
+    },
+    {
+      "video_id": "Os5SEHlLJIc",
+      "video_title": "변태들도 현자로 만든다는 전설의 영화..",
+      "original": {
+        "content_id": 14,
+        "content_type": "movie",
+        "content_title": "아메리칸 뷰티",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "아메리칸 뷰티"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "7gwMpYM-OFs",
+      "video_title": "(sub) 대한민국에서 전쟁이 일어난다면? 한국 사람이라면 꼭 봐야 하는 너무 사실적이라 경악한 실화 영화",
+      "original": {
+        "content_id": 11658,
+        "content_type": "movie",
+        "content_title": "태극기 휘날리며",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "vVOurbMHrRo",
+      "video_title": "직장 상사에게 아파트 열쇠를 빌려주게 되면 벌어지는 일 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 284,
+        "content_type": "movie",
+        "content_title": "아파트 열쇠를 빌려드립니다",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "사무실"
+        ],
+        "inferred_titles": [],
+        "confidence": 80,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"사무실\" != \"아파트 열쇠를 빌려드립니다\" (no_match(0%))"
+    },
+    {
+      "video_id": "j4shKw8bMNo",
+      "video_title": "와...대박...\"실화\"를 바탕으로 왓챠에서 작정하고 만든 평점까지 \"1위\" 한 \"한석규x김서형\"의 명품 연기를 볼 수 있는 명작 드라마",
+      "original": {
+        "content_id": 195743,
+        "content_type": "tv",
+        "content_title": "오늘은 좀 매울지도 몰라",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "오늘 좀 매울지도 몰라"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "8_qEtNCsi9U",
+      "video_title": "어린 아이를 납치해서 토막살인한 싸이코패스 아동유괴범의 최후 | 악의 마음을 읽는 자들 1-4화 몰아보기",
+      "original": {
+        "content_id": 146102,
+        "content_type": "tv",
+        "content_title": "악의 마음을 읽는 자들",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "악의 마음을 읽는 자들"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "mvX7545TWuo",
+      "video_title": "정말 이게 개봉했다고? 신으로 빙의한 인간이 행한 놀라운 기적 ㄷㄷ",
+      "original": {
+        "content_id": 425274,
+        "content_type": "movie",
+        "content_title": "나우 유 씨 미 3",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "나우유시미 3"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "PwjQrBd6JWg",
+      "video_title": "웨이브에서 작정하고 만든 미친 몰입감의 신작 드라마 1-4화 \"한방에 몰아보기\"",
+      "original": {
+        "content_id": 213320,
+        "content_type": "tv",
+        "content_title": "거래",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "거래"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "P7QYOK6K5KM",
+      "video_title": "인스타 팔로워에 환장한 관종녀의 비참한 결말을 보여주는 최신영화 《그녀가 죽었다》",
+      "original": {
+        "content_id": 743815,
+        "content_type": "movie",
+        "content_title": "그녀가 죽었다",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "그녀가 죽었다"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "hPKwHWEnaos",
+      "video_title": "감독의 의도를 알면 작품이 완전 달라집니다 《파고》 시즌2 몰아보기 and 결말 해석",
+      "original": {
+        "content_id": 60622,
+        "content_type": "tv",
+        "content_title": "파고",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "파고"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "WFs6TO6XYAQ",
+      "video_title": "\"복수를 위해\" 천재 피아니스트에서 변호사가 된 조승우",
+      "original": {
+        "content_id": 204241,
+        "content_type": "tv",
+        "content_title": "신성한, 이혼",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "신성한 유언"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "4GjoleZD6Pk",
+      "video_title": "2025년 \"1000만 관객\" 쌉가능! 극한직업 + 무빙 ㅋㅋㅋ 최신 영화 《하이파이브》",
+      "original": {
+        "content_id": 793058,
+        "content_type": "movie",
+        "content_title": "하이파이브",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "하이파이브"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "8Cct8fLbfdY",
+      "video_title": "[결말포함] 와...이 영화를 왜 지금 봤을까요??🔥해외에서 대박나서 한국에서 리메이크까지 제작된 실화를 바탕으로 몰입감1000% 주는 명작중에 명작 영화 끝까지 몰아보기",
+      "original": {
+        "content_id": 84111,
+        "content_type": "movie",
+        "content_title": "그 시절, 우리가 좋아했던 소녀",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "YYba51PFNZA",
+      "video_title": "와...🔥역대급 충격 소재와 미친 수위 🔥S관계를 맺은 사람 사이에 이어진 붉은 선이 보인다.? 웹툰 원작 2025년 역대급 신작 드라마 1~4화 몰아보기",
+      "original": {
+        "content_id": 232402,
+        "content_type": "tv",
+        "content_title": "S라인",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "S라인"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "dKXd7Cti9n8",
+      "video_title": "\"왓챠\"에서 공개하자마자 재밌다고 난리 난 화려한 액션신을 보여주는 범죄 느와르 드라마",
+      "original": {
+        "content_id": 135896,
+        "content_type": "tv",
+        "content_title": "최종병기 앨리스",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "최종변기 앨리스"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "pd7aZN9lAWE",
+      "video_title": "와..한국영화 띵작중에 띵작!!김혜수 X 김호진 X 이경영이 배꼽 빠지게 웃겨주는 꿀잼 영화",
+      "original": {
+        "content_id": 349239,
+        "content_type": "movie",
+        "content_title": "미스터 콘돔",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "미스터 콘돔"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "vfm6co7yfM4",
+      "video_title": "'토르' 해머를 능가하는 망치로 학교를 파괴시키는 남자의 정체 ㄷㄷ",
+      "original": {
+        "content_id": 261902,
+        "content_type": "tv",
+        "content_title": "마지막 썸머",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "JlZOEW3CSUw",
+      "video_title": "≪오징어 게임≫ 을 능가하는.. 불륜 추적 게임이 시작된다고?! 개미쳤다...ㄷ 배우 이정재와 임지연의 숨막히는 맞짱..! 갈수록 빠져드는 사랑 게임 ≪얄미운 사랑≫ 5화~6화",
+      "original": {
+        "content_id": 285770,
+        "content_type": "tv",
+        "content_title": "얄미운 사랑",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "얄미운 사랑"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "syorweoUep8",
+      "video_title": "와 개미쳤다.. 39금 성인 드라마인 줄 알았는데, 50만원 경품때문에 목숨을 건 애엄마ㅋㅋ 미친듯이 웃기기로 작정한 2025년 마지막 코믹드라마 1위 ≪키스는 괜히 해서≫3-4화",
+      "original": {
+        "content_id": 281013,
+        "content_type": "tv",
+        "content_title": "키스는 괜히 해서!",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "키스는 괜히 해서"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "QIvnts2bcE8",
+      "video_title": "🔥🔥넷플릭스가 천재 감독과 만든 최고의 😱호러😱 드라마 시리즈🔥🔥(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 83659,
+        "content_type": "tv",
+        "content_title": "기예르모 델토로의 호기심의 방",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "JFjG892GoDI",
+      "video_title": "《넷플릭스》에서 꼭 봐야하는 미친듯한 화끈함의 《유럽 범죄 연합 vs 최강 아빠..》 레전드 범죄 액션  [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 1212073,
+        "content_type": "movie",
+        "content_title": "60분",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "abhQnqNfNgM",
+      "video_title": "총 제작비 1500억!!?.. 《넷플릭스》에서 꼭 봐야하는 미친듯한 몰입감의 레전드 범죄 액션 Top.3 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 755566,
+        "content_type": "movie",
+        "content_title": "데이 시프트",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "Sn6kNSyliNk",
+      "video_title": "나쁜 학생들에게 못된 짓을 당한 소녀가 각성해서, 연봉 100억 S급 변호사가 됐다..! 그런데? 변론해야 할 사람이 슈퍼 아이돌 스타?!",
+      "original": {
+        "content_id": 285278,
+        "content_type": "tv",
+        "content_title": "아이돌아이",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "FwAwj7bc0Gg",
+      "video_title": "신세계..! 싸움에서 이기면 '왕'이 되는 역대급 세계관, 대지진 이후, 달랑 한 채 남은 아파트에서 물, 기름, 인간까지 모든 게 통제되는 극강의 시장 ≪콘크리트 마켓 시리즈≫",
+      "original": {
+        "content_id": 156293,
+        "content_type": "tv",
+        "content_title": "콘크리트마켓",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "콘크리트 마켓 시리즈"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "Gq0w3ehCMwg",
+      "video_title": "하필이면.. 《전직 해병대 할아버지》를 건드려버린 양아치 조직의 최후 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 25941,
+        "content_type": "movie",
+        "content_title": "해리 브라운",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "전직 해병대 할아버지"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"전직 해병대 할아버지\" != \"해리 브라운\" (no_match(11%))"
+    },
+    {
+      "video_id": "6fmdx-F3Qkc",
+      "video_title": "미쳐버린 몰입감으로 《13분》을 순삭시키는 힘을 숨긴 《최강 아빠》의 레전드 복수 액션 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 17639,
+        "content_type": "movie",
+        "content_title": "사일런트 나이트",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "최강 아빠"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"최강 아빠\" != \"사일런트 나이트\" (no_match(0%))"
+    },
+    {
+      "video_id": "jHiCQuqinU0",
+      "video_title": "와.. 미쳐버린 몰입감으로 《17분》을 순삭시키는 《힘을 숨긴 선생님》의 레전드 전쟁 액션 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 966220,
+        "content_type": "movie",
+        "content_title": "스나이퍼: 화이트 레이븐",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "힘을 숨긴 선생님"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"힘을 숨긴 선생님\" != \"스나이퍼: 화이트 레이븐\" (no_match(0%))"
+    },
+    {
+      "video_id": "3Zvxifgt1Lk",
+      "video_title": "또...또... 이상한 거 가져왔다...또",
+      "original": {
+        "content_id": 1330421,
+        "content_type": "movie",
+        "content_title": "본 레이크: 위험한 체크인",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "홈레이크"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "kFgI6wCAheE",
+      "video_title": "살인범으로 몰린 오빠를 구하기 위해 변호사가 된 여동생의 감동 실화 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 45094,
+        "content_type": "movie",
+        "content_title": "컨빅션",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "컨빅션"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "7stOdfdig5Y",
+      "video_title": "프롬 몰아보기",
+      "original": {
+        "content_id": 124364,
+        "content_type": "tv",
+        "content_title": "프롬",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "j5xj1qYkSZI",
+      "video_title": "《프롬》 시즌 1,2 몰아보기! OTT에서 제일 핫한 공포 스릴러 드라마... 진짜 존나 재밌음",
+      "original": {
+        "content_id": 124364,
+        "content_type": "tv",
+        "content_title": "프롬",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "프롬"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "j0_fENXgwtE",
+      "video_title": "세계 최대 마피아 조직이 전직 특수부대 전설의 교관을 잘못 건드리면 벌어지는 일 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 926393,
+        "content_type": "movie",
+        "content_title": "더 이퀄라이저 3",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "n8bBfjTKOsE",
+      "video_title": "엄청난 작품이 나왔습니다",
+      "original": {
+        "content_id": 219760,
+        "content_type": "tv",
+        "content_title": "터미널 리스트: 다크 울프",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "zZk5PJSH1tM",
+      "video_title": "하필이면.. CIA 조차 능가하는 동남아 랭킹 1위 첩보 요원을 건드려버린... [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 1016346,
+        "content_type": "movie",
+        "content_title": "엠알 나인",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "라인 투올"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"라인 투올\" != \"엠알 나인\" (no_match(0%))"
+    },
+    {
+      "video_id": "q8mz0ZU0LkE",
+      "video_title": "와.. 미쳐버린 몰입감으로 47분을 순삭시키는 《힘을 숨긴 최정예 지휘관》의 레전드 전쟁 액션.. TOP.3 한방에 몰아보기 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 599925,
+        "content_type": "movie",
+        "content_title": "셰르샤",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "힘을 숨긴 최정예 지휘관"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"힘을 숨긴 최정예 지휘관\" != \"셰르샤\" (no_match(0%))"
+    },
+    {
+      "video_id": "8di_M90gUWg",
+      "video_title": "하필이면..《아들을 잃은 지구 최강 잠복 요원》을 건드려버린 국제 테러범의 최후 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 388862,
+        "content_type": "movie",
+        "content_title": "카운트다운",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "아들을 잃은 지구 최강 잠복 요원"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"아들을 잃은 지구 최강 잠복 요원\" != \"카운트다운\" (no_match(0%))"
+    },
+    {
+      "video_id": "xMAd6pqdU2M",
+      "video_title": "세상이 종말로 향해가는 초자연 미스터리 드라마",
+      "original": {
+        "content_id": 62142,
+        "content_type": "tv",
+        "content_title": "더 리턴드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "IXuPPYOx_bs",
+      "video_title": "매력적인 매기 큐의 2025년 신작 수사물",
+      "original": {
+        "content_id": 239826,
+        "content_type": "tv",
+        "content_title": "발라드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "8KBeWuXp5Uw",
+      "video_title": "미쳐버린 전투력으로 전투 용병 부대를 쓸어버리는 전직 특수부대 출신 은둔 고수.. [영화리뷰 결말포함추",
+      "original": {
+        "content_id": 651793,
+        "content_type": "movie",
+        "content_title": "러시안 레이드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "러시안 레이디"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "xobziWZ05SI",
+      "video_title": "《넷플릭스》에 공개하자 마자 랭킹 Top.5 찍어버린.. 레전드 생존(?) 스릴러 신작 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 1337309,
+        "content_type": "movie",
+        "content_title": "방콕 브레이킹: 천국과 지옥",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "방콕 브레이킹"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "OlAAJEQ5Wr0",
+      "video_title": "개봉 당시 \"신선한 소재\"와 \"파워풀한 액션\"으로 관객들을 사로잡은 코미디 액션 영화 \"1위\"",
+      "original": {
+        "content_id": 21707,
+        "content_type": "movie",
+        "content_title": "조폭 마누라",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "조폭마누라 1"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "tmJjBLlFEwM",
+      "video_title": "해외 평점 7.0!!《넷플릭스》에 공개하자 마자 랭킹 Top.5 찍어버린 레전드 범죄 스릴러 Top.2 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 1005331,
+        "content_type": "movie",
+        "content_title": "캐리온",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "캐리온"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "c8N_ZmEZb9g",
+      "video_title": "인간의 추악한 일면을 천재적인 기법으로 보여준 미친 영화.. [결말포함]",
+      "original": {
+        "content_id": 553,
+        "content_type": "movie",
+        "content_title": "도그빌",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "도급빌"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"도급빌\" != \"도그빌\" (no_match(67%))"
+    },
+    {
+      "video_id": "frYFC4083ag",
+      "video_title": "🩸🩸소중한 사람을 살리기 위해 함부로 죽음이라는 운명을  거슬러🩸🩸 한순간에 지옥이 되어버린 마을😭😭(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 59726,
+        "content_type": "movie",
+        "content_title": "웨이크 우드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "웨이크 우드"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "ESFFzagMqWM",
+      "video_title": "영국 왕실을 뒤집어버린 “엡스타인” 스캔들",
+      "original": {
+        "content_id": 244326,
+        "content_type": "tv",
+        "content_title": "베리 로얄 스캔들",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "엡스타인"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "Phase1: \"엡스타인\" != \"베리 로얄 스캔들\" (no_match(14%))",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "42V-pClZ6_k",
+      "video_title": "MIT 교수를 수학으로 털어버리는 전세계를 놀라게한 7살 천재 소녀 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 400928,
+        "content_type": "movie",
+        "content_title": "어메이징 메리",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "a7io4HCXsew",
+      "video_title": "이렇게 감동적인 걸 왜 개봉하지 않았을까?",
+      "original": {
+        "content_id": 1196573,
+        "content_type": "movie",
+        "content_title": "쉬 라이즈 샷건",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "nuykYuBFyik",
+      "video_title": "《넷플릭스》에 공개하자 마자 랭킹 Top.9 찍어버린.. 힘을 숨긴 소녀 킬러의 레전드 범죄 액션 신작 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 1151949,
+        "content_type": "movie",
+        "content_title": "섀도우의 13",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "zBEFVLJooQQ",
+      "video_title": "가난한 서커스 마술사가 이세계로 차원 이동하면 벌어지는 일 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 68728,
+        "content_type": "movie",
+        "content_title": "오즈: 그레이트 앤드 파워풀",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "오즈의 마법사"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"오즈의 마법사\" != \"오즈: 그레이트 앤드 파워풀\" (no_match(18%))"
+    },
+    {
+      "video_id": "tkIPZenzMbg",
+      "video_title": "가진게 없고 능력이 없어도 사랑만 있다면.. 세상을 놀라게 한 미쳐버린 실화! [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 13920,
+        "content_type": "movie",
+        "content_title": "라디오",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "라디오"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "GvKqfhNVV6g",
+      "video_title": "🔥실화🔥 아빠와 대화하고 싶었던 소녀가 위자보드 후 벌어지는 기이한 일들💀  (영화리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 441701,
+        "content_type": "movie",
+        "content_title": "베로니카",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "베로니카"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "Sl4GMY8mgfw",
+      "video_title": "낯선 별장에 놀러 갔다가 미지의 방을 발견한 가족 (영화리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 808090,
+        "content_type": "movie",
+        "content_title": "하우스 온 더 바이우",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "JWPjqYyWpBA",
+      "video_title": "🩸죽은 망자들과 함께 산다는 것🩸 찝찝한 아프리카 공포 (영화리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 575774,
+        "content_type": "movie",
+        "content_title": "그 남자의 집",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "죽은 망자들과 함께 산다는 것"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"죽은 망자들과 함께 산다는 것\" != \"그 남자의 집\" (no_match(8%))"
+    },
+    {
+      "video_id": "GKKj8CG_fmY",
+      "video_title": "이게 실화라고? 이 남자가 반드시 일어나 우뚝 서야하는 이유 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 395993,
+        "content_type": "movie",
+        "content_title": "스트롱거",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "Ket-vsEWe-s",
+      "video_title": "드디어 최종화!!.. 미쳐버린 몰입감으로 17분을 순삭시키는 《유럽 랭킹 1위 대테러 특수부대》의 레전드 첩보 액션 [스트라이크 백 시즌3 9~10화][영화리뷰 결말포함]",
+      "original": {
+        "content_id": 32573,
+        "content_type": "tv",
+        "content_title": "스트라이크 백 ",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "스트라이크 백"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "uLTu5jv_JvA",
+      "video_title": "🩸실제 있던 마녀 사냥 사건을 재구성해서 만든 작품으로 🩸사랑받지 못한 한 여성이 마녀가 된 영화 💀💀💀(영화리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 310131,
+        "content_type": "movie",
+        "content_title": "더 위치",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "d-ltgLzEJ9M",
+      "video_title": "🩸🔪⛓️🔪 소년의 죄책감이 만들어낸 지옥🩸 노인의 끔찍하고 치밀한 복수가 시작된다🩸🔪🩸(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 1105736,
+        "content_type": "movie",
+        "content_title": "슐리터",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "슐리터"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "pIYVjPR0KQY",
+      "video_title": "🙌🙌 기적의 치유사 🕊🕊🕊️ 그리고 수상한 마을의 비밀 🏘 (영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 90290,
+        "content_type": "tv",
+        "content_title": "선택받은 자",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "선택받은 자"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "UfIKbiLTv18",
+      "video_title": "무시당하고 살던 흙수저 찐따가 말도 안되는 재능을 발견하고 억만장자가 되버리는 전 세계를 놀라게한 미쳐버린 실화 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 928344,
+        "content_type": "movie",
+        "content_title": "위어드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "알 빅"
+        ],
+        "inferred_titles": [],
+        "confidence": 85,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"알 빅\" != \"위어드\" (no_match(0%))"
+    },
+    {
+      "video_id": "8dVkWr7dq2s",
+      "video_title": "😱🩸🗝️ 아무도 모르는 지하 깊숙한 곳 💀🔥절대로 열어서는 안 될 보관함 🚫🧤(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 207270,
+        "content_type": "movie",
+        "content_title": "The Hoarder",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 호더"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"더 호더\" != \"The Hoarder\" (no_match(0%))"
+    },
+    {
+      "video_id": "IMhUC8lFscE",
+      "video_title": "⚠️👽 설명 없이 밀어붙이는 B급 공포 살아 돌아온 건 사람이 아니었다 👽⚠️ 80년대 감성(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 25712,
+        "content_type": "movie",
+        "content_title": "The Alien Dead",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 에일리언 데드"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"더 에일리언 데드\" != \"The Alien Dead\" (no_match(0%))"
+    },
+    {
+      "video_id": "sHtQOXdGipM",
+      "video_title": "와.. 총 제작비 30억!! 절대로 놓치면 안되는 역대급 몰입감의 초저예산 미래SF(?) 생존 스릴러 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 316269,
+        "content_type": "movie",
+        "content_title": "칼큘레이터",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "칼큘레이터"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "sQZzS_AvWDs",
+      "video_title": "🩸🩸양들의 침묵🦋 1년 후 시점을 그린 충격적인 드라마🦋 🩸🩸(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 274,
+        "content_type": "movie",
+        "content_title": "양들의 침묵",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "양들의 침묵"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "Kr5lp2Wo0iM",
+      "video_title": "세계 최고의 미녀 배우가 갑자기 주차요원에게 키스를 갈기는 이유는? [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 810171,
+        "content_type": "movie",
+        "content_title": "발렛",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "XxUryP3G9_s",
+      "video_title": "《1시간순삭》그 까다롭다는 '박평식'도 8점준 범죄 스릴러 한방에 몰아보기",
+      "original": {
+        "content_id": 6977,
+        "content_type": "movie",
+        "content_title": "노인을 위한 나라는 없다",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": false
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "FALSE_NEGATIVE",
+      "mapping_reason": "TMDB search returned 0 results",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "0kSh5wcv8Is",
+      "video_title": "인생이 외로운 당신이 꼭 봐야 하는 영화 [결말포함]",
+      "original": {
+        "content_id": 413452,
+        "content_type": "movie",
+        "content_title": "카드보드 복서",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "-m3pfChwGps",
+      "video_title": "D.P 디피보다 훨씬 더 현실적인 군생활을 보여준 숨겨진 보석같은 영화! PTSD 주의",
+      "original": {
+        "content_id": 451924,
+        "content_type": "movie",
+        "content_title": "폭력의 씨앗",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "폭력의 씨앗"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "CnotGXiuC80",
+      "video_title": "지상파에서는 절대 볼 수 없는 미친 수위로 난리난 49금 드라마 《판타G스팟》 몰아보기",
+      "original": {
+        "content_id": 211260,
+        "content_type": "tv",
+        "content_title": "판타G스팟",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "판타G스팟"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "5YARpiSNgzU",
+      "video_title": "제작비 800억...  미쳐버린 몰입감으로 17분을 순삭시키는 《힘을 숨긴 현직 CIA 요원...》의 레전드 첩보 액션 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 8195,
+        "content_type": "movie",
+        "content_title": "로닌",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "fpMEdkwGsZU",
+      "video_title": "🩸💀🩸잔혹하고 소름끼치는 공포 드라마 🩸💀🩸(드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 120462,
+        "content_type": "tv",
+        "content_title": "그들",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "uYhOzOKIsY4",
+      "video_title": "🩸🚪당신이 믿던 안전이 무너지는 순간🧱🩸 (영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 1425045,
+        "content_type": "movie",
+        "content_title": "브릭",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "크로스기"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"크로스기\" != \"브릭\" (no_match(0%))"
+    },
+    {
+      "video_id": "JO0bgb5lmUU",
+      "video_title": "제작비 600억... 20년이 지나도 밀리터리 액션의 정점으로 불리는 전설의 명작 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 8007,
+        "content_type": "movie",
+        "content_title": "에너미 라인스",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "에너미 라인스"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "HgldxTZnZfM",
+      "video_title": "네이비 씰 vs 콜롬비아 특수부대...?!! 미쳐버린 몰입감으로 15분을 순삭시키는 레전드 미개봉 전쟁 액션.. [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 14028,
+        "content_type": "movie",
+        "content_title": "에너미 라인스 3",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "에노미 라이스 3 콜롬비아"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"에노미 라이스 3 콜롬비아\" != \"에너미 라인스 3\" (no_match(45%))"
+    },
+    {
+      "video_id": "vNt3wfrReHs",
+      "video_title": "지구 멸망 5초 전.. 26,000년 만에 찾아온 우주 대재앙?! [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 72174,
+        "content_type": "movie",
+        "content_title": "둠스데이 지구 최후의 날",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "둠스데이 지구 최후의 날"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "rj4JC0uuDRQ",
+      "video_title": "국가에게 버림 받은 전직 최강의 특수 요원의 레전드 첩보 액션 Top.2 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 628900,
+        "content_type": "movie",
+        "content_title": "더 컨트랙터",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "와일드 카드"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"와일드 카드\" != \"더 컨트랙터\" (no_match(0%))"
+    },
+    {
+      "video_id": "Voc1Rf2kGbQ",
+      "video_title": "와.. 미쳐버린 몰입감으로 15분을 순삭시키는 《힘을 숨긴 천재 알바생..》의 레전드 미개봉 범죄 액션 [영화리뷰 결말포함]",
+      "original": {
+        "content_id": 1001274,
+        "content_type": "movie",
+        "content_title": "나이트콜",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [],
+        "inferred_titles": [],
+        "confidence": 0,
+        "includes_ending": true
+      },
+      "mapping_status": "NO_EXTRACTION",
+      "ending_status": "CORRECT",
+      "mapping_reason": "TMDB search returned 0 results"
+    },
+    {
+      "video_id": "luoHPLoTR6s",
+      "video_title": "내 운을 가져간 놈이 하필 미친 듯이 잘나가는 유명 배우였다 ㅎㄷㄷ",
+      "original": {
+        "content_id": 1015468,
+        "content_type": "movie",
+        "content_title": "부적: 남의 운을 빼앗는 자",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "부적"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "k9gXErehWC4",
+      "video_title": "\"웹툰\"을 원작으로 \"왓챠\"에서 공개하자마자 엄청난 화제가 된 배우진,연기력,몰입감 모든 것이 완벽한 블랙 코미디 드라마",
+      "original": {
+        "content_id": 202908,
+        "content_type": "tv",
+        "content_title": "사막의 왕",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "사막의 왕"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "4J-eVXgxIWk",
+      "video_title": "🩸 넷플릭스 명작! 치명적 매력에 빠져든 여성들… 🩸최악의 연쇄살X마 🩸테드 번디🩸 ㄷㄷㄷ충격 실화 😱\"(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 457799,
+        "content_type": "movie",
+        "content_title": "나는 악마를 사랑했다",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "나는 악마를 사랑했다"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "5TlV0UEqcPI",
+      "video_title": "미친 액션씬으로 눈을 떼지 못할...\"이경영\"이 각본,감독,배우까지 모두 다 한 꿀잼 액션 영화",
+      "original": {
+        "content_id": 349258,
+        "content_type": "movie",
+        "content_title": "귀천도",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "귀천"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": false
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_NEGATIVE",
+      "ending_reason": "Predicted: false, Actual: true"
+    },
+    {
+      "video_id": "gU7eOXdHlCY",
+      "video_title": "이 영화가 웃기지 않으면 300% 환불해드립니다.",
+      "original": {
+        "content_id": 21708,
+        "content_type": "movie",
+        "content_title": "조폭 마누라 2: 돌아온 전설",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "조폭마누라 2 돌아온 전설"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "jeaOdK9VJdg",
+      "video_title": "《보스》 최초 공개 🔥 황우슬혜 코믹 연기 미쳤다 ㅋㅋㅋ 1시간 30분 동안 쉬지 않고 웃긴 진짜 재밌는 신작 코믹 영화!",
+      "original": {
+        "content_id": 1053231,
+        "content_type": "movie",
+        "content_title": "보스",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "보스"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "ac_y6W2J1i8",
+      "video_title": "2025년 전세계에서 제일 \"HOT한\" 역대급 신작 드라마 《조각도시》 최신화 떴다! 안 보면 후회합니다",
+      "original": {
+        "content_id": 239385,
+        "content_type": "tv",
+        "content_title": "조각도시",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "조각도시"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "JpytvLAaioU",
+      "video_title": "진짜 숨 쉴 틈이 없습니다..2025년 11월 신작!! 개그맨보다 웃겨버리는 역대급 코미디 영화",
+      "original": {
+        "content_id": 1545280,
+        "content_type": "movie",
+        "content_title": "리플레이",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "리플레이"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "74x_lKDskvU",
+      "video_title": "VOD \"1위\" 찍고 감탄밖에 안나오는 한석규 X 이문식 X 오달수 X 차예련등 명풍배우 총출동 한 코미디 영화",
+      "original": {
+        "content_id": 57270,
+        "content_type": "movie",
+        "content_title": "구타유발자들",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "구타 유발자들"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "f3WsmUko7AA",
+      "video_title": "와...미친 반전의 반전!!!!! 오만석 X 이선균 X 류덕환의 연기력에 1000% 몰입해버리는 범죄 영화",
+      "original": {
+        "content_id": 55767,
+        "content_type": "movie",
+        "content_title": "우리 동네",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "우리 동네"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "1DVWZIdNsow",
+      "video_title": "조회수 \"5000만뷰\" 찍은 웹툰 원작! 첫방부터 맵고 빠른 전개로 화제몰이 중인 2026년 채널A 신작 드라마! 《아기가 생겼어요》1-2화 몰아보기",
+      "original": {
+        "content_id": 296009,
+        "content_type": "tv",
+        "content_title": "아기가 생겼어요",
+        "includes_ending": false
+      },
+      "predicted": {
+        "extracted_titles": [
+          "아기가 생겼어요"
+        ],
+        "inferred_titles": [],
+        "confidence": 95,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "FALSE_POSITIVE",
+      "ending_reason": "Predicted: true, Actual: false"
+    },
+    {
+      "video_id": "1_89icSO-B8",
+      "video_title": "와...진짜 몰입도 미쳤다.....\"실화\"를 바탕으로 관객 점수 98%를 기록하고 \"가이 리치\" 감독의 최고작이라고 호평을 받은 스토리,연기,몰입감 어디 하나 빠지지 않는 영화",
+      "original": {
+        "content_id": 882569,
+        "content_type": "movie",
+        "content_title": "더 커버넌트",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "더 커버넌트"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "_n1yJdbKjLA",
+      "video_title": "⚠️😱 여기 들어간 순간 끝났다 🚫🚨 (영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 467239,
+        "content_type": "movie",
+        "content_title": "더 템플",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "템플"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "boevgPdqOSU",
+      "video_title": "☠️🩸보이지 않는 것을 믿는 순간, 공포는 현실이 된다 👁️🫁해석하는 순간 더 무서워지는 심리 공포(영화/드라마리뷰/결말포함)(공포영화)",
+      "original": {
+        "content_id": 775400,
+        "content_type": "movie",
+        "content_title": "뱅큇",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "어벤"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MISMATCH",
+      "ending_status": "CORRECT",
+      "mapping_reason": "Phase1: \"어벤\" != \"뱅큇\" (no_match(0%))"
+    },
+    {
+      "video_id": "6h5UWCb-DFU",
+      "video_title": "미국을 건들면 나락가는 이유🔥[결말포함]",
+      "original": {
+        "content_id": 969492,
+        "content_type": "movie",
+        "content_title": "랜드 오브 배드",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "랜드 오브 베드"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
+    },
+    {
+      "video_id": "BC1BY5SDbPE",
+      "video_title": "당신의 동기부여와 힐링을 위한 개멋진 실화 [영화리뷰/결말포함]",
+      "original": {
+        "content_id": 529862,
+        "content_type": "movie",
+        "content_title": "브리트니 런스 어 마라톤",
+        "includes_ending": true
+      },
+      "predicted": {
+        "extracted_titles": [
+          "브리트니 런주어 마라톤"
+        ],
+        "inferred_titles": [],
+        "confidence": 90,
+        "includes_ending": true
+      },
+      "mapping_status": "MATCH",
+      "ending_status": "CORRECT"
     }
-  ],
-
-  "pattern_analysis": {
-    "clickbait_patterns": {
-      "count": 25,
-      "patterns": [
-        "XXX이 YYY하면 벌어지는 일",
-        "XXX의 최후",
-        "클릭하면 N분 순삭",
-        "갓작/명작/수작/레전드",
-        "실화라서 더 무서운",
-        "N억 제작비",
-        "평점 9.X점"
-      ],
-      "example_videos": ["9_vzwwnJlKM", "QDTX5U05VKQ", "x4mUZQwSrT4"]
-    },
-
-    "actor_only_patterns": {
-      "count": 12,
-      "common_actors": ["마동석", "남궁민", "한지민", "정우성", "하정우", "강하늘"],
-      "risk": "배우 필모그래피 DB 없이 특정 어려움"
-    },
-
-    "series_confusion_patterns": {
-      "count": 4,
-      "examples": [
-        {"pattern": "시리즈 전체 몰아보기", "video_id": "mN6o9rAfYlc", "issue": "어떤 에피소드가 main인지 불분명"},
-        {"pattern": "시즌 X 리뷰", "video_id": "yW4Mp13acMo", "issue": "시즌 전체 vs 특정 시즌"},
-        {"pattern": "시퀄/후속작", "video_id": "cIyQ-L-bYJQ", "issue": "배드 애스 2인데 1 매칭 가능성"}
-      ]
-    },
-
-    "title_variation_patterns": {
-      "count": 6,
-      "examples": [
-        {"original": "Chronicle", "variations": ["크로니클", "클로니클"]},
-        {"original": "코렐라인: 비밀의 문", "variations": ["코렐라인", "코렐라인 비밀의 문"]},
-        {"original": "빠담빠담... 그와 그녀의 심장박동소리", "short": "빠담빠담"},
-        {"original": "트라이건 스탬피드", "short": "트라이건"}
-      ]
-    },
-
-    "common_title_collision": {
-      "count": 5,
-      "titles": [
-        {"title": "라이프", "candidates": ["Life (2017, SF영화)", "라이프 (한국 드라마)", "기타 다수"]},
-        {"title": "아서", "candidates": ["Arthur (2011)", "Arthur (1981)", "기타 다수"]},
-        {"title": "소울", "candidates": ["Soul (Pixar)", "기타 다수"]},
-        {"title": "65", "candidates": ["65 (2023)", "숫자 제목 혼동"]},
-        {"title": "파묘", "note": "단독이지만 비유적 언급 오류 가능"}
-      ]
-    },
-
-    "non_korean_title_issues": {
-      "count": 3,
-      "examples": [
-        {"video_id": "ttdOB7OPDvM", "content_title": "The Fore-Men", "issue": "영문 제목 직접 매칭 필요"},
-        {"video_id": "UrKQLY28iXM", "content_title": "Hur det kanns att vara bakis", "issue": "스웨덴어 제목"},
-        {"video_id": "rGmb1gyKt1g", "content_title": "보이즈 프롬 카운티 헬", "issue": "번역 제목, 원제와 차이"}
-      ]
-    }
-  },
-
-  "improvement_plan": {
-    "priority_1_critical": [
-      {
-        "issue": "클릭베이트 설명형 표현 vs 실제 제목 구분",
-        "current_failure_rate": "~25%",
-        "solution": "설명형 패턴 감지 규칙 추가: '힘을 숨긴', 'XXX하는', 'XXX의', 'XXX된' 등 동사/형용사형 표현이 《》 안에 있으면 제목 아님으로 판단",
-        "implementation": "Direct Extraction 프롬프트에 negative pattern 추가",
-        "expected_improvement": "15-20% 정확도 향상"
-      },
-      {
-        "issue": "동명 작품 disambiguation",
-        "current_failure_rate": "~10%",
-        "solution": "흔한 제목 목록 관리 + 추가 컨텍스트(연도, 장르, 플랫폼, 배우) 기반 필터링 강화",
-        "implementation": "Unified Analysis에서 common_title_flag 추가, 추가 검증 단계 도입",
-        "expected_improvement": "8-10% 정확도 향상"
-      }
-    ],
-
-    "priority_2_high": [
-      {
-        "issue": "배우/감독만 언급 시 작품 특정",
-        "current_failure_rate": "~20%",
-        "solution": "주요 한국 배우 필모그래피 DB 구축 또는 배우+연도+장르 조합 검색 강화",
-        "implementation": "search_queries 생성 시 배우명 + 핵심 플롯 요소 필수 포함",
-        "expected_improvement": "10-15% 정확도 향상"
-      },
-      {
-        "issue": "음차 변형 매칭",
-        "current_failure_rate": "~5%",
-        "solution": "외래어 음차 변형 사전 구축 (Chronicle -> 크로니클/클로니클)",
-        "implementation": "TMDB 검색 시 음차 변형 목록으로 복수 검색",
-        "expected_improvement": "3-5% 정확도 향상"
-      },
-      {
-        "issue": "비유적 제목 언급 vs 실제 리뷰 구분",
-        "current_failure_rate": "~3%",
-        "solution": "'파묘급', '파묘 무당', 'XXX급' 같은 비유 표현 감지",
-        "implementation": "Direct Extraction에서 '급', '무당처럼', '같은' 등 비유 접미사 감지 규칙 추가",
-        "expected_improvement": "2-3% 정확도 향상"
-      }
-    ],
-
-    "priority_3_medium": [
-      {
-        "issue": "시리즈 전체 vs 특정 에피소드",
-        "current_failure_rate": "~7%",
-        "solution": "시리즈 콘텐츠 감지 플래그 + 복수 매칭 지원",
-        "implementation": "is_series_compilation 필드 추가, 시리즈 첫 번째가 아닌 전체 시리즈 ID 반환",
-        "expected_improvement": "5-7% 정확도 향상"
-      },
-      {
-        "issue": "부제 포함 제목 매칭",
-        "current_failure_rate": "~5%",
-        "solution": "TMDB 검색 시 부제 제외 검색 + 부제 포함 검색 모두 시도",
-        "implementation": "제목에서 ':', '-' 등으로 분리된 부제 자동 분리 후 복수 검색",
-        "expected_improvement": "3-5% 정확도 향상"
-      },
-      {
-        "issue": "외국어 제목 콘텐츠",
-        "current_failure_rate": "~3%",
-        "solution": "비영어권 콘텐츠 감지 + 영어 검색 쿼리 우선 생성",
-        "implementation": "search_queries에 영어 키워드 우선 배치, 국가/언어 힌트 추가",
-        "expected_improvement": "2-3% 정확도 향상"
-      }
-    ],
-
-    "priority_4_low": [
-      {
-        "issue": "완전 클릭베이트 (힌트 없음)",
-        "current_failure_rate": "~10%",
-        "solution": "자막 전체 분석 강화 + 웹 검색 결과 활용",
-        "implementation": "자막에서 캐릭터 이름, 고유 설정, 장소명 등 추출 후 검색",
-        "expected_improvement": "3-5% 정확도 향상 (한계 있음)"
-      }
-    ]
-  },
-
-  "summary": {
-    "total_analyzed": 60,
-    "classification_distribution": {
-      "A_direct_mention": 18,
-      "B_partial_mention": 8,
-      "C_actor_director_only": 12,
-      "D_plot_only_clickbait": 16,
-      "E_complete_clickbait": 6
-    },
-    "risk_distribution": {
-      "low": 20,
-      "medium": 10,
-      "high": 12,
-      "very_high": 18
-    },
-    "estimated_mismatch_rate": {
-      "current": "25-30%",
-      "after_priority_1": "10-15%",
-      "after_all_improvements": "5-8%"
-    },
-    "key_findings": [
-      "1. 클릭베이트 설명형 표현(《힘을 숨긴 할아버지들》)을 제목으로 오인하는 케이스가 가장 위험",
-      "2. 마동석, 남궁민 등 인기 배우 언급만으로 작품 특정이 어려운 케이스 다수",
-      "3. 동명 작품(라이프, 아서 등) disambiguation이 중요",
-      "4. 시리즈 전체 리뷰 vs 특정 에피소드 리뷰 구분 필요",
-      "5. 비유적 제목 언급(파묘 무당급)과 실제 리뷰 구분 필요"
-    ]
-  }
+  ]
 }
