@@ -7,8 +7,8 @@ import { SlackNotificationAdapter } from '@/infrastructure/external-services/sla
 /** 배치 처리 기본 설정 */
 const DEFAULT_MIN_AGE_HOURS = 25;
 
-/** 채널 간 딜레이 (레이트 리미팅 방지) */
-const CHANNEL_PROCESSING_DELAY_MS = 3000;
+/** 채널 간 딜레이 (레이트 리미팅 방지) - 30초로 증가 */
+const CHANNEL_PROCESSING_DELAY_MS = 30000;
 
 /** 딜레이 헬퍼 */
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));

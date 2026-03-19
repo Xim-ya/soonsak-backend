@@ -34,6 +34,14 @@ const CIRCUIT_BREAKER_CONFIG = {
   cooldownMs: 10 * 60 * 1000, // 10분 쿨다운
 };
 
+/** yt-dlp Rate Limit 방지 옵션 */
+const YT_DLP_RATE_LIMIT_OPTIONS = [
+  '--sleep-requests 3',       // 요청 간 3초 대기
+  '--sleep-interval 5',       // 다운로드 간 최소 5초
+  '--max-sleep-interval 15',  // 최대 15초 (랜덤)
+  '--sleep-subtitles 2',      // 자막 요청 전 2초 대기
+].join(' ');
+
 /** 쿠키 파일 경로 */
 const COOKIES_FILE_PATH = '/tmp/youtube_cookies.txt';
 
@@ -543,7 +551,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     try {
       const cookiesFlag = this.getCookiesFlag();
       const { stdout } = await this.execYtDlpWithRetry(
-        `yt-dlp ${cookiesFlag} --print-json --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
+        `yt-dlp ${cookiesFlag} ${YT_DLP_RATE_LIMIT_OPTIONS} --print-json --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
         { timeout: 120000, maxBuffer: 10 * 1024 * 1024 },
       );
 
@@ -781,7 +789,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     try {
       const cookiesFlag = this.getCookiesFlag();
       await this.execYtDlpWithRetry(
-        `yt-dlp ${cookiesFlag} --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
+        `yt-dlp ${cookiesFlag} ${YT_DLP_RATE_LIMIT_OPTIONS} --write-auto-subs --sub-lang ko --sub-format vtt --skip-download -o "${outputPath}" "https://www.youtube.com/watch?v=${videoId}"`,
         { timeout: 60000 },
       );
 
@@ -998,7 +1006,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     try {
       const cookiesFlag = this.getCookiesFlag();
       const { stdout } = await execAsync(
-        `yt-dlp ${cookiesFlag} --dump-json --playlist-items 1 "https://www.youtube.com/channel/${channelId}/videos"`,
+        `yt-dlp ${cookiesFlag} ${YT_DLP_RATE_LIMIT_OPTIONS} --dump-json --playlist-items 1 "https://www.youtube.com/channel/${channelId}/videos"`,
         { timeout: 60000 }
       );
 
@@ -1178,7 +1186,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     try {
       const cookiesFlag = this.getCookiesFlag();
       const { stdout } = await execAsync(
-        `yt-dlp ${cookiesFlag} --print channel_id "${url}" 2>/dev/null | head -1`,
+        `yt-dlp ${cookiesFlag} ${YT_DLP_RATE_LIMIT_OPTIONS} --print channel_id "${url}" 2>/dev/null | head -1`,
         { timeout: 30000 },
       );
 

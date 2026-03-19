@@ -5,9 +5,10 @@ import { BatchProcessingService } from '@/application/services';
 
 /**
  * 스케줄러 Cron 서비스
- * 매일 오전 6시 배치 작업 실행
+ * 4시간마다 배치 작업 실행 (Rate limit 분산)
  * - DB에 등록된 모든 채널의 최근 영상을 조회
  * - 게시일이 25시간 이전인 영상만 필터링하여 처리
+ * - 1시, 5시, 9시, 13시, 17시, 21시 (KST) 실행
  */
 @Injectable()
 export class SchedulerCron {
@@ -23,14 +24,15 @@ export class SchedulerCron {
   }
 
   /**
-   * 매일 오전 6시에 배치 작업 실행
+   * 4시간마다 배치 작업 실행 (Rate limit 분산)
+   * 실행 시간: 1시, 5시, 9시, 13시, 17시, 21시 (KST)
    * 25시간 이전에 게시된 영상만 처리 (자막 등이 준비될 시간 확보)
    */
-  @Cron('0 13 * * *', {
-    name: 'daily-video-batch',
+  @Cron('0 1,5,9,13,17,21 * * *', {
+    name: 'distributed-video-batch',
     timeZone: 'Asia/Seoul',
   })
-  async handleDailyBatch() {
+  async handleDistributedBatch() {
     if (!this.isEnabled) {
       this.logger.log('Scheduler is disabled, skipping batch');
       return;
@@ -41,15 +43,16 @@ export class SchedulerCron {
       return;
     }
 
-    this.logger.log('Starting daily batch job');
+    const hour = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', hour12: false });
+    this.logger.log(`Starting distributed batch job (${hour}:00 KST)`);
 
     try {
       const result = await this.batchProcessingService.runBatch();
       this.logger.log(
-        `Daily batch completed: ${result.totalSuccess} videos processed, ${result.totalFailed} failed`,
+        `Batch completed: ${result.totalSuccess} videos processed, ${result.totalFailed} failed`,
       );
     } catch (error) {
-      this.logger.error(`Daily batch failed: ${(error as Error).message}`);
+      this.logger.error(`Batch failed: ${(error as Error).message}`);
     }
   }
 }
