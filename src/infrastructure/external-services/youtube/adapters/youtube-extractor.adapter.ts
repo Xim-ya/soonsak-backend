@@ -20,13 +20,19 @@ const execAsync = promisify(exec);
 
 /** 429 에러 재시도 설정 (강화) */
 const RATE_LIMIT_RETRY_CONFIG = {
-  maxRetries: 5,
-  baseDelayMs: 15000,   // 8초 → 15초
-  maxDelayMs: 120000,   // 60초 → 120초 (2분)
+  maxRetries: 3,        // 5회 → 3회 (빠른 실패)
+  baseDelayMs: 10000,   // 15초 → 10초
+  maxDelayMs: 30000,    // 120초 → 30초 (빠른 포기)
 };
 
 /** 선제적 요청 간 딜레이 (rate limit 방지) */
-const PROACTIVE_DELAY_MS = 5000; // 2초 → 5초
+const PROACTIVE_DELAY_MS = 5000;
+
+/** Circuit Breaker 설정 */
+const CIRCUIT_BREAKER_CONFIG = {
+  failureThreshold: 3,        // 연속 3회 실패 시 circuit open
+  cooldownMs: 10 * 60 * 1000, // 10분 쿨다운
+};
 
 /** 쿠키 파일 경로 */
 const COOKIES_FILE_PATH = '/tmp/youtube_cookies.txt';
@@ -80,6 +86,12 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   private slackWebhookUrl: string | undefined;
   private cookieErrorNotified = false; // 쿠키 오류 알림 중복 방지
 
+  // Circuit Breaker 상태
+  private circuitState: 'closed' | 'open' = 'closed';
+  private consecutiveFailures = 0;
+  private circuitOpenedAt: number | null = null;
+  private rateLimitNotified = false; // rate limit 알림 중복 방지
+
   constructor(private readonly configService: ConfigService) {
     this.maxTranscriptLength = this.configService.get<number>(
       'YOUTUBE_MAX_TRANSCRIPT_LENGTH',
@@ -91,6 +103,29 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
   onModuleInit() {
     this.initializeCookiesFile();
     this.logger.log('YouTubeExtractorAdapter initialized');
+  }
+
+  /**
+   * Circuit Breaker 상태 조회 (모니터링/디버깅용)
+   */
+  getCircuitBreakerStatus(): {
+    state: 'closed' | 'open';
+    consecutiveFailures: number;
+    isYtDlpAvailable: boolean;
+    remainingCooldownMs: number | null;
+  } {
+    let remainingCooldownMs: number | null = null;
+    if (this.circuitState === 'open' && this.circuitOpenedAt) {
+      const elapsed = Date.now() - this.circuitOpenedAt;
+      remainingCooldownMs = Math.max(0, CIRCUIT_BREAKER_CONFIG.cooldownMs - elapsed);
+    }
+
+    return {
+      state: this.circuitState,
+      consecutiveFailures: this.consecutiveFailures,
+      isYtDlpAvailable: this.isYtDlpAvailable(),
+      remainingCooldownMs,
+    };
   }
 
   /**
@@ -182,6 +217,128 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     }
   }
 
+  /**
+   * Circuit Breaker: yt-dlp 호출 가능 여부 확인
+   * - 연속 실패 시 circuit이 열리고 yt-dlp 호출 차단
+   * - 쿨다운 후 자동 복구
+   */
+  private isYtDlpAvailable(): boolean {
+    if (this.circuitState === 'closed') {
+      return true;
+    }
+
+    // 쿨다운 경과 확인
+    if (this.circuitOpenedAt) {
+      const elapsed = Date.now() - this.circuitOpenedAt;
+      if (elapsed >= CIRCUIT_BREAKER_CONFIG.cooldownMs) {
+        this.logger.log('Circuit breaker: cooldown expired, resetting to closed state');
+        this.resetCircuit();
+        return true;
+      }
+      const remainingMin = Math.ceil((CIRCUIT_BREAKER_CONFIG.cooldownMs - elapsed) / 60000);
+      this.logger.debug(`Circuit breaker: open, ${remainingMin}min remaining`);
+    }
+
+    return false;
+  }
+
+  /**
+   * Circuit Breaker: 성공 시 호출
+   */
+  private recordYtDlpSuccess(): void {
+    this.consecutiveFailures = 0;
+    if (this.circuitState === 'open') {
+      this.logger.log('Circuit breaker: success after cooldown, circuit closed');
+      this.resetCircuit();
+    }
+  }
+
+  /**
+   * Circuit Breaker: Rate limit 실패 시 호출
+   */
+  private recordYtDlpRateLimitFailure(): void {
+    this.consecutiveFailures++;
+    this.logger.warn(`Circuit breaker: rate limit failure ${this.consecutiveFailures}/${CIRCUIT_BREAKER_CONFIG.failureThreshold}`);
+
+    if (this.consecutiveFailures >= CIRCUIT_BREAKER_CONFIG.failureThreshold) {
+      this.openCircuit();
+    }
+  }
+
+  /**
+   * Circuit 열기 (yt-dlp 차단)
+   */
+  private openCircuit(): void {
+    this.circuitState = 'open';
+    this.circuitOpenedAt = Date.now();
+    const cooldownMin = CIRCUIT_BREAKER_CONFIG.cooldownMs / 60000;
+    this.logger.warn(`Circuit breaker: OPEN - yt-dlp disabled for ${cooldownMin} minutes`);
+
+    // Rate limit 알림 (1회만)
+    this.notifyRateLimitCircuitOpen();
+  }
+
+  /**
+   * Circuit 리셋
+   */
+  private resetCircuit(): void {
+    this.circuitState = 'closed';
+    this.consecutiveFailures = 0;
+    this.circuitOpenedAt = null;
+    this.rateLimitNotified = false;
+  }
+
+  /**
+   * Rate Limit Circuit Open 시 Slack 알림
+   */
+  private async notifyRateLimitCircuitOpen(): Promise<void> {
+    if (this.rateLimitNotified || !this.slackWebhookUrl) {
+      return;
+    }
+
+    this.rateLimitNotified = true;
+    const cooldownMin = CIRCUIT_BREAKER_CONFIG.cooldownMs / 60000;
+
+    const message = {
+      blocks: [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: '⚡ YouTube Rate Limit - Circuit Breaker 활성화',
+            emoji: true,
+          },
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `*YouTube API rate limit이 감지되어 yt-dlp 호출을 일시 중단합니다.*\n\n• 연속 실패: ${this.consecutiveFailures}회\n• 쿨다운: ${cooldownMin}분\n• YouTubei.js로 대체 처리 중`,
+          },
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `🕐 발생 시각: ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}`,
+            },
+          ],
+        },
+      ],
+    };
+
+    try {
+      await fetch(this.slackWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message),
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send rate limit notification: ${(error as Error).message}`);
+    }
+  }
+
   private async getYouTubeInstance(): Promise<Innertube> {
     if (!this.youtube) {
       this.youtube = await Innertube.create();
@@ -206,23 +363,34 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
         result = youtubeiResult;
         this.logger.debug(`[${normalizedId}] Video info extracted via youtubei.js`);
       } else {
-        // 2차: yt-dlp로 누락 필드 보완 시도 (쿠키 필요할 수 있음)
-        this.logger.debug(`[${normalizedId}] youtubei.js missing fields: ${missingFields.join(', ')}, trying yt-dlp`);
-        const ytdlpResult = await this.extractWithYtDlp(normalizedId);
-        if (ytdlpResult) {
-          result = this.mergeVideoInfo(youtubeiResult, ytdlpResult, missingFields);
+        // 2차: yt-dlp로 누락 필드 보완 시도 (Circuit Breaker 확인)
+        if (this.isYtDlpAvailable()) {
+          this.logger.debug(`[${normalizedId}] youtubei.js missing fields: ${missingFields.join(', ')}, trying yt-dlp`);
+          const ytdlpResult = await this.extractWithYtDlp(normalizedId);
+          if (ytdlpResult) {
+            result = this.mergeVideoInfo(youtubeiResult, ytdlpResult, missingFields);
+          } else {
+            result = youtubeiResult;
+          }
         } else {
+          // Circuit open: yt-dlp 스킵, youtubei.js 결과만 사용
+          this.logger.debug(`[${normalizedId}] Circuit open, using youtubei.js only (missing: ${missingFields.join(', ')})`);
           result = youtubeiResult;
         }
       }
     } catch (error) {
-      // youtubei.js 완전 실패 시 yt-dlp로 폴백
-      this.logger.warn(`[${normalizedId}] youtubei.js failed, trying yt-dlp: ${(error as Error).message}`);
-      const ytdlpResult = await this.extractWithYtDlp(normalizedId);
-      if (ytdlpResult) {
-        result = ytdlpResult;
+      // youtubei.js 완전 실패 시 yt-dlp로 폴백 (Circuit Breaker 확인)
+      if (this.isYtDlpAvailable()) {
+        this.logger.warn(`[${normalizedId}] youtubei.js failed, trying yt-dlp: ${(error as Error).message}`);
+        const ytdlpResult = await this.extractWithYtDlp(normalizedId);
+        if (ytdlpResult) {
+          result = ytdlpResult;
+        } else {
+          throw new Error(`All extraction methods failed for ${normalizedId}`);
+        }
       } else {
-        throw new Error(`All extraction methods failed for ${normalizedId}`);
+        // Circuit open: yt-dlp 폴백 불가
+        throw new Error(`[CIRCUIT_OPEN] youtubei.js failed and yt-dlp is disabled: ${(error as Error).message}`);
       }
     }
 
@@ -252,11 +420,15 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       return { text: youtubeiTranscript };
     }
 
-    // 2차: yt-dlp로 자막 추출 폴백 (쿠키 필요할 수 있음)
-    this.logger.debug(`[${videoId}] youtube-transcript failed, trying yt-dlp`);
-    const transcript = await this.extractTranscriptWithYtDlp(videoId);
-    if (transcript) {
-      return { text: transcript };
+    // 2차: yt-dlp로 자막 추출 폴백 (Circuit Breaker 확인)
+    if (this.isYtDlpAvailable()) {
+      this.logger.debug(`[${videoId}] youtube-transcript failed, trying yt-dlp`);
+      const transcript = await this.extractTranscriptWithYtDlp(videoId);
+      if (transcript) {
+        return { text: transcript };
+      }
+    } else {
+      this.logger.debug(`[${videoId}] Circuit open, skipping yt-dlp transcript extraction`);
     }
 
     return null;
@@ -334,20 +506,22 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const result = await execAsync(command, options);
-        // 성공 후 선제적 딜레이 (다음 요청 전 rate limit 방지)
+        // 성공: circuit breaker 리셋 및 선제적 딜레이
+        this.recordYtDlpSuccess();
         await delay(PROACTIVE_DELAY_MS);
         return result;
       } catch (error) {
         const err = error as Error;
 
-        // 429 에러가 아니면 즉시 throw
+        // 429 에러가 아니면 즉시 throw (circuit breaker에 영향 없음)
         if (!isRateLimitError(err)) {
           throw error;
         }
 
-        // 마지막 시도였으면 throw
+        // 마지막 시도였으면 circuit breaker 기록 후 throw
         if (attempt === maxRetries) {
           this.logger.warn(`Rate limit exceeded after ${maxRetries + 1} attempts`);
+          this.recordYtDlpRateLimitFailure();
           throw error;
         }
 
