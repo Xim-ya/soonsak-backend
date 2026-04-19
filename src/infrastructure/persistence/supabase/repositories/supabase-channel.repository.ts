@@ -17,7 +17,8 @@ export class SupabaseChannelRepository implements IChannelRepository {
   async findAll(): Promise<Channel[]> {
     const { data, error } = await this.supabaseProvider.getClient()
       .from(SUPABASE_TABLES.CHANNELS)
-      .select('id, name, handle_id, logo_url')
+      .select('id, name, handle_id, logo_url, is_active')
+      .eq('is_active', true)
       .order('name');
 
     if (error) {
@@ -28,6 +29,20 @@ export class SupabaseChannelRepository implements IChannelRepository {
     return (data || []).map((record) =>
       ChannelMapper.toDomain(record as ChannelDBRecord),
     );
+  }
+
+  async markInactive(id: string, reason: string): Promise<void> {
+    const { error } = await this.supabaseProvider.getClient()
+      .from(SUPABASE_TABLES.CHANNELS)
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      this.logger.error(`Failed to mark channel ${id} inactive: ${error.message}`);
+      throw new Error(`Failed to mark channel ${id} inactive: ${error.message}`);
+    }
+
+    this.logger.warn(`Channel ${id} deactivated. reason: ${reason}`);
   }
 
   async findById(id: string): Promise<Channel | null> {

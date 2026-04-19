@@ -2,7 +2,7 @@ import { Injectable, Logger, Inject } from '@nestjs/common';
 import { INJECTION_TOKENS, MESSAGES } from '@/shared/constants';
 import { IVideoRepository, IChannelRepository, IFailedVideoRepository } from '@/domain/repositories';
 import { FailedVideo } from '@/domain/entities';
-import { IRSSFeedPort, RSSFeedEntry } from '@/application/ports';
+import { IRSSFeedPort, NoVideosTabError, RSSFeedEntry } from '@/application/ports';
 import { RegisterVideoUseCase } from '../register-video';
 import { RegisterChannelInput, RegisterChannelResult, FailedVideoInfo } from './register-channel.dto';
 
@@ -146,8 +146,20 @@ export class RegisterChannelUseCase {
         `  Channel completed: ${result.successCount} success, ${result.failedCount} failed, ${result.skippedCount} skipped, ${result.skippedShortsCount} shorts, ${result.skippedPermanentlyFailedCount} perm-failed`,
       );
     } catch (error) {
-      result.errors.push(`Channel error: ${(error as Error).message}`);
-      this.logger.error(`  Channel registration failed: ${(error as Error).message}`);
+      const errorMessage = (error as Error).message;
+      result.errors.push(`Channel error: ${errorMessage}`);
+      this.logger.error(`  Channel registration failed: ${errorMessage}`);
+
+      // 탭이 없는 채널(쇼츠 전용/빈 채널 등)은 크론 대상에서 영구 제외
+      if (error instanceof NoVideosTabError) {
+        try {
+          await this.channelRepository.markInactive(channelId, errorMessage);
+        } catch (deactivateError) {
+          this.logger.error(
+            `  Failed to deactivate channel ${channelId}: ${(deactivateError as Error).message}`,
+          );
+        }
+      }
     }
 
     return result;

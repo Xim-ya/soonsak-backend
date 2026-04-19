@@ -11,6 +11,7 @@ export interface ChannelDBRecord {
   banner_url?: string;
   subscriber_count?: number;
   updated_at?: string;
+  is_active?: boolean;
 }
 
 /**
@@ -30,6 +31,7 @@ export class ChannelMapper {
       bannerUrl: record.banner_url,
       subscriberCount: record.subscriber_count,
       lastProcessedAt: record.updated_at ? new Date(record.updated_at) : undefined,
+      isActive: record.is_active ?? true,
     });
   }
 

@@ -29,4 +29,10 @@ export interface IChannelRepository {
    * @returns 채널 ID
    */
   getOrCreate(id: string, name: string): Promise<string>;
+
+  /**
+   * 채널 비활성화 (크론 대상에서 제외)
+   * 탭 구조 불가·빈 채널 등 영구적으로 추출이 불가능한 경우 사용
+   */
+  markInactive(id: string, reason: string): Promise<void>;
 }

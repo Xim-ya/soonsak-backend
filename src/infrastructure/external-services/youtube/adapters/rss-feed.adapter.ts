@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { XMLParser } from 'fast-xml-parser';
 import { Innertube } from 'youtubei.js';
-import { IRSSFeedPort, RSSFeedEntry } from '@/application/ports';
+import { IRSSFeedPort, NoVideosTabError, RSSFeedEntry } from '@/application/ports';
 import { buildRSSUrl } from '@/shared/utils';
 
 interface RSSFeedEntryXML {
@@ -83,6 +83,10 @@ export class RSSFeedAdapter implements IRSSFeedPort, OnModuleInit {
   }
 
   async parseChannelFeed(channelId: string): Promise<RSSFeedEntry[]> {
+    if (!channelId || channelId.trim() === '') {
+      throw new Error('Channel ID is empty');
+    }
+
     // channelId 추출 (URL인 경우)
     let extractedChannelId = channelId;
     if (channelId.startsWith('http')) {
@@ -166,6 +170,10 @@ export class RSSFeedAdapter implements IRSSFeedPort, OnModuleInit {
    * youtubei.js로 채널 비디오 가져오기 (RSS 실패 시 폴백)
    */
   private async fetchWithYoutubeiJs(channelId: string): Promise<RSSFeedEntry[]> {
+    if (!channelId || channelId.trim() === '') {
+      throw new Error('Channel ID is empty');
+    }
+
     const youtube = await this.getYouTubeInstance();
     const channel = await youtube.getChannel(channelId);
 
@@ -177,6 +185,12 @@ export class RSSFeedAdapter implements IRSSFeedPort, OnModuleInit {
     const channelMetadata = channel.metadata as any;
     const channelHeader = channel.header as any;
     const channelName = channelMetadata?.title || channelHeader?.author?.name || '';
+
+    // 채널에 정규 Videos 탭이 없으면 더 이상 시도할 의미 없음
+    // (Shorts 전용/빈 채널 — 후속 파이프라인이 쇼츠를 필터링하므로 쓸모없는 호출 반복 방지)
+    if (!(channel as any).has_videos) {
+      throw new NoVideosTabError(channelId);
+    }
 
     const videos: RSSFeedEntry[] = [];
     let videosTab: any = await channel.getVideos();

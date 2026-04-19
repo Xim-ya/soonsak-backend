@@ -6,6 +6,7 @@ export interface ChannelProps {
   bannerUrl?: string;
   subscriberCount?: number;
   lastProcessedAt?: Date;
+  isActive?: boolean;
 }
 
 /**
@@ -19,6 +20,7 @@ export class Channel {
   private readonly _bannerUrl?: string;
   private readonly _subscriberCount?: number;
   private _lastProcessedAt?: Date;
+  private readonly _isActive: boolean;
 
   private constructor(props: ChannelProps) {
     this._id = props.id;
@@ -28,6 +30,7 @@ export class Channel {
     this._bannerUrl = props.bannerUrl;
     this._subscriberCount = props.subscriberCount;
     this._lastProcessedAt = props.lastProcessedAt;
+    this._isActive = props.isActive ?? true;
   }
 
   static create(props: ChannelProps): Channel {
@@ -66,6 +69,10 @@ export class Channel {
     return this._lastProcessedAt;
   }
 
+  get isActive(): boolean {
+    return this._isActive;
+  }
+
   markAsProcessed(): void {
     this._lastProcessedAt = new Date();
   }
@@ -79,6 +86,7 @@ export class Channel {
       bannerUrl: this._bannerUrl,
       subscriberCount: this._subscriberCount,
       lastProcessedAt: this._lastProcessedAt,
+      isActive: this._isActive,
     };
   }
 }
