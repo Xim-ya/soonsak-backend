@@ -360,49 +360,20 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       throw new Error(`Invalid video ID: ${videoId}`);
     }
 
-    let result: YouTubeVideoInfo;
+    // youtubei.js 17 단독 사용 — 쿠키 불필요, YouTube InnerTube API 호출.
+    // 과거에는 필드 누락 시 yt-dlp로 보완했지만 yt-dlp는 Railway 공유 IP의 봇 감지와 쿠키 만료
+    // 사이클에 계속 걸려 critical path에서 제거. 필수 필드 중 하나라도 빠지면 즉시 실패 처리해서
+    // "duration=0 → rate limiting" 류의 잘못된 silent degradation을 막는다.
+    const result = await this.extractWithYoutubeiJs(normalizedId);
 
-    // 1차: youtubei.js 시도 (쿠키 불필요)
-    try {
-      const youtubeiResult = await this.extractWithYoutubeiJs(normalizedId);
-      const missingFields = this.getMissingFields(youtubeiResult);
-
-      if (missingFields.length === 0) {
-        result = youtubeiResult;
-        this.logger.debug(`[${normalizedId}] Video info extracted via youtubei.js`);
-      } else {
-        // 2차: yt-dlp로 누락 필드 보완 시도 (Circuit Breaker 확인)
-        if (this.isYtDlpAvailable()) {
-          this.logger.debug(`[${normalizedId}] youtubei.js missing fields: ${missingFields.join(', ')}, trying yt-dlp`);
-          const ytdlpResult = await this.extractWithYtDlp(normalizedId);
-          if (ytdlpResult) {
-            result = this.mergeVideoInfo(youtubeiResult, ytdlpResult, missingFields);
-          } else {
-            result = youtubeiResult;
-          }
-        } else {
-          // Circuit open: yt-dlp 스킵, youtubei.js 결과만 사용
-          this.logger.debug(`[${normalizedId}] Circuit open, using youtubei.js only (missing: ${missingFields.join(', ')})`);
-          result = youtubeiResult;
-        }
-      }
-    } catch (error) {
-      // youtubei.js 완전 실패 시 yt-dlp로 폴백 (Circuit Breaker 확인)
-      if (this.isYtDlpAvailable()) {
-        this.logger.warn(`[${normalizedId}] youtubei.js failed, trying yt-dlp: ${(error as Error).message}`);
-        const ytdlpResult = await this.extractWithYtDlp(normalizedId);
-        if (ytdlpResult) {
-          result = ytdlpResult;
-        } else {
-          throw new Error(`All extraction methods failed for ${normalizedId}`);
-        }
-      } else {
-        // Circuit open: yt-dlp 폴백 불가
-        throw new Error(`[CIRCUIT_OPEN] youtubei.js failed and yt-dlp is disabled: ${(error as Error).message}`);
-      }
+    const missingRequired = this.getMissingRequiredFields(result);
+    if (missingRequired.length > 0) {
+      throw new Error(
+        `youtubei.js returned incomplete data for ${normalizedId}, missing required fields: ${missingRequired.join(', ')}`,
+      );
     }
 
-    // 최종 제목 검증: 제목이 없거나 너무 짧으면 oEmbed로 재시도
+    // 제목 보완: youtubei.js에서 비정상적으로 짧게 나오면 oEmbed로 회복
     if (!result.title || result.title.length < 3) {
       const oembedTitle = await this.fetchTitleFromOembed(normalizedId);
       if (oembedTitle) {
@@ -411,9 +382,8 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       }
     }
 
-    // 최종 publishedAt 검증: 모든 시도 후에도 없으면 현재 시간으로 폴백
+    // publishedAt은 RSS 피드에서 이미 input으로 들어오므로 여기는 폴백 용도만
     if (!result.publishedAt) {
-      this.logger.warn(`[${normalizedId}] publishedAt not found, using current time as fallback`);
       result.publishedAt = new Date().toISOString();
     }
 
@@ -674,15 +644,17 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     }
   }
 
-  private getMissingFields(info: YouTubeVideoInfo): string[] {
+  /**
+   * 등록 파이프라인 진행에 반드시 필요한 필드만 체크.
+   * description/publishedAt은 RSS 피드 입력으로 보완되거나 없어도 동작하므로 제외.
+   */
+  private getMissingRequiredFields(info: YouTubeVideoInfo): string[] {
     const missing: string[] = [];
     if (!info.title) missing.push('title');
-    if (!info.description) missing.push('description');
-    if (!info.duration) missing.push('duration');
+    if (!info.duration || info.duration === 0) missing.push('duration');
     if (!info.channelId) missing.push('channelId');
     if (!info.channelTitle) missing.push('channelTitle');
     if (!info.thumbnail) missing.push('thumbnail');
-    if (!info.publishedAt) missing.push('publishedAt');
     return missing;
   }
 
