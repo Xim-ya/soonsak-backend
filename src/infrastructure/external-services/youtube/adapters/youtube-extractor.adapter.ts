@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Innertube } from 'youtubei.js';
+import { Innertube, type Types } from 'youtubei.js';
 import { YoutubeTranscript } from 'youtube-transcript';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -361,25 +361,49 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     }
 
     // youtubei.js 17 단독 사용 — 쿠키 불필요, YouTube InnerTube API 호출.
-    // 과거에는 필드 누락 시 yt-dlp로 보완했지만 yt-dlp는 Railway 공유 IP의 봇 감지와 쿠키 만료
-    // 사이클에 계속 걸려 critical path에서 제거. 필수 필드 중 하나라도 빠지면 즉시 실패 처리해서
-    // "duration=0 → rate limiting" 류의 잘못된 silent degradation을 막는다.
-    const result = await this.extractWithYoutubeiJs(normalizedId);
+    // WEB client가 degraded 응답(필수 필드 누락)을 돌려줄 때가 있어 IOS → ANDROID client로 순차 재시도하고,
+    // 그래도 채널/썸네일이 빠지면 oEmbed로 최종 보완한다. duration은 InnerTube 외에는 받을 곳이 없으므로
+    // 전 client가 실패하면 영구 실패로 끊는다 ("duration=0 silent degradation" 방지).
+    let result = await this.extractWithYoutubeiJs(normalizedId, 'WEB');
+    let missingRequired = this.getMissingRequiredFields(result);
 
-    const missingRequired = this.getMissingRequiredFields(result);
+    const fallbackClients: Types.InnerTubeClient[] = ['IOS', 'ANDROID'];
+    for (const client of fallbackClients) {
+      if (missingRequired.length === 0) break;
+      this.logger.warn(
+        `[${normalizedId}] WEB client missing ${missingRequired.join(', ')}, retrying with ${client} client`,
+      );
+      try {
+        const fallback = await this.extractWithYoutubeiJs(normalizedId, client);
+        result = this.mergeVideoInfo(result, fallback, missingRequired);
+        missingRequired = this.getMissingRequiredFields(result);
+        if (missingRequired.length === 0) {
+          this.logger.log(`[${normalizedId}] Recovered via ${client} client`);
+        }
+      } catch (error) {
+        this.logger.debug(
+          `[${normalizedId}] ${client} client retry failed: ${(error as Error).message}`,
+        );
+      }
+    }
+
+    if (missingRequired.length > 0) {
+      const oembed = await this.fetchFromOembed(normalizedId);
+      if (oembed) {
+        result = this.mergeVideoInfo(result, oembed, missingRequired);
+        const stillMissing = this.getMissingRequiredFields(result);
+        const recovered = missingRequired.filter((f) => !stillMissing.includes(f));
+        if (recovered.length > 0) {
+          this.logger.log(`[${normalizedId}] Recovered via oEmbed: ${recovered.join(', ')}`);
+        }
+        missingRequired = stillMissing;
+      }
+    }
+
     if (missingRequired.length > 0) {
       throw new Error(
         `youtubei.js returned incomplete data for ${normalizedId}, missing required fields: ${missingRequired.join(', ')}`,
       );
-    }
-
-    // 제목 보완: youtubei.js에서 비정상적으로 짧게 나오면 oEmbed로 회복
-    if (!result.title || result.title.length < 3) {
-      const oembedTitle = await this.fetchTitleFromOembed(normalizedId);
-      if (oembedTitle) {
-        this.logger.log(`[${normalizedId}] Title recovered from oEmbed: ${oembedTitle}`);
-        result.title = oembedTitle;
-      }
     }
 
     // publishedAt은 RSS 피드에서 이미 input으로 들어오므로 여기는 폴백 용도만
@@ -658,9 +682,12 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     return missing;
   }
 
-  private async extractWithYoutubeiJs(videoId: string): Promise<YouTubeVideoInfo> {
+  private async extractWithYoutubeiJs(
+    videoId: string,
+    client: Types.InnerTubeClient = 'WEB',
+  ): Promise<YouTubeVideoInfo> {
     const youtube = await this.getYouTubeInstance();
-    const info = await youtube.getInfo(videoId);
+    const info = await youtube.getInfo(videoId, { client });
 
     if (!info.basic_info) {
       throw new Error(`Video not found: ${videoId}`);
@@ -668,15 +695,7 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
 
     const basicInfo = info.basic_info as any;
 
-    // 제목이 없거나 유효하지 않으면 oEmbed API로 폴백
-    let title = basicInfo.title || '';
-    if (!title || title.length < 3) {
-      const oembedTitle = await this.fetchTitleFromOembed(videoId);
-      if (oembedTitle) {
-        title = oembedTitle;
-        this.logger.log(`[${videoId}] Title fetched from oEmbed: ${title}`);
-      }
-    }
+    const title = basicInfo.title || '';
 
     let duration = 0;
     if (basicInfo.duration) {
@@ -691,17 +710,6 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
     // 3분 이하 영상은 콘텐츠 리뷰 영상으로 부적합하므로 스킵
     const isShorts = basicInfo.is_short === true || (duration > 0 && duration <= this.SHORTS_DURATION_THRESHOLD);
 
-    // 자막 추출 시도 (youtube-transcript 패키지 사용)
-    let transcript: string | undefined;
-    try {
-      transcript = await this.extractTranscriptWithYoutubeTranscript(videoId);
-      if (transcript) {
-        this.logger.log(`[${videoId}] Transcript in getInfo: ${transcript.length} chars`);
-      }
-    } catch (error) {
-      this.logger.debug(`[${videoId}] Transcript extraction in extractWithYoutubeiJs failed: ${(error as Error).message}`);
-    }
-
     return {
       id: videoId,
       title,
@@ -715,15 +723,15 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
       viewCount: basicInfo.view_count,
       likeCount: basicInfo.like_count,
       isShorts,
-      transcript,
     };
   }
 
   /**
-   * YouTube oEmbed API로 제목 가져오기 (인증 불필요)
-   * youtubei.js/yt-dlp 제목 추출 실패 시 폴백
+   * YouTube oEmbed API로 메타데이터 가져오기 (인증 불필요).
+   * InnerTube 응답이 degraded일 때 title/channelTitle/channelId/thumbnail 보완용.
+   * oEmbed는 duration을 주지 않으므로 duration 폴백은 불가능.
    */
-  private async fetchTitleFromOembed(videoId: string): Promise<string | null> {
+  private async fetchFromOembed(videoId: string): Promise<Partial<YouTubeVideoInfo> | null> {
     try {
       const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
       const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
@@ -732,17 +740,31 @@ export class YouTubeExtractorAdapter implements IYouTubeExtractorPort, OnModuleI
         return null;
       }
 
-      const data = await response.json() as { title?: string };
-      return data.title || null;
+      const data = (await response.json()) as {
+        title?: string;
+        author_name?: string;
+        author_url?: string;
+        thumbnail_url?: string;
+      };
+
+      // author_url은 `/channel/UCxxx` 또는 `/@handle` 형식. UC로 시작하는 채널 ID만 안전하게 추출.
+      const channelIdMatch = data.author_url?.match(/\/channel\/(UC[\w-]+)/);
+
+      return {
+        title: data.title,
+        channelTitle: data.author_name,
+        channelId: channelIdMatch?.[1],
+        thumbnail: data.thumbnail_url,
+      };
     } catch (error) {
-      this.logger.debug(`[${videoId}] oEmbed title fetch failed: ${(error as Error).message}`);
+      this.logger.debug(`[${videoId}] oEmbed fetch failed: ${(error as Error).message}`);
       return null;
     }
   }
 
   private mergeVideoInfo(
     primary: YouTubeVideoInfo,
-    fallback: YouTubeVideoInfo,
+    fallback: Partial<YouTubeVideoInfo>,
     missingFields: string[],
   ): YouTubeVideoInfo {
     const result = { ...primary };
