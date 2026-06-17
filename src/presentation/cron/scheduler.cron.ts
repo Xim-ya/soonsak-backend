@@ -19,7 +19,10 @@ export class SchedulerCron {
     private readonly batchProcessingService: BatchProcessingService,
     private readonly configService: ConfigService,
   ) {
-    this.isEnabled = this.configService.get<boolean>('SCHEDULER_ENABLED', true);
+    // env 값은 문자열로 들어오므로 'false'/false 를 모두 비활성으로 처리한다.
+    // (기본값: 미설정 시 활성)
+    const rawEnabled = this.configService.get<string | boolean>('SCHEDULER_ENABLED', true);
+    this.isEnabled = rawEnabled !== false && rawEnabled !== 'false';
     this.logger.log(`Scheduler cron ${this.isEnabled ? 'enabled' : 'disabled'}`);
   }
 
