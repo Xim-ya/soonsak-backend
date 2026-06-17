@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Soonsak 배치 로컬 스케줄러 (하루 1회 09:00 KST)
+  설치:
+    cp scripts/com.soonsak.batch.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.soonsak.batch.plist
+  해제:
+    launchctl unload ~/Library/LaunchAgents/com.soonsak.batch.plist
+  즉시 1회 실행(테스트):
+    launchctl start com.soonsak.batch
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.soonsak.batch</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/ximya/soonsak/reboot/soonsak-backend/scripts/run-batch-cron.sh</string>
+  </array>
+
+  <!-- 하루 1회: 매일 09:00 (시스템 로컬타임 = KST) -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
+
+  <!-- 예약 시각에 맥이 잠들어 있었으면 깨어날 때 1회 보충 실행 -->
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/ximya/soonsak/reboot/soonsak-backend/logs/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/ximya/soonsak/reboot/soonsak-backend/logs/launchd.err.log</string>
+</dict>
+</plist>
